@@ -1,4 +1,4 @@
-# Squadai Monorepo Migration Plan
+# Aisquad Monorepo Migration Plan
 
 ## Goal
 
@@ -15,7 +15,7 @@ The target is a single command surface and one source-of-truth repository for op
 
 ## Current State Snapshot
 
-- Root (`squadai/`) is **not** a git repo.
+- Root (`aisquad/`) is **not** a git repo.
 - Each service folder currently has its own `.git`:
   - `mission-control/.git`
   - `openclaw/.git`
@@ -34,7 +34,7 @@ The target is a single command surface and one source-of-truth repository for op
 Keep the same top-level directories:
 
 ```text
-squadai/
+aisquad/
 ├── mission-control/
 ├── openclaw/
 ├── sentinel/
@@ -90,7 +90,7 @@ This plan assumes **history-preserving import**.
 
 ### Phase 1 - Prepare Root Monorepo
 
-1. Initialize git at `squadai/`.
+1. Initialize git at `aisquad/`.
 2. Create root `.gitignore` to cover:
    - macOS files (`.DS_Store`)
    - service-local env/secrets that must never be tracked
@@ -163,7 +163,7 @@ This preserves current architecture while centralizing control in one repository
 
 After migration, the repository should include:
 
-1. One root `.git` in `squadai/`
+1. One root `.git` in `aisquad/`
 2. One root `README.md` describing all services and orchestration
 3. One root `Makefile` exposing cross-service commands
 4. Existing service docs and command surfaces preserved in place
@@ -175,7 +175,7 @@ After migration, the repository should include:
 
 Migration is complete when all items are true:
 
-- `git status` works from `squadai/`
+- `git status` works from `aisquad/`
 - No child `.git` directories remain (except any intentionally retained nested workspace policy)
 - `mission-control`, `openclaw`, `sentinel`, and `vm` are visible and tracked from root
 - A single root command surface can start/check the integrated environment

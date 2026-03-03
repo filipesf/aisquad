@@ -4,7 +4,7 @@ SHELL := /bin/bash
 
 .PHONY: help
 help:
-	@printf "\nSquadai Monorepo Commands\n"
+	@printf "\nAisquad Monorepo Commands\n"
 	@printf "========================\n\n"
 	@printf "Core\n"
 	@printf "  make up                 Start VM + Mission Control\n"

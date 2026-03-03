@@ -1,4 +1,4 @@
-# Squadai Monorepo
+# Aisquad Monorepo
 
 Single repository that groups all local services used in the agent operations stack.
 
