@@ -8,8 +8,8 @@ This repository manages a native OpenClaw deployment running inside an OrbStack 
 
 - Apple Silicon (M1 Pro)
 - macOS with OrbStack
-- OrbStack Linux machine: `openclaw-vm` (Ubuntu 25.10, arm64)
-- Gateway accessible at `openclaw-vm.orb.local:18789`
+- OrbStack Linux machine: `aisquad` (Ubuntu 25.10, arm64)
+- Gateway accessible at `aisquad.orb.local:18789`
 
 ## What Is Included
 
@@ -26,7 +26,7 @@ This repository manages a native OpenClaw deployment running inside an OrbStack 
 
 ```
 macOS Host (OrbStack)
-  └─ openclaw-vm (Ubuntu 25.10 Linux machine)
+  └─ aisquad (Ubuntu 25.10 Linux machine)
        ├─ systemd: openclaw-gateway.service
        │    └─ node dist/index.js gateway --bind lan --port 18789
        │    └─ WorkingDirectory: /home/filipefernandes/openclaw
@@ -176,7 +176,7 @@ make agent-identity AGENT_ID=coding NAME="Coding" EMOJI="robot"
 
 ```bash
 # Edit from macOS via orb
-orb -m openclaw-vm -u root vim /etc/openclaw/openclaw.env
+orb -m aisquad -u root vim /etc/openclaw/openclaw.env
 
 # Then restart the service
 make restart

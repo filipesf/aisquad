@@ -8,7 +8,7 @@ if [ $# -lt 1 ]; then
 fi
 
 AGENT_ID="$1"
-VM="${VM:-openclaw-vm}"
+VM="${VM:-aisquad}"
 OPENCLAW_DIR="/home/filipefernandes/openclaw"
 WORKSPACE="${WORKSPACE:-/home/filipefernandes/.openclaw/workspace-${AGENT_ID}}"
 NON_INTERACTIVE="${NON_INTERACTIVE:-1}"

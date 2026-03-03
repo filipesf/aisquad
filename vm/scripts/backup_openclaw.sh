@@ -3,7 +3,7 @@ set -euo pipefail
 
 TS="$(date +%Y%m%d-%H%M%S)"
 BACKUP_DIR="${1:-./backups}"
-VM="${VM:-openclaw-vm}"
+VM="${VM:-aisquad}"
 STATE_DIR="/home/filipefernandes/.openclaw"
 
 mkdir -p "${BACKUP_DIR}"

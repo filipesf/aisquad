@@ -15,7 +15,7 @@ This runbook orchestrates:
 
 - Docker and Docker Compose
 - OrbStack and `orb` CLI
-- Access to VM `openclaw-vm`
+- Access to VM `aisquad`
 
 ## Daily Operations
 

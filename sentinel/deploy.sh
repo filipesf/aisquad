@@ -9,7 +9,7 @@
 #
 set -euo pipefail
 
-VM_HOST="openclaw-vm@orb"
+VM_HOST="aisquad@orb"
 VM_DIR="/home/filipefernandes/sentinel"
 COMPOSE_DIR="/home/filipefernandes/openclaw"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -31,10 +31,10 @@ sync_files() {
 
 restart_container() {
   echo "[deploy] Restarting sentinel container..."
-  orb run -m openclaw-vm bash -c "cd ${COMPOSE_DIR} && set -a && source .env && set +a && docker compose up -d sentinel && docker compose restart sentinel"
+  orb run -m aisquad bash -c "cd ${COMPOSE_DIR} && set -a && source .env && set +a && docker compose up -d sentinel && docker compose restart sentinel"
   echo "[deploy] Container restarted."
   sleep 3
-  orb run -m openclaw-vm bash -c "cd ${COMPOSE_DIR} && set -a && source .env && set +a && docker compose logs --tail 15 sentinel"
+  orb run -m aisquad bash -c "cd ${COMPOSE_DIR} && set -a && source .env && set +a && docker compose logs --tail 15 sentinel"
 }
 
 case "${1:-}" in
@@ -43,7 +43,7 @@ case "${1:-}" in
     ;;
   commands)
     echo "[deploy] Registering slash commands..."
-    orb run -m openclaw-vm bash -c "cd ${COMPOSE_DIR} && set -a && source .env && set +a && docker compose exec sentinel node dist/deploy-commands.js"
+    orb run -m aisquad bash -c "cd ${COMPOSE_DIR} && set -a && source .env && set +a && docker compose exec sentinel node dist/deploy-commands.js"
     ;;
   *)
     echo "[deploy] Building..."

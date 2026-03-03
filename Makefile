@@ -10,6 +10,7 @@ help:
 	@printf "  make up                 Start VM + Mission Control\n"
 	@printf "  make down               Stop Mission Control\n"
 	@printf "  make status             Show VM and Mission Control status\n\n"
+	@printf "  make links              Print operational links\n\n"
 	@printf "Mission Control\n"
 	@printf "  make mc-up              Start Mission Control stack\n"
 	@printf "  make mc-up-openclaw     Start Mission Control with openclaw profile\n"
@@ -25,13 +26,23 @@ help:
 	@printf "  make vm-ps              Show VM service status\n\n"
 
 .PHONY: up
-up: vm-up mc-up
+up: vm-up mc-up links
 
 .PHONY: down
 down: mc-down
 
 .PHONY: status
-status: vm-ps mc-ps
+status: vm-ps mc-ps links
+
+.PHONY: links
+links:
+	@printf "\nOperational Links\n"
+	@printf "=================\n"
+	@printf "Mission Control UI: http://localhost:5173\n"
+	@printf "Mission Control Health: http://localhost:3000/health\n"
+	@printf "OpenClaw VM endpoint: http://aisquad.orb.local:18789\n"
+	@$(MAKE) -C vm dashboard-url
+	@printf "\n"
 
 .PHONY: mc-up
 mc-up:

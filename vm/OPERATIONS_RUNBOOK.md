@@ -1,6 +1,6 @@
 # OpenClaw Operations Runbook
 
-> Architecture: Native process inside OrbStack Linux VM (`openclaw-vm`), managed by systemd.
+> Architecture: Native process inside OrbStack Linux VM (`aisquad`), managed by systemd.
 
 ## Quick Reference
 
@@ -56,7 +56,7 @@ Commands:
 python3 -c "import secrets; print(secrets.token_urlsafe(48))"
 
 # Edit the gateway env file inside the VM
-orb -m openclaw-vm sudo nano /etc/openclaw/openclaw.env
+orb -m aisquad sudo nano /etc/openclaw/openclaw.env
 # Update OPENCLAW_GATEWAY_TOKEN=<new-token>
 
 # Restart the gateway to pick up the new token
@@ -82,15 +82,15 @@ Commands:
 make restart
 
 # List and revoke devices
-orb -m openclaw-vm -- openclaw devices list
-orb -m openclaw-vm -- openclaw devices revoke <device-id>
+orb -m aisquad -- openclaw devices list
+orb -m aisquad -- openclaw devices revoke <device-id>
 
 # Perform token rotation steps above
 
 # Verify
-orb -m openclaw-vm -- openclaw devices list
-orb -m openclaw-vm -- openclaw security audit --deep
-orb -m openclaw-vm -- openclaw health --json
+orb -m aisquad -- openclaw devices list
+orb -m aisquad -- openclaw security audit --deep
+orb -m aisquad -- openclaw health --json
 ```
 
 ## Service Management
@@ -99,14 +99,14 @@ Both services are managed by systemd inside the VM.
 
 ```bash
 # Gateway
-orb -m openclaw-vm sudo systemctl status openclaw-gateway
-orb -m openclaw-vm sudo systemctl restart openclaw-gateway
-orb -m openclaw-vm sudo journalctl -u openclaw-gateway -f
+orb -m aisquad sudo systemctl status openclaw-gateway
+orb -m aisquad sudo systemctl restart openclaw-gateway
+orb -m aisquad sudo journalctl -u openclaw-gateway -f
 
 # Sentinel
-orb -m openclaw-vm sudo systemctl status openclaw-sentinel
-orb -m openclaw-vm sudo systemctl restart openclaw-sentinel
-orb -m openclaw-vm sudo journalctl -u openclaw-sentinel -f
+orb -m aisquad sudo systemctl status openclaw-sentinel
+orb -m aisquad sudo systemctl restart openclaw-sentinel
+orb -m aisquad sudo journalctl -u openclaw-sentinel -f
 ```
 
 ## Env File Locations (inside VM)
