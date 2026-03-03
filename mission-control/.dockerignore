@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.git/
+.env
+.env.local
+thoughts/
+ops/backups/
+coverage/
+*.log
+.DS_Store

@@ -1,0 +1,213 @@
+services:
+  # ── Infrastructure ──────────────────────────────────
+  postgres:
+    image: postgres:16
+    container_name: mctl-postgres
+    environment:
+      POSTGRES_USER: ${PGUSER:-postgres}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-postgres}
+      POSTGRES_DB: ${PGDATABASE:-mission_control}
+    ports:
+      - '${PG_PORT:-5432}:5432'
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: mctl-redis
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Migration (one-shot) ────────────────────────────
+  migrate:
+    build:
+      context: .
+      target: migrate
+    container_name: mctl-migrate
+    environment:
+      PGHOST: postgres
+      PGPORT: '5432'
+      PGUSER: ${PGUSER:-postgres}
+      PGPASSWORD: ${PGPASSWORD:-postgres}
+      PGDATABASE: ${PGDATABASE:-mission_control}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  # ── Control API ─────────────────────────────────────
+  control-api:
+    build:
+      context: .
+      target: api
+    container_name: mctl-api
+    ports:
+      - '${API_PORT:-3000}:3000'
+    environment:
+      HOST: '0.0.0.0'
+      PORT: '3000'
+      PGHOST: postgres
+      PGPORT: '5432'
+      PGUSER: ${PGUSER:-postgres}
+      PGPASSWORD: ${PGPASSWORD:-postgres}
+      PGDATABASE: ${PGDATABASE:-mission_control}
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  # ── Mission UI ──────────────────────────────────────
+  mission-ui:
+    build:
+      context: .
+      target: ui
+    container_name: mctl-ui
+    ports:
+      - '${UI_PORT:-5173}:5173'
+    depends_on:
+      control-api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Core Workers ────────────────────────────────────
+  offline-detector:
+    build:
+      context: .
+      target: worker
+    container_name: mctl-offline-detector
+    command: ['apps/workers/src/offline-detector.ts']
+    environment:
+      PGHOST: postgres
+      PGPORT: '5432'
+      PGUSER: ${PGUSER:-postgres}
+      PGPASSWORD: ${PGPASSWORD:-postgres}
+      PGDATABASE: ${PGDATABASE:-mission_control}
+      OFFLINE_THRESHOLD_MS: ${OFFLINE_THRESHOLD_MS:-30000}
+      DETECTOR_POLL_MS: ${DETECTOR_POLL_MS:-10000}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  assigner:
+    build:
+      context: .
+      target: worker
+    container_name: mctl-assigner
+    command: ['apps/workers/src/assigner.ts']
+    environment:
+      PGHOST: postgres
+      PGPORT: '5432'
+      PGUSER: ${PGUSER:-postgres}
+      PGPASSWORD: ${PGPASSWORD:-postgres}
+      PGDATABASE: ${PGDATABASE:-mission_control}
+      ASSIGNER_POLL_MS: ${ASSIGNER_POLL_MS:-5000}
+      LEASE_SECONDS: ${LEASE_SECONDS:-120}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  notification-dispatcher:
+    build:
+      context: .
+      target: worker
+    container_name: mctl-notif-dispatcher
+    command: ['apps/workers/src/notification-dispatcher.ts']
+    environment:
+      PGHOST: postgres
+      PGPORT: '5432'
+      PGUSER: ${PGUSER:-postgres}
+      PGPASSWORD: ${PGPASSWORD:-postgres}
+      PGDATABASE: ${PGDATABASE:-mission_control}
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      NOTIF_POLL_MS: ${NOTIF_POLL_MS:-5000}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # ── OpenClaw Workers (optional) ─────────────────────
+  openclaw-heartbeat-bridge:
+    build:
+      context: .
+      target: worker
+    container_name: mctl-openclaw-heartbeat
+    command: ['apps/workers/src/openclaw-heartbeat-bridge.ts']
+    profiles: [openclaw]
+    environment:
+      PGHOST: postgres
+      PGPORT: '5432'
+      PGUSER: ${PGUSER:-postgres}
+      PGPASSWORD: ${PGPASSWORD:-postgres}
+      PGDATABASE: ${PGDATABASE:-mission_control}
+      OPENCLAW_ENABLED: 'true'
+      OPENCLAW_GATEWAY_URL: ${OPENCLAW_GATEWAY_URL:-}
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
+      OPENCLAW_DISPATCH_POLL_MS: ${OPENCLAW_DISPATCH_POLL_MS:-10000}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  openclaw-dispatcher:
+    build:
+      context: .
+      target: worker
+    container_name: mctl-openclaw-dispatcher
+    command: ['apps/workers/src/openclaw-dispatcher.ts']
+    profiles: [openclaw]
+    environment:
+      PGHOST: postgres
+      PGPORT: '5432'
+      PGUSER: ${PGUSER:-postgres}
+      PGPASSWORD: ${PGPASSWORD:-postgres}
+      PGDATABASE: ${PGDATABASE:-mission_control}
+      OPENCLAW_ENABLED: 'true'
+      OPENCLAW_GATEWAY_URL: ${OPENCLAW_GATEWAY_URL:-}
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
+      OPENCLAW_DEFAULT_MODEL: ${OPENCLAW_DEFAULT_MODEL:-}
+      OPENCLAW_DISPATCH_POLL_MS: ${OPENCLAW_DISPATCH_POLL_MS:-10000}
+      CONTROL_API_URL: http://control-api:3000
+    depends_on:
+      control-api:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  redis_data:

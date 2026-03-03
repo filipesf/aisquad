@@ -1,0 +1,297 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.3.2",
+    "lastTouchedAt": "2026-03-03T00:23:23.585Z"
+  },
+  "wizard": {
+    "lastRunAt": "2026-03-02T20:08:09.559Z",
+    "lastRunVersion": "2026.3.2",
+    "lastRunCommand": "doctor",
+    "lastRunMode": "local"
+  },
+  "auth": {
+    "profiles": {
+      "openai-codex:default": {
+        "provider": "openai-codex",
+        "mode": "oauth"
+      }
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {}
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openai-codex/gpt-5.1-codex-mini"
+      },
+      "models": {
+        "openai-codex/gpt-5.3-codex": {
+          "alias": "Codex"
+        },
+        "openai-codex/gpt-5.2": {
+          "alias": "GPT-5.2"
+        },
+        "openai-codex/gpt-5.2-codex": {
+          "alias": "Codex-5.2"
+        },
+        "openai-codex/gpt-5.1-codex-mini": {
+          "alias": "Mini"
+        }
+      },
+      "workspace": "/home/node/.openclaw/workspace",
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "maxConcurrent": 4,
+      "subagents": {
+        "maxConcurrent": 8,
+        "runTimeoutSeconds": 900
+      }
+    },
+    "list": [
+      {
+        "id": "corven",
+        "default": true,
+        "name": "Corven",
+        "workspace": "/home/node/.openclaw/workspace-corven",
+        "model": "openai-codex/gpt-5.2",
+        "identity": {
+          "name": "Corven"
+        }
+      }
+    ]
+  },
+  "tools": {
+    "alsoAllow": [
+      "github",
+      "gh-issues",
+      "gog",
+      "linear"
+    ],
+    "web": {
+      "search": {
+        "enabled": true,
+        "provider": "brave"
+      },
+      "fetch": {
+        "enabled": true
+      }
+    },
+    "media": {
+      "audio": {
+        "enabled": true
+      }
+    },
+    "exec": {
+      "security": "full",
+      "ask": "off",
+      "applyPatch": {
+        "workspaceOnly": true
+      }
+    },
+    "fs": {
+      "workspaceOnly": true
+    }
+  },
+  "bindings": [
+    {
+      "agentId": "corven",
+      "comment": "Discord (DMs + guilds)",
+      "match": {
+        "channel": "discord"
+      }
+    }
+  ],
+  "messages": {
+    "ackReactionScope": "group-mentions"
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "session": {
+    "dmScope": "per-channel-peer",
+    "threadBindings": {
+      "enabled": true,
+      "idleHours": 24
+    },
+    "maintenance": {
+      "mode": "enforce",
+      "pruneAfter": "30d",
+      "maxEntries": 500,
+      "maxDiskBytes": "500mb",
+      "highWaterBytes": "400mb"
+    }
+  },
+  "hooks": {
+    "enabled": true,
+    "token": "REDACTED_HOOKS_TOKEN"
+  },
+  "channels": {
+    "whatsapp": {
+      "enabled": false,
+      "dmPolicy": "allowlist",
+      "allowFrom": [
+        "+353838479037"
+      ],
+      "groupPolicy": "disabled",
+      "groups": {
+        "*": {
+          "requireMention": true
+        }
+      },
+      "debounceMs": 0,
+      "accounts": {
+        "default": {
+          "enabled": true,
+          "dmPolicy": "allowlist",
+          "allowFrom": [
+            "+353838479037"
+          ],
+          "groupPolicy": "disabled",
+          "debounceMs": 0
+        }
+      },
+      "mediaMaxMb": 50,
+      "actions": {
+        "reactions": true,
+        "sendMessage": true,
+        "polls": true
+      }
+    },
+    "discord": {
+      "enabled": true,
+      "groupPolicy": "allowlist",
+      "streaming": "partial",
+      "replyToMode": "first",
+      "dmPolicy": "allowlist",
+      "allowFrom": [
+        "408373729358512128"
+      ],
+      "guilds": {
+        "1202363522177310740": {
+          "requireMention": false,
+          "channels": {
+            "corven": {
+              "allow": true
+            },
+            "research": {
+              "allow": true,
+              "systemPrompt": "This is the #research channel. Format all deliverables as Research Cards.\n\nTemplate:\n## 📰 {Title}\n> {One-line takeaway — the \"so what\"}\n\n**Source:** [{domain}]({url})\n**Tags:** \\`{tag1}\\` \\`{tag2}\\` \\`{tag3}\\`\n\n{2-4 sentence summary. What was found, why it matters for Flare, and one actionable implication. No fluff.}\n\n-# 🕐 {date} · via {agent}\n\nRules for this channel:\n- ONE deliverable per message. Never combine multiple items.\n- Total message must be under 1500 characters.\n- Start with ## and emoji. Use blockquote (>) for the one-line takeaway.\n- Tags: lowercase, no spaces, max 3, wrapped in backticks.\n- Summary must answer: what, so what, now what.\n- Footer uses -# (subtext) with timestamp and agent attribution.\n- No preamble (\"Here's what I found\"), no sign-offs (\"Let me know\").\n- If the deliverable has a source URL, include it. If not, omit the Source line."
+            },
+            "growth": {
+              "allow": true,
+              "systemPrompt": "This is the #growth channel. Format all deliverables as Campaign Brief Cards.\n\nTemplate:\n## 🎯 {Campaign Name} — {Segment}\n> {One-line positioning — what we're testing}\n\n**Sprint:** {week/date range} · **Offer:** {Spark/Ignite} · **Status:** \\`{draft|active|paused|done}\\`\n\n**ICP:** {one line}\n**Country:** {Ireland/Portugal/both}\n\n**DM (A):** {copy}\n**DM (B):** {copy}\n\n**Follow-ups:** Day 1 → {action} · Day 3 → {action} · Day 7 → {action}\n\n-# 🕐 {date} · via {agent}\n\nRules for this channel:\n- ONE deliverable per message. Never combine multiple items.\n- Total message must be under 1500 characters.\n- Start with ## and emoji. Use blockquote (>) for the one-line takeaway.\n- Tags: lowercase, no spaces, max 3, wrapped in backticks.\n- Summary must answer: what, so what, now what.\n- Footer uses -# (subtext) with timestamp and agent attribution.\n- No preamble (\"Here's what I found\"), no sign-offs (\"Let me know\").\n- If the deliverable has a source URL, include it. If not, omit the Source line."
+            },
+            "content": {
+              "allow": true,
+              "systemPrompt": "This is the #content channel. Format all deliverables as Content Item Cards.\n\nTemplate:\n## 📝 {Post Title/Hook}\n> **Type:** {post|anchor|story} · **Platform:** {IG|LinkedIn|both} · **CTA:** {Spark/Ignite/none}\n\n{The actual copy — ready to post or adapt.}\n\n-# 🕐 {date} · \\`{draft|approved|posted}\\`\n\nRules for this channel:\n- ONE deliverable per message. Never combine multiple items.\n- Total message must be under 1500 characters.\n- Start with ## and emoji. Use blockquote (>) for the one-line takeaway.\n- Tags: lowercase, no spaces, max 3, wrapped in backticks.\n- Summary must answer: what, so what, now what.\n- Footer uses -# (subtext) with timestamp and agent attribution.\n- No preamble (\"Here's what I found\"), no sign-offs (\"Let me know\").\n- If the deliverable has a source URL, include it. If not, omit the Source line."
+            },
+            "ops": {
+              "allow": true,
+              "systemPrompt": "This is the #ops channel. Use rich embeds for all output.\n\nAgent Color Registry:\n- Corven: 15247484 (#e8a87c)\n- flare-growth: 3447003 (#3498db)\n- flare-content: 2067276 (#1f8b4c)\n- flare-ops: 15105570 (#e67e22)\n- flare-leads: 10181046 (#9b59b6)\n\nRules for this channel:\n- ALWAYS use the message tool with action \"send\" and an \"embeds\" array. Do NOT reply with plain text.\n- Each embed MUST have: title (with emoji), color (decimal integer from the Agent Color Registry), and footer with timestamp + attribution.\n- For standups: one embed per agent. Consistent 3-field structure: Completed, In Progress, Blocked.\n- For reports: use inline fields for metrics (max 3 per row), non-inline for text sections.\n- For decisions: use gold color (16776960). Include Context, Alternatives, Impact fields.\n- Total embed content must stay under 6000 chars per embed.\n- Plain-text message (above embeds) is a one-line date/title header only.\n- Do NOT use components and embeds together in the same message.\n- If you have more than 10 embeds, split across multiple messages.\n- Thread replies under a standup/report serve as discussion — those CAN be plain text."
+            },
+            "squad-feed": {
+              "allow": true,
+              "systemPrompt": "This is the #squad-feed channel. Use rich embeds for all output.\n\nAgent Color Registry:\n- Corven: 15247484 (#e8a87c)\n- flare-growth: 3447003 (#3498db)\n- flare-content: 2067276 (#1f8b4c)\n- flare-ops: 15105570 (#e67e22)\n- flare-leads: 10181046 (#9b59b6)\n\nRules for this channel:\n- ALWAYS use the message tool with action \"send\" and an \"embeds\" array. Do NOT reply with plain text.\n- Each embed MUST have: title (with emoji), color (decimal integer from the Agent Color Registry), and footer with timestamp + attribution.\n- For standups: one embed per agent. Consistent 3-field structure: Completed, In Progress, Blocked.\n- For reports: use inline fields for metrics (max 3 per row), non-inline for text sections.\n- For decisions: use gold color (16776960). Include Context, Alternatives, Impact fields.\n- Total embed content must stay under 6000 chars per embed.\n- Plain-text message (above embeds) is a one-line date/title header only.\n- Do NOT use components and embeds together in the same message.\n- If you have more than 10 embeds, split across multiple messages.\n- Thread replies under a standup/report serve as discussion — those CAN be plain text."
+            }
+          }
+        }
+      },
+      "threadBindings": {
+        "enabled": true,
+        "idleHours": 24,
+        "spawnSubagentSessions": false
+      },
+      "voice": {
+        "enabled": true,
+        "tts": {
+          "provider": "openai",
+          "openai": {
+            "voice": "ash"
+          }
+        }
+      }
+    },
+    "slack": {
+      "mode": "socket",
+      "webhookPath": "/slack/events",
+      "enabled": false,
+      "userTokenReadOnly": true,
+      "groupPolicy": "allowlist",
+      "streaming": "partial",
+      "nativeStreaming": true
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "controlUi": {
+      "allowedOrigins": [
+        "http://127.0.0.1:18789",
+        "http://localhost:18789"
+      ]
+    },
+    "auth": {
+      "mode": "token",
+      "token": "REDACTED_GATEWAY_TOKEN"
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    }
+  },
+  "skills": {
+    "install": {
+      "nodeManager": "npm"
+    },
+    "entries": {
+      "nano-banana-pro": {
+        "apiKey": "REDACTED_GEMINI_API_KEY"
+      },
+      "github": {
+        "enabled": true
+      },
+      "gh-issues": {
+        "enabled": true,
+        "apiKey": "REDACTED_GITHUB_PAT"
+      },
+      "slack": {
+        "enabled": false
+      },
+      "discord": {
+        "enabled": false
+      },
+      "oracle": {
+        "enabled": false
+      },
+      "tmux": {
+        "enabled": false
+      },
+      "nano-pdf": {
+        "enabled": false
+      },
+      "xurl": {
+        "enabled": false
+      }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "whatsapp": {
+        "enabled": false
+      },
+      "discord": {
+        "enabled": true
+      },
+      "telemetry": {
+        "enabled": true
+      }
+    }
+  }
+}

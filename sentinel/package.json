@@ -1,0 +1,26 @@
+{
+  "name": "flare-setup-bot",
+  "version": "1.0.0",
+  "description": "Discord setup bot that bootstraps and maintains the Flare HQ server",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "rm -rf dist && tsc",
+    "start": "./deploy.sh",
+    "stop": "orb run -m openclaw-vm bash -c 'cd /home/filipefernandes/openclaw && set -a && source .env && set +a && docker compose stop sentinel'",
+    "restart": "orb run -m openclaw-vm bash -c 'cd /home/filipefernandes/openclaw && set -a && source .env && set +a && docker compose restart sentinel'",
+    "logs": "orb run -m openclaw-vm bash -c 'cd /home/filipefernandes/openclaw && set -a && source .env && set +a && docker compose logs --tail 50 -f sentinel'",
+    "deploy": "./deploy.sh commands"
+  },
+  "author": "Filipe Fernandes",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "discord.js": "^14.17.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}

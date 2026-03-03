@@ -1,0 +1,32 @@
+.DS_Store
+
+# Root OS/editor noise
+.idea/
+.vscode/
+
+# Service-local secrets and env files
+mission-control/.env
+mission-control/.env.local
+sentinel/.env
+sentinel/config.json
+vm/.env
+vm/.env.local
+openclaw/openclaw.json
+
+# OpenClaw sensitive/runtime state
+openclaw/credentials/
+openclaw/identity/
+openclaw/devices/
+openclaw/logs/
+openclaw/completions/
+openclaw/media/
+openclaw/memory/
+openclaw/delivery-queue/
+openclaw/subagents/
+
+# Keep nested workspace repos outside root tracking
+openclaw/workspace/
+openclaw/workspace-corven/
+
+# Local migration backups
+*.pre-monorepo-backup

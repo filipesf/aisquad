@@ -1,0 +1,20 @@
+{
+  "name": "@mc/integration",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "lint": "echo 'ok'",
+    "typecheck": "tsc --noEmit",
+    "build": "echo 'ok'"
+  },
+  "devDependencies": {
+    "@mc/shared": "workspace:*",
+    "pg": "^8.16.0",
+    "ioredis": "^5.6.1",
+    "@types/pg": "^8.15.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.1"
+  }
+}

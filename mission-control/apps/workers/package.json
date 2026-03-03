@@ -1,0 +1,29 @@
+{
+  "name": "@mc/workers",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'Use individual worker scripts'",
+    "build": "tsc --build",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'no tests yet'",
+    "offline-detector": "tsx src/offline-detector.ts",
+    "assigner": "tsx src/assigner.ts",
+    "notification-dispatcher": "tsx src/notification-dispatcher.ts",
+    "daily-standup": "tsx src/daily-standup.ts",
+    "openclaw-heartbeat-bridge": "tsx src/openclaw-heartbeat-bridge.ts",
+    "openclaw-dispatcher": "tsx src/openclaw-dispatcher.ts"
+  },
+  "dependencies": {
+    "@mc/shared": "workspace:*",
+    "ioredis": "^5.6.1",
+    "pg": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.4",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

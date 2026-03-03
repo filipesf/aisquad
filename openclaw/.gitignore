@@ -1,0 +1,50 @@
+# Main config (contains embedded secrets — use openclaw.json.example as template)
+openclaw.json
+openclaw.json.bak*
+
+# Runtime / ephemeral
+completions/
+logs/
+subagents/
+delivery-queue/
+canvas/
+update-check.json
+
+# Sessions (large, constantly changing)
+agents/*/sessions/
+sessions/
+
+# Agent auth & model configs (contain API keys)
+agents/*/agent/auth.json
+agents/*/agent/auth-profiles.json
+agents/*/agent/models.json
+
+# Secrets / credentials
+credentials/
+devices/
+exec-approvals.json
+
+# Device identity (private keys)
+identity/
+
+# Google/service credentials
+config/gogcli/credentials.json
+config/gogcli/keyring
+
+# Memory databases (binary, large)
+memory/
+
+# Media (binary blobs)
+media/
+
+# Nested repos (tracked independently)
+workspace/
+workspace-corven/
+
+# Cron backups / run history
+cron/jobs.json.bak*
+cron/jobs.backup-*
+cron/runs/
+
+# OS
+.DS_Store

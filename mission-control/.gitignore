@@ -1,0 +1,23 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
+thoughts/
+
+# Build outputs
+*.tsbuildinfo
+
+# Docker volumes
+infra/data/
+
+# Backups
+ops/backups/
+
+# Test coverage
+coverage/
+
+# IDE
+.vscode/
+.idea/

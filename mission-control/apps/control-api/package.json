@@ -1,0 +1,28 @@
+{
+  "name": "@mc/control-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --build",
+    "start": "node dist/index.js",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@mc/shared": "workspace:*",
+    "fastify": "^5.3.3",
+    "ioredis": "^5.6.1",
+    "pg": "^8.16.0",
+    "zod": "^3.25.7"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.4",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.1"
+  }
+}
