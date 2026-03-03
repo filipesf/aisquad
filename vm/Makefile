@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 
-VM ?= openclaw-vm
+AUTO_VM := $(shell orb list 2>/dev/null | sed -n '1s/[[:space:]].*//p')
+VM ?= $(if $(AUTO_VM),$(AUTO_VM),openclaw-vm)
 ORB ?= orb -m $(VM)
 ORB_ROOT ?= orb -m $(VM) -u root
 OPENCLAW_DIR ?= /home/filipefernandes/openclaw
