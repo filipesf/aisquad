@@ -65,12 +65,12 @@ mission-control/
 ├── ops/
 │   ├── backup.sh             # pg_dump with verification
 │   ├── restore.sh            # Restore with dry-run + confirmation
-│   └── runbooks/
-│       └── RUNBOOK.md
+│   └── sync-openclaw-agents.ts
 ├── tests/
 │   ├── integration/          # 7 test files, 31 tests
 │   └── e2e/                  # (empty, reserved)
-└── thoughts/                 # Internal notes (gitignored)
+├── thoughts/                 # Internal notes (gitignored)
+└── RUNBOOK.md                # Docker ops, backup/restore, troubleshooting
 ```
 
 ## Getting Started

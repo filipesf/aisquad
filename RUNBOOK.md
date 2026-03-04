@@ -76,4 +76,4 @@ make vm-ps
 
 For deeper VM operations and maintenance, use `vm/README.md` and `vm/RUNBOOK.md`.
 
-For Mission Control service-level operations, use `mission-control/ops/RUNBOOK.md`.
+For Mission Control service-level operations, use `mission-control/RUNBOOK.md`.
