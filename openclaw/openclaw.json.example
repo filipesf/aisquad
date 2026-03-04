@@ -40,7 +40,7 @@
           "alias": "Mini"
         }
       },
-      "workspace": "/home/node/.openclaw/workspace",
+      "workspace": "/home/filipefernandes/.openclaw/workspace",
       "compaction": {
         "mode": "safeguard"
       },
@@ -55,7 +55,7 @@
         "id": "corven",
         "default": true,
         "name": "Corven",
-        "workspace": "/home/node/.openclaw/workspace-corven",
+        "workspace": "/home/filipefernandes/.openclaw/workspace-corven",
         "model": "openai-codex/gpt-5.2",
         "identity": {
           "name": "Corven"

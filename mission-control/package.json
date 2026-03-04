@@ -11,7 +11,8 @@
     "test": "pnpm -r test",
     "test:integration": "pnpm --filter @mc/integration test",
     "db:migrate": "node db/migrate.js",
-    "db:seed": "tsx db/seed.ts"
+    "db:seed": "tsx db/seed.ts",
+    "agents:sync-openclaw": "tsx ops/sync-openclaw-agents.ts"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.32.0",

@@ -87,6 +87,26 @@ docker compose --profile openclaw up -d
 
 Requires `OPENCLAW_GATEWAY_URL` and `OPENCLAW_GATEWAY_TOKEN` in your `.env` file.
 
+Note: for the OpenClaw hooks integration, `OPENCLAW_GATEWAY_TOKEN` must be the hooks bearer token accepted by `POST /hooks/agent`.
+
+After startup, sync Mission Control agents from OpenClaw:
+
+```bash
+pnpm agents:sync-openclaw
+```
+
+Optional: keep Fleet Status continuously aligned with OpenClaw using a host cron job:
+
+```bash
+crontab -l > /tmp/mc_cron 2>/dev/null || true
+cat <<'EOF' >> /tmp/mc_cron
+# BEGIN mission-control openclaw agent sync
+* * * * * cd /Users/filipefernandes/Code/squadai/mission-control && pnpm agents:sync-openclaw >> /Users/filipefernandes/Code/squadai/mission-control/ops/logs/openclaw-agent-sync.log 2>&1
+# END mission-control openclaw agent sync
+EOF
+crontab /tmp/mc_cron
+```
+
 ### Start only infrastructure (for local development)
 
 ```bash
@@ -397,7 +417,7 @@ docker compose run --rm -e PGHOST=postgres worker apps/workers/src/daily-standup
 # Check dispatcher logs for HTTP 401/403 errors
 docker compose logs --tail=50 openclaw-dispatcher
 
-# Verify the gateway token matches your OpenClaw config
+# Verify the hooks bearer token matches your OpenClaw config
 # (check your .env file for OPENCLAW_GATEWAY_TOKEN)
 
 # Test connectivity to the gateway directly

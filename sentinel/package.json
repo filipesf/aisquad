@@ -6,9 +6,9 @@
   "scripts": {
     "build": "rm -rf dist && tsc",
     "start": "./deploy.sh",
-    "stop": "orb run -m aisquad bash -c 'cd /home/filipefernandes/openclaw && set -a && source .env && set +a && docker compose stop sentinel'",
-    "restart": "orb run -m aisquad bash -c 'cd /home/filipefernandes/openclaw && set -a && source .env && set +a && docker compose restart sentinel'",
-    "logs": "orb run -m aisquad bash -c 'cd /home/filipefernandes/openclaw && set -a && source .env && set +a && docker compose logs --tail 50 -f sentinel'",
+    "stop": "orb run -m aisquad -u root systemctl stop openclaw-sentinel",
+    "restart": "orb run -m aisquad -u root systemctl restart openclaw-sentinel",
+    "logs": "orb run -m aisquad -u root journalctl -u openclaw-sentinel --no-pager -n 50 -f",
     "deploy": "./deploy.sh commands"
   },
   "author": "Filipe Fernandes",

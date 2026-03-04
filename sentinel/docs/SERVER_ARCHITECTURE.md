@@ -99,7 +99,7 @@ Prompts are truncated to ~80 characters with markdown/special characters strippe
 
 - **Role:** Personal companion + multi-context squad operator
 - **Discord role:** `Corven` (managed bot role, auto-created by Discord)
-- **Backend:** OpenClaw gateway running in Docker on `aisquad`
+- **Backend:** OpenClaw gateway running natively via systemd on `aisquad`
 - **Access:** AGENTS, SQUADS categories
 - **Commands:** `/corven`, `/session`, `/growth`, `/content`, `/ops`, `/leads`
 - **Context switching:** Channel name determines which squad context Corven loads from its workspace (`work/flare/squads/<squad>/WORKING.md`)

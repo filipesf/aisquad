@@ -37,8 +37,7 @@ memory/
 # Media (binary blobs)
 media/
 
-# Nested repos (tracked independently)
-workspace/
+# Nested repo (tracked independently)
 workspace-corven/
 
 # Cron backups / run history

@@ -3,15 +3,14 @@
 # deploy.sh — Build Sentinel locally and deploy to the OrbStack VM
 #
 # Usage:
-#   ./deploy.sh          Build + sync + restart container
+#   ./deploy.sh          Build + sync + restart service
 #   ./deploy.sh sync     Sync only (skip build)
-#   ./deploy.sh commands Register slash commands via container
+#   ./deploy.sh commands Register slash commands on VM
 #
 set -euo pipefail
 
 VM_HOST="aisquad@orb"
 VM_DIR="/home/filipefernandes/sentinel"
-COMPOSE_DIR="/home/filipefernandes/openclaw"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 cd "$SCRIPT_DIR"
@@ -29,12 +28,12 @@ sync_files() {
   echo "[deploy] Sync complete."
 }
 
-restart_container() {
-  echo "[deploy] Restarting sentinel container..."
-  orb run -m aisquad bash -c "cd ${COMPOSE_DIR} && set -a && source .env && set +a && docker compose up -d sentinel && docker compose restart sentinel"
-  echo "[deploy] Container restarted."
+restart_service() {
+  echo "[deploy] Restarting sentinel service..."
+  orb run -m aisquad -u root systemctl restart openclaw-sentinel
+  echo "[deploy] Service restarted."
   sleep 3
-  orb run -m aisquad bash -c "cd ${COMPOSE_DIR} && set -a && source .env && set +a && docker compose logs --tail 15 sentinel"
+  orb run -m aisquad -u root journalctl -u openclaw-sentinel --no-pager -n 15
 }
 
 case "${1:-}" in
@@ -43,12 +42,12 @@ case "${1:-}" in
     ;;
   commands)
     echo "[deploy] Registering slash commands..."
-    orb run -m aisquad bash -c "cd ${COMPOSE_DIR} && set -a && source .env && set +a && docker compose exec sentinel node dist/deploy-commands.js"
+    orb run -m aisquad bash -c "cd ${VM_DIR} && node dist/deploy-commands.js"
     ;;
   *)
     echo "[deploy] Building..."
     npm run build
     sync_files
-    restart_container
+    restart_service
     ;;
 esac

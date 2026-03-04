@@ -625,10 +625,10 @@ channels: {
 ```json5
 agents: {
   list: [
-    { id: "corven", default: true, workspace: "/home/node/.openclaw/workspace-corven" },
-    { id: "flare-growth", workspace: "/home/node/.openclaw/workspace-flare-growth" },
-    { id: "flare-content", workspace: "/home/node/.openclaw/workspace-flare-content" },
-    { id: "flare-ops", workspace: "/home/node/.openclaw/workspace-flare-ops" },
+    { id: "corven", default: true, workspace: "/home/filipefernandes/.openclaw/workspace-corven" },
+    { id: "flare-growth", workspace: "/home/filipefernandes/.openclaw/workspace-flare-growth" },
+    { id: "flare-content", workspace: "/home/filipefernandes/.openclaw/workspace-flare-content" },
+    { id: "flare-ops", workspace: "/home/filipefernandes/.openclaw/workspace-flare-ops" },
   ]
 },
 bindings: [

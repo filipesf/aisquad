@@ -24,8 +24,7 @@ openclaw/memory/
 openclaw/delivery-queue/
 openclaw/subagents/
 
-# Keep nested workspace repos outside root tracking
-openclaw/workspace/
+# Keep nested workspace repo outside root tracking
 openclaw/workspace-corven/
 
 # Local migration backups

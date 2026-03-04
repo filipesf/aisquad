@@ -261,12 +261,34 @@ Set the following environment variables:
 ```bash
 OPENCLAW_ENABLED=true
 OPENCLAW_GATEWAY_URL=http://localhost:8080   # Your OpenClaw gateway URL
-OPENCLAW_GATEWAY_TOKEN=your-secret-token     # Bearer token for /hooks/agent
+OPENCLAW_GATEWAY_TOKEN=your-hooks-token       # Bearer token for /hooks/agent
 ```
 
 When `OPENCLAW_ENABLED=true`, the workers will fail fast on startup if `OPENCLAW_GATEWAY_URL` or `OPENCLAW_GATEWAY_TOKEN` are missing.
 
 With `OPENCLAW_ENABLED=false` (the default), all OpenClaw-related behavior is inert — no workers start, no dispatches occur.
+
+### Agent Registry Sync
+
+Fleet Status reflects rows in Mission Control's `agents` table. To keep it aligned with the OpenClaw VM agent list, run:
+
+```bash
+pnpm agents:sync-openclaw
+```
+
+This sync command:
+
+- Reads `agents.list` from `~/.openclaw/openclaw.json` in the VM (via `orb`)
+- Creates missing Mission Control agents
+- Updates existing synced agent metadata (`name`, `session_key`, `capabilities.openclaw`)
+- Disables stale OpenClaw mappings that no longer exist in OpenClaw
+- Sends heartbeat for synced agents so Fleet Status transitions to `online`
+
+Optional environment overrides:
+
+- `OPENCLAW_VM` (default: `aisquad`)
+- `OPENCLAW_STATE_PATH` (default: `/home/filipefernandes/.openclaw/openclaw.json`)
+- `CONTROL_API_URL` (default: `http://localhost:3000`)
 
 ### Output Handling
 
