@@ -69,7 +69,6 @@ mission-control/
 ├── tests/
 │   ├── integration/          # 7 test files, 31 tests
 │   └── e2e/                  # (empty, reserved)
-├── thoughts/                 # Internal notes (gitignored)
 └── RUNBOOK.md                # Docker ops, backup/restore, troubleshooting
 ```
 

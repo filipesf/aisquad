@@ -20,10 +20,17 @@ make status
 make down
 ```
 
+## Runbooks
+
+| Scope | File |
+|---|---|
+| Cross-service daily ops | `RUNBOOK.md` |
+| VM maintenance, token rotation, emergency procedures | `vm/RUNBOOK.md` |
+| Mission Control Docker ops, backup/restore, troubleshooting | `mission-control/RUNBOOK.md` |
+
 ## Notes
 
 - Service-specific workflows remain in their own folders.
 - `mission-control` keeps its internal pnpm workspace setup.
 - `openclaw/workspace` and `openclaw/workspace-corven` remain excluded from root git tracking.
-
 
