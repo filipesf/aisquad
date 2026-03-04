@@ -26,6 +26,4 @@ make down
 - `mission-control` keeps its internal pnpm workspace setup.
 - `openclaw/workspace` and `openclaw/workspace-corven` remain excluded from root git tracking.
 
-## Migration Plan
 
-See `MONOREPO_MIGRATION_PLAN.md` for the migration steps and constraints used for this repository.

@@ -66,7 +66,7 @@ mission-control/
 │   ├── backup.sh             # pg_dump with verification
 │   ├── restore.sh            # Restore with dry-run + confirmation
 │   └── runbooks/
-│       └── local-vm-operations.md
+│       └── RUNBOOK.md
 ├── tests/
 │   ├── integration/          # 7 test files, 31 tests
 │   └── e2e/                  # (empty, reserved)

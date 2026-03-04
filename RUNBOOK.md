@@ -74,6 +74,6 @@ make mc-logs
 make vm-ps
 ```
 
-For deeper VM operations and maintenance, use `vm/README.md` and `vm/OPERATIONS_RUNBOOK.md`.
+For deeper VM operations and maintenance, use `vm/README.md` and `vm/RUNBOOK.md`.
 
-For Mission Control service-level operations, use `mission-control/ops/runbooks/local-vm-operations.md`.
+For Mission Control service-level operations, use `mission-control/ops/RUNBOOK.md`.

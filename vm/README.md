@@ -20,7 +20,7 @@ This repository manages a native OpenClaw deployment running inside an OrbStack 
 | `scripts/agent_add.sh` | Non-interactive helper to add isolated agents with optional bindings |
 | `scripts/backup_openclaw.sh` | Backup script — tars `.openclaw` state from VM, snapshots git workspaces |
 | `scripts/restore_verify_openclaw.sh` | Restore validation script for backup archives |
-| `OPERATIONS_RUNBOOK.md` | Monthly maintenance, token rotation, and emergency lockout procedures |
+| `RUNBOOK.md` | Monthly maintenance, token rotation, and emergency lockout procedures |
 
 ## Architecture
 
@@ -210,7 +210,7 @@ The gateway logs may show repeated `[bonjour] gateway name conflict resolved` me
 
 ## Routine Operations
 
-See `OPERATIONS_RUNBOOK.md` for:
+See `RUNBOOK.md` for:
 - Monthly maintenance checklist
 - Token rotation procedure
 - Emergency lockout response
