@@ -79,4 +79,5 @@ make vm-ps
 | Scope | File |
 |---|---|
 | VM maintenance, token rotation, emergency procedures | `vm/RUNBOOK.md` |
+| Sentinel deploy, service management, troubleshooting | `sentinel/RUNBOOK.md` |
 | Mission Control Docker ops, backup/restore, troubleshooting | `mission-control/RUNBOOK.md` |
