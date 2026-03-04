@@ -58,7 +58,8 @@ mission-control/
 │   ├── seed.ts               # Demo data (3 agents, 10 tasks, comments, notifications)
 │   └── migrations/
 │       ├── 001_init.sql      # 8 tables, 15 indexes, 6 FKs
-│       └── 002_assignment_invariants.sql
+│       ├── 002_assignment_invariants.sql
+│       └── 003_openclaw_dispatch_tracking.sql  # openclaw_dispatch_attempts table + 3 indexes
 ├── infra/
 │   └── nginx.conf            # nginx config for Dockerized UI
 ├── ops/
@@ -67,7 +68,7 @@ mission-control/
 │   └── runbooks/
 │       └── local-vm-operations.md
 ├── tests/
-│   ├── integration/          # 8 test files, 31 tests
+│   ├── integration/          # 7 test files, 31 tests
 │   └── e2e/                  # (empty, reserved)
 └── thoughts/                 # Internal notes (gitignored)
 ```
@@ -241,6 +242,8 @@ Four independent background processes that poll PostgreSQL:
 | **Assigner**                | 10s (`ASSIGNER_POLL_MS`) | Expires stale leases, then matches queued tasks to online agents by capability                       |
 | **Notification Dispatcher** | 5s (`NOTIF_POLL_MS`)     | Delivers queued notifications to online agents; retries with exponential backoff                     |
 | **Daily Standup**           | one-shot                 | Generates a digest of the last 24h: tasks completed/blocked/created, agent outages, assignment churn |
+| **OpenClaw Dispatcher**     | 10s (`OPENCLAW_DISPATCH_POLL_MS`) | Polls for offered assignments on OpenClaw-enabled agents; dispatches to `/hooks/agent`; tracks each attempt in `openclaw_dispatch_attempts` with exponential backoff (max 5 retries) |
+| **OpenClaw Heartbeat Bridge** | 10s (`OPENCLAW_DISPATCH_POLL_MS`) | Sends periodic heartbeats for all OpenClaw-backed agents to keep their Mission Control status `online` |
 
 Workers are stateless — they can be killed and restarted without data loss. All state lives in PostgreSQL.
 
@@ -331,7 +334,7 @@ Write requests (`POST`, `PATCH`, `PUT`, `DELETE`) with an `Idempotency-Key` head
 
 ## Database
 
-8 tables, 15 indexes, enforced by CHECK constraints and foreign keys (all `ON DELETE CASCADE`):
+9 tables, 18 indexes, enforced by CHECK constraints and foreign keys (all `ON DELETE CASCADE`):
 
 | Table           | Purpose                                                        |
 | --------------- | -------------------------------------------------------------- |
@@ -341,8 +344,9 @@ Write requests (`POST`, `PATCH`, `PUT`, `DELETE`) with an `Idempotency-Key` head
 | `notifications` | Notification queue with retry tracking                         |
 | `activities`    | Append-only activity log (event sourcing)                      |
 | `comments`      | Task comments with @-mention support                           |
-| `subscriptions` | Agent-to-task subscription mapping                             |
-| `_migrations`   | Migration tracking                                             |
+| `subscriptions`               | Agent-to-task subscription mapping                                                        |
+| `openclaw_dispatch_attempts`  | Per-attempt record of OpenClaw dispatches — status, error, response excerpt, retry count  |
+| `_migrations`                 | Migration tracking                                                                        |
 
 Run migrations with:
 
@@ -379,7 +383,7 @@ pnpm test:integration
 
 ### Integration Tests
 
-31 tests against a live API + database, run sequentially (`fileParallelism: false`):
+31 tests across 7 files against a live API + database, run sequentially (`fileParallelism: false`):
 
 - **Heartbeat lifecycle** — registration, offline→online transition, sequence dedup, offline detection, recovery
 - **Assignment lifecycle** — task creation, state transitions, full offer→accept→complete flow, lease expiry and requeue

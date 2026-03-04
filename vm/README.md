@@ -101,6 +101,7 @@ make restart-all   # Restart all services
 make ps            # Show service status
 make logs          # Tail gateway logs
 make logs-sentinel # Tail sentinel logs
+make logs-all      # Tail all service logs
 ```
 
 ### Update & Build
@@ -153,11 +154,12 @@ make full-check        # ps, status, health, audit, verify-local
 make agents-list
 make agents-list-bindings
 make agent-add AGENT_ID=work
-make agent-add AGENT_ID=coding MODEL="openai/gpt-5.2" BINDS="telegram:ops,discord:coding"
-make agent-bind AGENT_ID=coding BINDS="telegram:ops"
-make agent-unbind AGENT_ID=coding BINDS="telegram:ops"
+make agent-add AGENT_ID=coding WORKSPACE=coding MODEL="openai/gpt-4o" BINDS="discord:coding,telegram:ops"
+make agent-bind AGENT_ID=coding BINDS="discord:coding,telegram:ops"
+make agent-unbind AGENT_ID=coding BINDS="discord:coding"
+make agent-unbind-all AGENT_ID=coding
 make agent-delete AGENT_ID=coding
-make agent-identity AGENT_ID=coding NAME="Coding" EMOJI="robot"
+make agent-identity AGENT_ID=coding NAME="Coding" THEME="dark" EMOJI="robot" AVATAR="https://..."
 ```
 
 ## VM Internal Layout

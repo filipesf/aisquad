@@ -92,6 +92,8 @@ npm run dev
 | `/ops prompt`                                       | Routed     | `#ops`          | Checklists, tracking, reports          |
 | `/leads prompt`                                     | Routed     | `#growth`       | Lead generation (routes to growth)     |
 | `/decision title [context] [alternatives] [impact]` | Routed     | `#squad-feed`   | Log a decision as a rich embed         |
+| `/standup`                                          | Routed     | `#squad-feed`   | Post standup embeds for active agents  |
+| `/report type [weekly\|checklist]`                  | Routed     | `#ops`          | Post structured weekly or daily report |
 
 ### Infrastructure Commands
 
@@ -189,6 +191,8 @@ sentinel/
 │   │   │   ├── ops.ts                # /ops prompt — routed to #ops
 │   │   │   └── leads.ts              # /leads prompt — routed to #growth
 │   │   ├── decision.ts               # /decision — embed to #squad-feed
+│   │   ├── standup.ts                # /standup — standup embeds to #squad-feed
+│   │   ├── report.ts                 # /report weekly|checklist — structured report to #ops
 │   │   ├── setup/index.ts            # /setup full | update | verify
 │   │   ├── create/index.ts           # /create role|channel|category
 │   │   ├── assign/index.ts           # /assign role <user> <role>
