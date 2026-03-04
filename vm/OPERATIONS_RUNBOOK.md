@@ -14,8 +14,8 @@
 | Backup | `make backup` |
 | Restore latest | `make restore-latest` |
 | Build from source | `make build` |
-| Update + rebuild | `make update` |
-| SSH into VM | `make ssh` |
+| Update + rebuild | `make pull` |
+| SSH into VM | `make vm-ssh` |
 
 ## Monthly Maintenance Checklist
 
@@ -28,7 +28,7 @@
 Commands:
 
 ```bash
-make update          # git pull + pnpm install + build + restart
+make pull            # git pull + pnpm install + build + restart
 make ps              # check service status
 make verify-local    # run openclaw health, status, doctor
 make backup          # create timestamped backup
@@ -123,6 +123,7 @@ Both are `chmod 600` and owned by `filipefernandes`. Never commit these to git.
 ```bash
 make vm-start       # Start the VM
 make vm-stop        # Stop the VM (stops all services)
+make vm-restart     # Restart the VM
 make vm-info        # Show VM resource usage
-make ssh            # SSH into the VM
+make vm-ssh         # SSH into the VM
 ```
