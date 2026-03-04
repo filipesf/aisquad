@@ -9,6 +9,7 @@ import {
 } from '../lib/api.ts';
 import { StatusBadge } from '../components/StatusBadge.tsx';
 import { TimeAgo } from '../components/TimeAgo.tsx';
+import { ApiAuthBanner } from '../components/ApiAuthBanner.tsx';
 
 export function AgentDetail() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +17,7 @@ export function AgentDetail() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -28,7 +30,9 @@ export function AgentDetail() {
       setAgent(agentData);
       setAssignments(assignmentData);
       setNotifications(notificationData);
+      setError(null);
     } catch (err) {
+      setError(err);
       console.error('Failed to load agent:', err);
     } finally {
       setLoading(false);
@@ -60,6 +64,8 @@ export function AgentDetail() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
+      <ApiAuthBanner error={error} />
+
       {/* Header */}
       <div>
         <Link to="/" className="text-sm text-gray-400 hover:text-gray-300">

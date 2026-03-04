@@ -38,7 +38,7 @@
 - `#research` (WORK → SQUADS) — carried over, repurposed as blog-roll
 - `#corven` (AGENTS) — freeform 1:1
 - `Voice — Corven` (AGENTS) — voice works
-- `#bot-commands`, `#audit-log`, `#server-config` (META) — infrastructure
+- `#audit-log` (META) — infrastructure
 
 **Remove entire categories:**
 
@@ -64,9 +64,7 @@ Flare
 │   └── #squad-feed      ← daily standups, agent status, Mission Control visibility
 │
 └── 🔧 META (pos 2)
-    ├── #bot-commands
-    ├── #audit-log
-    └── #server-config
+    └── #audit-log
 ```
 
 PERSONAL category and all its channels (`#journal`, `#finance`, `#reminders`, `#health`, voice) are removed entirely. The server starts with AGENTS at the top.
@@ -1083,7 +1081,7 @@ Benefits over regular text channels:
 - [x] Update `server-architecture.ts`: remove PERSONAL + WORK, AGENTS (pos 0), SQUADS (pos 1), META (pos 2)
 - [x] Add `commandRouting`, `channelAgentDefaults` to architecture config
 - [x] Deploy Sentinel (`npm run build` + `./deploy.sh`)
-- [ ] Run `/setup full clean:True` from `#bot-commands` — removes old PERSONAL/WORK categories
+- [ ] Run `/setup full clean:True` — removes old PERSONAL/WORK categories
 - [ ] Verify structure (`/setup verify`)
 
 **OpenClaw integration (WebSocket RPC + HTTP fallback):**
@@ -1102,7 +1100,7 @@ Benefits over regular text channels:
 - [x] Implement sector shorthands with prompt (`/growth`, `/content`, `/ops`, `/leads`)
 - [x] Implement `/decision` with embed builder
 - [x] Register new commands (`./deploy.sh commands`)
-- [x] Test: `/corven prompt:"..."` from `#bot-commands` → thread in `#corven`, Corven responds _(tested, worked via HTTP fallback before scope fix)_
+- [x] Test: `/corven prompt:"..."` → thread in `#corven`, Corven responds _(tested, worked via HTTP fallback before scope fix)_
 - [ ] Test: `/corven prompt:"..."` via WS RPC (after scope fix) → verify no fallback needed
 - [ ] Test: `/growth prompt:"test"` from `#corven` → thread in `#growth`, agent responds
 - [ ] Test: `/leads prompt:"test"` from anywhere → thread in `#growth`, agent responds

@@ -7,6 +7,7 @@ import { useActivityStream } from '../hooks/useActivityStream.ts';
 import { StatusBadge } from '../components/StatusBadge.tsx';
 import { TimeAgo } from '../components/TimeAgo.tsx';
 import { ActivityFeed } from '../components/ActivityFeed.tsx';
+import { ApiAuthBanner } from '../components/ApiAuthBanner.tsx';
 
 function AgentCard({ agent }: { agent: Agent }) {
   return (
@@ -44,8 +45,8 @@ const STATE_COLORS: Record<string, string> = {
 };
 
 export function Dashboard() {
-  const { data: agents } = usePolling(listAgents, 5000);
-  const { data: tasks } = usePolling(listTasks, 5000);
+  const { data: agents, error: agentsError } = usePolling(listAgents, 5000);
+  const { data: tasks, error: tasksError } = usePolling(listTasks, 5000);
   const { activities, connected } = useActivityStream();
 
   const stateCounts = TASK_STATES.reduce<Record<string, number>>((acc, state) => {
@@ -58,6 +59,8 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8">
+      <ApiAuthBanner error={tasksError ?? agentsError} />
+
       {/* Fleet Summary */}
       <section>
         <div className="mb-4 flex items-center justify-between">

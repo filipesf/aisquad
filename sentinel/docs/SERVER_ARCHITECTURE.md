@@ -185,9 +185,7 @@ Flare
 │   └── #squad-feed      — Daily standups, agent status, decisions
 │
 └── 🔧 META (pos 2)
-    ├── #bot-commands
-    ├── #audit-log
-    └── #server-config
+    └── #audit-log
 ```
 
 ---
@@ -232,13 +230,11 @@ Flare
 
 #### 🔧 META
 
-> The backstage. Infrastructure, not content. This is where you manage the server itself.
+> Infrastructure-only category for server change logs.
 
-| Channel          | What goes here                                  | Who writes   | Who reads   |
-| ---------------- | ----------------------------------------------- | ------------ | ----------- |
-| `#bot-commands`  | Slash commands for the setup bot                | You, Admins  | You, Admins |
-| `#audit-log`     | Immutable record of every server change         | Setup bot    | You, Admins |
-| `#server-config` | Human-readable notes about current server state | You (manual) | You         |
+| Channel      | What goes here                          | Who writes | Who reads   |
+| ------------ | --------------------------------------- | ---------- | ----------- |
+| `#audit-log` | Immutable record of every server change | Setup bot  | You, Admins |
 
 **Permissions:**
 
@@ -246,8 +242,6 @@ Flare
 - `@Agent`: Deny `ViewChannel` (agents don't need to see meta)
 - `@Admin`: Allow `ViewChannel`, `SendMessages`, `SendMessagesInThreads`, `ReadMessageHistory`
 - Exception: `@Agent` gets `SendMessages` in `#audit-log` only (to post their own logs)
-
-**Note:** OpenClaw slash commands (`/activation`, `/model`, etc.) only work in channels where Corven has `ViewChannel` permission — NOT in `#bot-commands`.
 
 ---
 
@@ -323,7 +317,7 @@ This bot exists to **bootstrap and maintain** the server and **trigger agent ses
 3. **Pass 3:** Delete orphan channels with no parent category
 4. Then proceeds with normal setup
 
-**Caveat:** If you run this from a channel that gets deleted, the deferred reply fails. Run from `#bot-commands` to be safe.
+**Caveat:** If you run this from a channel that gets deleted, the deferred reply fails.
 
 ---
 

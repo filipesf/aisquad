@@ -281,15 +281,6 @@ export const categories: CategoryConfig[] = [
     ],
     channels: [
       {
-        name: 'bot-commands',
-        type: ChannelType.GuildText,
-        topic:
-          'Slash command invocations for the setup bot \u2014 your terminal for server operations',
-        category: '\u{1f527} META',
-        overwrites: [],
-        autoArchive: false,
-      },
-      {
         name: 'audit-log',
         type: ChannelType.GuildText,
         topic:
@@ -299,15 +290,6 @@ export const categories: CategoryConfig[] = [
           // Agents can post to audit-log even though they can't see META
           { role: 'Agent', allow: [S], deny: [] },
         ],
-        autoArchive: false,
-      },
-      {
-        name: 'server-config',
-        type: ChannelType.GuildText,
-        topic:
-          'Human-readable notes about the current server state \u2014 the README for this server',
-        category: '\u{1f527} META',
-        overwrites: [],
         autoArchive: false,
       },
     ],

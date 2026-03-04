@@ -4,6 +4,7 @@ import type { TaskWithAssignment, Assignment, Comment as CommentType, Agent } fr
 import { getTask, getTaskAssignments, listComments, createComment, listAgents } from '../lib/api.ts';
 import { StatusBadge } from '../components/StatusBadge.tsx';
 import { TimeAgo } from '../components/TimeAgo.tsx';
+import { ApiAuthBanner } from '../components/ApiAuthBanner.tsx';
 
 function AssignmentHistoryItem({ assignment }: { assignment: Assignment }) {
   return (
@@ -215,6 +216,7 @@ export function TaskDetail() {
   const [comments, setComments] = useState<CommentType[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -229,7 +231,9 @@ export function TaskDetail() {
       setAssignments(assignmentData);
       setComments(commentData);
       setAgents(agentData);
+      setError(null);
     } catch (err) {
+      setError(err);
       console.error('Failed to load task:', err);
     } finally {
       setLoading(false);
@@ -254,6 +258,8 @@ export function TaskDetail() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
+      <ApiAuthBanner error={error} />
+
       {/* Header */}
       <div>
         <Link to="/tasks" className="text-sm text-gray-400 hover:text-gray-300">

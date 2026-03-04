@@ -5,6 +5,7 @@ import { TASK_STATES } from '../types/domain.ts';
 import { listTasks, changeTaskState, createTask } from '../lib/api.ts';
 import { usePolling } from '../hooks/usePolling.ts';
 import { StatusBadge } from '../components/StatusBadge.tsx';
+import { ApiAuthBanner } from '../components/ApiAuthBanner.tsx';
 
 const COLUMN_STYLES: Record<string, string> = {
   queued: 'border-t-blue-500',
@@ -192,7 +193,7 @@ function CreateTaskForm({ onCreated }: { onCreated: () => void }) {
 }
 
 export function TaskBoard() {
-  const { data: tasks, refresh } = usePolling(listTasks, 5000);
+  const { data: tasks, error: pollError, refresh } = usePolling(listTasks, 5000);
   const [error, setError] = useState<string | null>(null);
 
   const handleDrop = useCallback(
@@ -219,6 +220,8 @@ export function TaskBoard() {
 
   return (
     <div className="space-y-4">
+      <ApiAuthBanner error={pollError} />
+
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-100">Task Board</h2>
         <CreateTaskForm onCreated={refresh} />

@@ -9,7 +9,23 @@ import type {
   TaskState,
 } from '../types/domain.ts';
 
-const BASE_URL = '/api';
+const DEFAULT_BASE_URL =
+  typeof window !== 'undefined' && window.location.port === '13000'
+    ? 'http://localhost:18080/api'
+    : '/api';
+
+const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env ?? {};
+
+const BASE_URL = env.VITE_API_BASE_URL ?? DEFAULT_BASE_URL;
+
+const ENV_BEARER = env.VITE_API_BEARER_TOKEN;
+
+function getBearerToken(): string | null {
+  if (ENV_BEARER) return ENV_BEARER;
+  if (typeof window === 'undefined') return null;
+  const token = window.localStorage.getItem('MC_AGENT_TOKEN');
+  return token && token.trim().length > 0 ? token : null;
+}
 
 class ApiError extends Error {
   constructor(
@@ -23,26 +39,85 @@ class ApiError extends Error {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${BASE_URL}${path}`;
+  const token = getBearerToken();
   const res = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   });
 
+  const text = await res.text();
+  const body = text ? (JSON.parse(text) as unknown) : null;
+
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new ApiError(res.status, body);
+    throw new ApiError(res.status, body ?? { error: res.statusText });
   }
 
-  return res.json() as Promise<T>;
+  return body as T;
+}
+
+type TaskLike = Partial<Task> & {
+  status?: string;
+  priority?: number | string;
+  required_capabilities?: Record<string, unknown>;
+};
+
+function normalizeTaskState(task: TaskLike): TaskState {
+  const value = String(task.state ?? task.status ?? 'queued');
+  const mapped: Record<string, TaskState> = {
+    queued: 'queued',
+    inbox: 'queued',
+    triage: 'assigned',
+    assigned: 'assigned',
+    in_progress: 'in_progress',
+    review: 'review',
+    done: 'done',
+    completed: 'done',
+    blocked: 'blocked',
+  };
+  return mapped[value] ?? 'queued';
+}
+
+function normalizePriority(priority: TaskLike['priority']): number {
+  if (typeof priority === 'number') return priority;
+  const mapped: Record<string, number> = {
+    low: 2,
+    medium: 5,
+    high: 8,
+    urgent: 10,
+  };
+  return mapped[String(priority ?? '').toLowerCase()] ?? 5;
+}
+
+function normalizeTask(raw: TaskLike): Task {
+  return {
+    id: String(raw.id ?? ''),
+    title: String(raw.title ?? ''),
+    description: String(raw.description ?? ''),
+    state: normalizeTaskState(raw),
+    priority: normalizePriority(raw.priority),
+    required_capabilities: raw.required_capabilities ?? {},
+    created_at: String(raw.created_at ?? new Date().toISOString()),
+    updated_at: String(raw.updated_at ?? new Date().toISOString()),
+  };
 }
 
 // ── Agents ─────────────────────────────────────────────────────
 
 export async function listAgents(): Promise<Agent[]> {
-  return request<Agent[]>('/agents');
+  try {
+    const data = await request<Agent[] | { agents?: Agent[] }>('/agents');
+    if (Array.isArray(data)) return data;
+    return data.agents ?? [];
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) {
+      return [];
+    }
+    throw err;
+  }
 }
 
 export async function getAgent(id: string): Promise<Agent> {
@@ -61,11 +136,29 @@ export async function getAgentAssignments(agentId: string): Promise<Assignment[]
 
 export async function listTasks(state?: string): Promise<Task[]> {
   const qs = state ? `?state=${encodeURIComponent(state)}` : '';
-  return request<Task[]>(`/tasks${qs}`);
+  const data = await request<TaskLike[] | { tasks?: TaskLike[] }>(`/tasks${qs}`);
+  const list = Array.isArray(data) ? data : (data.tasks ?? []);
+  return list.map(normalizeTask);
 }
 
 export async function getTask(id: string): Promise<TaskWithAssignment> {
-  return request<TaskWithAssignment>(`/tasks/${id}`);
+  const data = await request<
+    TaskLike | { task?: TaskLike; current_assignment?: Assignment | null; status?: string }
+  >(`/tasks/${id}`);
+
+  const raw =
+    'task' in (data as Record<string, unknown>)
+      ? ((data as { task?: TaskLike }).task ?? {})
+      : (data as TaskLike);
+  const current_assignment =
+    'current_assignment' in (data as Record<string, unknown>)
+      ? ((data as { current_assignment?: Assignment | null }).current_assignment ?? null)
+      : null;
+
+  return {
+    ...normalizeTask(raw),
+    current_assignment,
+  };
 }
 
 export async function createTask(input: {
@@ -81,10 +174,32 @@ export async function createTask(input: {
 }
 
 export async function changeTaskState(id: string, state: TaskState): Promise<Task> {
-  return request<Task>(`/tasks/${id}/state`, {
-    method: 'PATCH',
-    body: JSON.stringify({ state }),
-  });
+  try {
+    const task = await request<TaskLike>(`/tasks/${id}/state`, {
+      method: 'PATCH',
+      body: JSON.stringify({ state }),
+    });
+    return normalizeTask(task);
+  } catch (err) {
+    if (!(err instanceof ApiError) || err.status === 404) {
+      throw err;
+    }
+
+    const statusMap: Record<TaskState, string> = {
+      queued: 'inbox',
+      assigned: 'triage',
+      in_progress: 'in_progress',
+      review: 'review',
+      done: 'done',
+      blocked: 'blocked',
+    };
+
+    const task = await request<TaskLike>(`/tasks/${id}/transition`, {
+      method: 'POST',
+      body: JSON.stringify({ to_state: statusMap[state] }),
+    });
+    return normalizeTask(task);
+  }
 }
 
 // ── Assignments ────────────────────────────────────────────────

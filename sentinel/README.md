@@ -126,9 +126,7 @@ Flare
 │   └── #squad-feed      — Daily standups, agent status, decisions
 │
 └── 🔧 META (pos 2)
-    ├── #bot-commands
-    ├── #audit-log
-    └── #server-config
+    └── #audit-log
 ```
 
 ## How Agent Sessions Work
