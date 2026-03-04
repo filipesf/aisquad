@@ -4,15 +4,15 @@
 
 ## Quick Reference
 
-| Action | Command |
-|---|---|
-| Full deploy (build + sync + restart) | `npm start` or `make sentinel-deploy` from repo root |
-| Register slash commands | `npm run deploy` or `make sentinel-commands` from repo root |
-| Sync files only (no restart) | `./deploy.sh sync` |
-| Restart service | `npm run restart` |
-| Stop service | `npm run stop` |
-| Tail live logs | `npm run logs` |
-| Check service status | `orb run -m aisquad -u root systemctl status openclaw-sentinel` |
+| Action                               | Command                                                         |
+| ------------------------------------ | --------------------------------------------------------------- |
+| Full deploy (build + sync + restart) | `npm start` or `make sentinel-deploy` from repo root            |
+| Register slash commands              | `npm run deploy` or `make sentinel-commands` from repo root     |
+| Sync files only (no restart)         | `./deploy.sh sync`                                              |
+| Restart service                      | `npm run restart`                                               |
+| Stop service                         | `npm run stop`                                                  |
+| Tail live logs                       | `npm run logs`                                                  |
+| Check service status                 | `orb run -m aisquad -u root systemctl status openclaw-sentinel` |
 
 ---
 
@@ -36,12 +36,12 @@ All three fields are required. Missing `config.json` crashes the process at star
 
 ### Environment Variables (`sentinel.env` on VM)
 
-| Variable | Required | Default | Purpose |
-|---|---|---|---|
-| `OPENCLAW_GATEWAY_TOKEN` | Yes (for WS) | `''` | Auth token for OpenClaw Gateway WebSocket RPC. Empty = WS disabled entirely, HTTP-only mode. |
-| `OPENCLAW_HOOKS_TOKEN` | Yes (for HTTP fallback) | `''` | Bearer token for `POST /hooks/agent`. Empty = HTTP fallback unavailable. |
-| `OPENCLAW_GATEWAY_PORT` | No | `18789` | Port for both WS and HTTP connections to OpenClaw. |
-| `OPENCLAW_DISCORD_BOT_ID` | No | `1475916909647233208` | Corven bot's Discord user ID, used for message deduplication. |
+| Variable                  | Required                | Default               | Purpose                                                                                      |
+| ------------------------- | ----------------------- | --------------------- | -------------------------------------------------------------------------------------------- |
+| `OPENCLAW_GATEWAY_TOKEN`  | Yes (for WS)            | `''`                  | Auth token for OpenClaw Gateway WebSocket RPC. Empty = WS disabled entirely, HTTP-only mode. |
+| `OPENCLAW_HOOKS_TOKEN`    | Yes (for HTTP fallback) | `''`                  | Bearer token for `POST /hooks/agent`. Empty = HTTP fallback unavailable.                     |
+| `OPENCLAW_GATEWAY_PORT`   | No                      | `18789`               | Port for both WS and HTTP connections to OpenClaw.                                           |
+| `OPENCLAW_DISCORD_BOT_ID` | No                      | `1475916909647233208` | Corven bot's Discord user ID, used for message deduplication.                                |
 
 > **Important:** `OPENCLAW_GATEWAY_TOKEN` and `OPENCLAW_HOOKS_TOKEN` must be **different** values. OpenClaw enforces this at its own startup.
 
@@ -70,6 +70,7 @@ make sentinel-deploy
 ```
 
 Steps performed by `deploy.sh`:
+
 1. `npm run build` — `rm -rf dist && tsc` (compiles `src/` → `dist/`)
 2. `rsync -az --delete` — syncs `dist/`, `node_modules/`, `config.json`, `package.json` to `aisquad@orb:/home/filipefernandes/sentinel/`
 3. `systemctl restart openclaw-sentinel` on VM
@@ -133,19 +134,19 @@ orb run -m aisquad -u root journalctl -u openclaw-sentinel -f
 
 ### Log Prefixes
 
-| Prefix | Meaning |
-|---|---|
-| `[INIT]` | Startup: command loading, WS connect result |
-| `[READY]` | Discord client ready, bot tag, guild count |
-| `[COMMAND]` | Every slash command invocation (`user.tag used /command in #channel`) |
-| `[COMMAND] Error` | Command execution errors |
-| `[OPENCLAW-WS]` | WS lifecycle: connect, disconnect, reconnect, timeout |
-| `[OPENCLAW]` | Agent trigger result (RPC or HTTP) |
-| `[THREAD]` | Thread creation, agent bot resolution |
-| `[AUDIT]` | Every `logAction()` call (also written to `#audit-log`) |
-| `[SETUP]` | Step-by-step setup progress |
-| `[UPDATE]` | Reconciliation steps |
-| `[DEDUPE]` | Corven duplicate message deduplication events |
+| Prefix            | Meaning                                                               |
+| ----------------- | --------------------------------------------------------------------- |
+| `[INIT]`          | Startup: command loading, WS connect result                           |
+| `[READY]`         | Discord client ready, bot tag, guild count                            |
+| `[COMMAND]`       | Every slash command invocation (`user.tag used /command in #channel`) |
+| `[COMMAND] Error` | Command execution errors                                              |
+| `[OPENCLAW-WS]`   | WS lifecycle: connect, disconnect, reconnect, timeout                 |
+| `[OPENCLAW]`      | Agent trigger result (RPC or HTTP)                                    |
+| `[THREAD]`        | Thread creation, agent bot resolution                                 |
+| `[AUDIT]`         | Every `logAction()` call (also written to `#audit-log`)               |
+| `[SETUP]`         | Step-by-step setup progress                                           |
+| `[UPDATE]`        | Reconciliation steps                                                  |
+| `[DEDUPE]`        | Corven duplicate message deduplication events                         |
 
 ---
 
@@ -250,6 +251,7 @@ npm run deploy     # re-register with Discord API
 ### Commands not appearing in Discord
 
 Commands are guild-scoped. Check:
+
 - `guildId` in `config.json` matches the target server
 - `deploy.sh commands` was run after any command definition change
 - The build was synced to VM before registering: `npm start` then `npm run deploy`

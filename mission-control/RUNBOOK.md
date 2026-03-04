@@ -1,93 +1,88 @@
-# Local VM Operations Runbook
+# Mission Control Runbook
 
-## Table of Contents
+> Multi-agent task orchestration stack. All services run as Docker containers managed by `docker-compose.yml` inside `mission-control/`.
 
-1. [System Overview](#system-overview)
-2. [Health Checks](#health-checks)
-3. [Starting Services](#starting-services)
-4. [Stopping Services](#stopping-services)
-5. [Restarting Services](#restarting-services)
-6. [Backup and Restore](#backup-and-restore)
-7. [Failure Recovery](#failure-recovery)
-8. [Common Troubleshooting](#common-troubleshooting)
+## Quick Reference
+
+| Action                      | Command                                        |
+| --------------------------- | ---------------------------------------------- |
+| Start everything            | `docker compose up -d`                         |
+| Start with OpenClaw workers | `docker compose --profile openclaw up -d`      |
+| Stop (preserve data)        | `docker compose down`                          |
+| Stop + wipe all data        | `docker compose down -v`                       |
+| Container status            | `docker compose ps`                            |
+| All logs                    | `docker compose logs -f`                       |
+| Specific service logs       | `docker compose logs -f control-api`           |
+| API health                  | `curl -s http://localhost:3000/health \| jq .` |
+| Rebuild after code changes  | `docker compose up -d --build`                 |
+| Backup database             | `bash ops/backup.sh`                           |
+| Restore latest backup       | `bash ops/restore.sh`                          |
+| Run migrations              | `pnpm db:migrate`                              |
+| Sync OpenClaw agents        | `pnpm agents:sync-openclaw`                    |
 
 ---
 
 ## System Overview
 
-All services run as Docker containers managed by `docker-compose.yml` at the repo root.
+All services run from `mission-control/docker-compose.yml`. Commands are run from the `mission-control/` directory.
 
-| Service                       | Container                  | Port | Description                                                       |
-| ----------------------------- | -------------------------- | ---- | ----------------------------------------------------------------- |
-| **PostgreSQL 16**             | `mctl-postgres`            | 5432 | Primary datastore                                                 |
-| **Redis 7**                   | `mctl-redis`               | 6379 | Cache, idempotency, dedup                                         |
-| **Migrate**                   | `mctl-migrate`             | —    | One-shot migration runner (exits after completion)                |
-| **Control API**               | `mctl-api`                 | 3000 | Fastify REST API                                                  |
-| **Mission UI**                | `mctl-ui`                  | 5173 | React dashboard (nginx serving static build)                      |
-| **Offline Detector**          | `mctl-offline-detector`    | —    | Background worker (loop)                                          |
-| **Assigner**                  | `mctl-assigner`            | —    | Background worker (loop)                                          |
-| **Notification Dispatcher**   | `mctl-notif-dispatcher`    | —    | Background worker (loop)                                          |
-| **OpenClaw Heartbeat Bridge** | `mctl-openclaw-heartbeat`  | —    | Keeps OpenClaw agents online (optional, `openclaw` profile)       |
-| **OpenClaw Dispatcher**       | `mctl-openclaw-dispatcher` | —    | Dispatches assignments to OpenClaw (optional, `openclaw` profile) |
+### Core services (always started)
 
----
+| Service name              | Container               | Port | Description                                                 |
+| ------------------------- | ----------------------- | ---- | ----------------------------------------------------------- |
+| `postgres`                | `mctl-postgres`         | 5432 | PostgreSQL 16 — primary datastore                           |
+| `redis`                   | `mctl-redis`            | 6379 | Redis 7 — idempotency cache, dedup keys                     |
+| `migrate`                 | `mctl-migrate`          | —    | One-shot migration runner; exits after completing           |
+| `control-api`             | `mctl-api`              | 3000 | Fastify 5 REST API                                          |
+| `mission-ui`              | `mctl-ui`               | 5173 | React 19 dashboard (nginx, static build)                    |
+| `offline-detector`        | `mctl-offline-detector` | —    | Marks agents offline when heartbeats stop                   |
+| `assigner`                | `mctl-assigner`         | —    | Expires stale leases; assigns queued tasks to online agents |
+| `notification-dispatcher` | `mctl-notif-dispatcher` | —    | Delivers queued notifications with exponential backoff      |
+| `daily-standup`           | `mctl-daily-standup`    | —    | One-shot: generates 24h activity digest                     |
 
-## Health Checks
+### OpenClaw profile (optional)
 
-### Quick health check
+Started with `--profile openclaw`. Requires `OPENCLAW_ENABLED=true`, `OPENCLAW_GATEWAY_URL`, and `OPENCLAW_GATEWAY_TOKEN` in `.env`.
 
-```bash
-# All services at a glance
-docker compose ps
+| Service name                | Container                  | Description                                                                                                                                                                |
+| --------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `openclaw-heartbeat-bridge` | `mctl-openclaw-heartbeat`  | Sends periodic heartbeats for OpenClaw-backed agents to keep them `online` in Mission Control                                                                              |
+| `openclaw-dispatcher`       | `mctl-openclaw-dispatcher` | Polls for offered assignments on OpenClaw agents; dispatches via `POST /hooks/agent`; tracks attempts in `openclaw_dispatch_attempts` (max 5 retries, exponential backoff) |
 
-# API health (checks DB + Redis connectivity)
-curl -s http://localhost:3000/health | jq .
-# Expected: {"status":"ok","db":true,"redis":true}
-```
+**Service name** (e.g. `control-api`, `offline-detector`) is used with `docker compose logs/stop/restart`.
+**Container name** (e.g. `mctl-api`, `mctl-offline-detector`) is used with `docker exec`.
 
-### Infrastructure health
-
-```bash
-# PostgreSQL
-docker exec mctl-postgres pg_isready -U postgres
-
-# Redis
-docker exec mctl-redis redis-cli ping
-# Expected: PONG
-```
-
-### Check container logs for errors
-
-```bash
-# All services
-docker compose logs --tail=50
-
-# Specific service
-docker compose logs --tail=50 control-api
-docker compose logs --tail=50 offline-detector
-```
+**nginx proxy:** The UI container proxies `/api/` → `http://control-api:3000/` so the dashboard talks to the API without CORS issues.
 
 ---
 
 ## Starting Services
 
-### Start everything (core services)
+### Core stack
 
 ```bash
 docker compose up -d
 ```
 
-This starts Postgres, Redis, runs migrations, then starts the API, UI, and all core workers. Dependencies are handled automatically — migrations wait for Postgres, workers wait for migrations, etc.
+Startup order is enforced via `depends_on` + health checks:
 
-### Start with OpenClaw workers
+1. `postgres` and `redis` start and become healthy
+2. `migrate` runs all pending migrations and exits
+3. `control-api`, `mission-ui`, and all workers start
+
+### With OpenClaw workers
 
 ```bash
 docker compose --profile openclaw up -d
 ```
 
-Requires `OPENCLAW_GATEWAY_URL` and `OPENCLAW_GATEWAY_TOKEN` in your `.env` file.
+Requires in `.env`:
 
-Note: for the OpenClaw hooks integration, `OPENCLAW_GATEWAY_TOKEN` must be the hooks bearer token accepted by `POST /hooks/agent`.
+```
+OPENCLAW_ENABLED=true
+OPENCLAW_GATEWAY_URL=http://aisquad.orb.local:18789
+OPENCLAW_GATEWAY_TOKEN=<hooks-bearer-token>
+```
 
 After startup, sync Mission Control agents from OpenClaw:
 
@@ -95,7 +90,7 @@ After startup, sync Mission Control agents from OpenClaw:
 pnpm agents:sync-openclaw
 ```
 
-Optional: keep Fleet Status continuously aligned with OpenClaw using a host cron job:
+To keep Fleet Status continuously aligned, add a cron job on the host:
 
 ```bash
 crontab -l > /tmp/mc_cron 2>/dev/null || true
@@ -107,31 +102,39 @@ EOF
 crontab /tmp/mc_cron
 ```
 
-### Start only infrastructure (for local development)
+### Infrastructure only (for local development with hot reload)
 
 ```bash
 docker compose up -d postgres redis
+pnpm install
+pnpm --filter @mc/shared build
+pnpm db:migrate
+pnpm dev   # starts all apps in parallel with hot reload
 ```
 
-Then run apps with `pnpm` for hot reload — see README for details.
-
-### Seed demo data (optional)
+Or start apps individually:
 
 ```bash
-docker exec mctl-postgres psql -U postgres -d mission_control -c "\dt"  # verify tables exist
-pnpm db:seed
+pnpm --filter @mc/control-api dev      # API on :3000
+pnpm --filter @mc/mission-ui dev       # UI on :5173
+pnpm --filter @mc/workers assigner
+pnpm --filter @mc/workers offline-detector
+pnpm --filter @mc/workers notification-dispatcher
+```
+
+### Seed demo data
+
+```bash
+docker exec mctl-postgres psql -U postgres -d mission_control -c "\dt"  # verify tables exist first
+pnpm db:seed   # 3 agents, 10 tasks, comments, notifications
 ```
 
 ### Verify startup
 
 ```bash
-# Check all containers are up
 docker compose ps
-
-# Verify API responds
 curl -s http://localhost:3000/health | jq .
-
-# Verify UI serves
+# Expected: {"status":"ok","db":true,"redis":true}
 curl -s -o /dev/null -w "%{http_code}" http://localhost:5173
 # Expected: 200
 ```
@@ -140,56 +143,96 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:5173
 
 ## Stopping Services
 
-### Stop all services (preserve data)
-
 ```bash
-docker compose down
-```
-
-### Stop all services AND remove data volumes
-
-```bash
-docker compose down -v
-# WARNING: This deletes all database data!
-```
-
-### Stop a single service
-
-```bash
+docker compose down           # stop all, preserve volumes (pg_data, redis_data)
+docker compose down -v        # stop all + DELETE all data — irreversible
+docker compose stop control-api           # stop single service
 docker compose stop offline-detector
-docker compose stop control-api
 ```
 
 ---
 
 ## Restarting Services
 
-### Restart a single service
-
 ```bash
-docker compose restart control-api
+docker compose restart control-api       # restart single service
 docker compose restart offline-detector
+
+docker compose down && docker compose up -d   # full restart, preserve data
+
+docker compose up -d --build             # rebuild images then restart (after code changes)
+
+docker compose down -v && docker compose up -d  # clean slate — wipes all data
 ```
 
-### Restart all services (preserve data)
+---
+
+## Database
+
+### Migrations
 
 ```bash
-docker compose down && docker compose up -d
+pnpm db:migrate    # apply all pending migrations from db/migrations/
+
+# Check current migration state
+docker exec mctl-postgres psql -U postgres -d mission_control -c \
+  "SELECT * FROM _migrations ORDER BY name;"
+
+# Re-run migrations (force recreate the migrate container)
+docker compose up -d --force-recreate migrate
 ```
 
-### Rebuild and restart (after code changes)
+Migration files:
+
+- `001_init.sql` — 8 tables, 15 indexes, 6 FKs (agents, tasks, assignments, notifications, activities, comments, subscriptions, \_migrations)
+- `002_assignment_invariants.sql` — partial unique index preventing multiple active assignments per task
+- `003_openclaw_dispatch_tracking.sql` — `openclaw_dispatch_attempts` table + 3 indexes
+
+### Tables
+
+| Table                        | Purpose                                                                     |
+| ---------------------------- | --------------------------------------------------------------------------- |
+| `agents`                     | Agent registry with status, capabilities, heartbeat config                  |
+| `tasks`                      | Task queue with state machine, priority, required capabilities              |
+| `assignments`                | Lease-based task-to-agent assignments                                       |
+| `notifications`              | Notification queue with retry tracking                                      |
+| `activities`                 | Append-only activity log                                                    |
+| `comments`                   | Task comments with @-mention support                                        |
+| `subscriptions`              | Agent-to-task subscriptions                                                 |
+| `openclaw_dispatch_attempts` | Per-attempt record of OpenClaw dispatches — status, error, response excerpt |
+| `_migrations`                | Migration tracking                                                          |
+
+---
+
+## Workers
+
+Six background processes. All are stateless — they can be killed and restarted without data loss.
+
+| Worker                    | Service name                | Container                  | Poll interval                               | Batch size          |
+| ------------------------- | --------------------------- | -------------------------- | ------------------------------------------- | ------------------- |
+| Offline Detector          | `offline-detector`          | `mctl-offline-detector`    | `OFFLINE_POLL_MS` (default 10s)             | —                   |
+| Assigner                  | `assigner`                  | `mctl-assigner`            | `ASSIGNER_POLL_MS` (default 10s)            | 10 tasks, 10 agents |
+| Notification Dispatcher   | `notification-dispatcher`   | `mctl-notif-dispatcher`    | `NOTIF_POLL_MS` (default 5s)                | 50 notifications    |
+| Daily Standup             | `daily-standup`             | `mctl-daily-standup`       | one-shot (or loop with `STANDUP_LOOP=true`) | —                   |
+| OpenClaw Dispatcher       | `openclaw-dispatcher`       | `mctl-openclaw-dispatcher` | `OPENCLAW_DISPATCH_POLL_MS` (default 10s)   | 20 assignments      |
+| OpenClaw Heartbeat Bridge | `openclaw-heartbeat-bridge` | `mctl-openclaw-heartbeat`  | `OPENCLAW_DISPATCH_POLL_MS` (default 10s)   | all OpenClaw agents |
+
+**Offline threshold:** per-agent `heartbeat_interval_ms × 3` (not a global fixed threshold).
+
+**Notification retry:** exponential backoff, `MAX_RETRIES=5`.
+
+**OpenClaw dispatcher retry:** max 5 attempts per assignment, exponential backoff; attempts tracked in `openclaw_dispatch_attempts`.
+
+### Run a worker manually (outside Docker)
 
 ```bash
-docker compose up -d --build
-```
+pnpm --filter @mc/workers offline-detector
+pnpm --filter @mc/workers assigner
+pnpm --filter @mc/workers notification-dispatcher
+pnpm --filter @mc/workers daily-standup
 
-### Full restart from scratch (clean slate)
-
-```bash
-docker compose down -v
-docker compose up -d
-# Migrations run automatically. Optionally seed:
-pnpm db:seed
+# Daily standup in loop mode
+STANDUP_LOOP=true pnpm --filter @mc/workers daily-standup
 ```
 
 ---
@@ -200,101 +243,155 @@ pnpm db:seed
 
 ```bash
 bash ops/backup.sh
-# Backup saved to ops/backups/mission_control_YYYYMMDD_HHMMSS.sql
+# Saves: ops/backups/mission_control_YYYYMMDD_HHMMSS.sql
 ```
 
-### Validate a backup (dry run)
+Uses `pg_dump` with verification. The dump file is plain SQL.
+
+### Validate a backup (dry run — no data change)
 
 ```bash
 bash ops/restore.sh --dry-run
-# Or specify a file:
-bash ops/restore.sh --dry-run ops/backups/mission_control_20240101_120000.sql
+bash ops/restore.sh --dry-run ops/backups/mission_control_20260303_013107.sql
 ```
 
 ### Restore from backup
 
 ```bash
-# Uses most recent backup:
-bash ops/restore.sh
+bash ops/restore.sh                                              # most recent backup
+bash ops/restore.sh ops/backups/mission_control_20260303_013107.sql
+# WARNING: drops and recreates the database!
+```
 
-# Or specify a file:
-bash ops/restore.sh ops/backups/mission_control_20240101_120000.sql
+---
 
-# WARNING: This drops and recreates the database!
+## OpenClaw Sync
+
+Reads agent list from the OpenClaw VM via `orb` and syncs them into Mission Control's `agents` table:
+
+```bash
+pnpm agents:sync-openclaw
+```
+
+What it does:
+
+- Reads `agents.list` from `~/.openclaw/openclaw.json` in the VM
+- Creates missing Mission Control agents
+- Updates existing synced agent metadata (`name`, `session_key`, `capabilities.openclaw`)
+- Disables stale OpenClaw mappings no longer in OpenClaw
+- Sends heartbeat for synced agents so Fleet Status transitions to `online`
+
+Optional env overrides:
+
+| Variable              | Default                                         |
+| --------------------- | ----------------------------------------------- |
+| `OPENCLAW_VM`         | `aisquad`                                       |
+| `OPENCLAW_STATE_PATH` | `/home/filipefernandes/.openclaw/openclaw.json` |
+| `CONTROL_API_URL`     | `http://localhost:3000`                         |
+
+---
+
+## Environment Variables
+
+Template: `mission-control/.env.example`. Copy to `mission-control/.env` and fill in values.
+
+| Variable                    | Default                 | Used by                 | Notes                                      |
+| --------------------------- | ----------------------- | ----------------------- | ------------------------------------------ |
+| `PGHOST`                    | `localhost`             | API, Workers            | Use `postgres` when running inside Docker  |
+| `PGPORT`                    | `5432`                  | API, Workers            |                                            |
+| `PGUSER`                    | `postgres`              | API, Workers            |                                            |
+| `PGPASSWORD`                | `postgres`              | API, Workers            |                                            |
+| `PGDATABASE`                | `mission_control`       | API, Workers            |                                            |
+| `REDIS_HOST`                | `localhost`             | API                     | Use `redis` when running inside Docker     |
+| `REDIS_PORT`                | `6379`                  | API                     |                                            |
+| `HOST`                      | `0.0.0.0`               | API                     |                                            |
+| `PORT`                      | `3000`                  | API                     |                                            |
+| `LOG_LEVEL`                 | `info`                  | API                     |                                            |
+| `OFFLINE_POLL_MS`           | `10000`                 | Offline Detector        |                                            |
+| `ASSIGNER_POLL_MS`          | `10000`                 | Assigner                |                                            |
+| `LEASE_SECONDS`             | `30`                    | Assigner                |                                            |
+| `NOTIF_POLL_MS`             | `5000`                  | Notification Dispatcher |                                            |
+| `OPENCLAW_ENABLED`          | `false`                 | OpenClaw workers        | Set `true` to activate OpenClaw profile    |
+| `OPENCLAW_GATEWAY_URL`      | —                       | OpenClaw workers        | Required when `OPENCLAW_ENABLED=true`      |
+| `OPENCLAW_GATEWAY_TOKEN`    | —                       | OpenClaw workers        | Hooks bearer token for `POST /hooks/agent` |
+| `OPENCLAW_DEFAULT_MODEL`    | —                       | OpenClaw workers        | Optional model override                    |
+| `OPENCLAW_DISPATCH_POLL_MS` | `10000`                 | OpenClaw workers        | Shared by dispatcher + heartbeat bridge    |
+| `CONTROL_API_URL`           | `http://localhost:3000` | OpenClaw workers        |                                            |
+| `STANDUP_LOOP`              | —                       | Daily Standup           | Set `true` for continuous loop mode        |
+
+**Connection pool limits:** API max 20 connections; each worker max 5 connections.
+
+---
+
+## Health Checks
+
+```bash
+# All containers at a glance
+docker compose ps
+
+# API health (checks DB + Redis)
+curl -s http://localhost:3000/health | jq .
+# Expected: {"status":"ok","db":true,"redis":true}
+
+# PostgreSQL
+docker exec mctl-postgres pg_isready -U postgres
+
+# Redis
+docker exec mctl-redis redis-cli ping
+# Expected: PONG
+
+# Specific service logs
+docker compose logs --tail=50 control-api
+docker compose logs --tail=50 offline-detector
+docker compose logs --tail=50 openclaw-dispatcher
 ```
 
 ---
 
 ## Failure Recovery
 
-### Worker container crashed or exited
+### Worker container crashed
 
-Workers have `restart: unless-stopped` and will auto-restart. If a worker is stuck:
+Workers have `restart: unless-stopped` and auto-restart. If stuck:
 
 ```bash
-# 1. Check status
 docker compose ps
-
-# 2. Check logs
 docker compose logs --tail=50 offline-detector
-
-# 3. Force restart
 docker compose restart offline-detector
 ```
 
-No data is lost because:
+No data loss — all state is in PostgreSQL.
 
-- Workers poll the database for work
-- All state transitions are in PostgreSQL
-- Incomplete transactions are rolled back by Postgres
-
-### API container crashed
-
-The API also has `restart: unless-stopped`. If it won't restart:
+### API container won't restart
 
 ```bash
-# Check logs for the error
 docker compose logs --tail=100 control-api
-
-# Force recreate the container
 docker compose up -d --force-recreate control-api
-
-# Verify health
 curl -s http://localhost:3000/health | jq .
 ```
 
-### PostgreSQL connection refused
+### PostgreSQL down
 
 ```bash
-# 1. Check container status
 docker compose ps postgres
-
-# 2. If not running, start it
 docker compose up -d postgres
-
-# 3. Wait for healthy
+# Wait for healthy, then check
 docker compose ps postgres
-
-# 4. If data is corrupted, restore from backup
+# If data is corrupted:
 bash ops/restore.sh
 ```
 
-### Redis connection refused
+### Redis down
 
 ```bash
-# 1. Check container status
-docker compose ps redis
-
-# 2. If not running, start it
 docker compose up -d redis
-
-# 3. Redis data loss is non-critical (only caches, dedup keys)
-#    Services will reconnect automatically
+# Redis data loss is non-critical (only caches and dedup keys)
+# Services reconnect automatically via ioredis retry logic
 ```
 
-### Orphaned assignments (task stuck in assigned/in_progress)
+### Orphaned assignments (task stuck in `assigned` or `in_progress`)
 
-The assigner worker automatically expires stale leases. To check or force:
+The assigner worker expires stale leases automatically. To check or force-expire:
 
 ```bash
 # Check for orphaned assignments
@@ -306,8 +403,7 @@ docker exec mctl-postgres psql -U postgres -d mission_control -c "
     AND a.lease_expires_at < now();
 "
 
-# The assigner worker handles these automatically.
-# If you need to force-expire:
+# Force-expire if needed
 docker exec mctl-postgres psql -U postgres -d mission_control -c "
   UPDATE assignments SET status = 'expired', updated_at = now()
   WHERE status IN ('offered', 'accepted') AND lease_expires_at < now();
@@ -320,126 +416,31 @@ docker exec mctl-postgres psql -U postgres -d mission_control -c "
 "
 ```
 
----
-
-## Common Troubleshooting
-
-### Port already in use
+### OpenClaw: hook auth failures (HTTP 401/403)
 
 ```bash
-# Find what's using a port
-lsof -i :5432
-lsof -i :3000
-lsof -i :5173
-
-# Change ports via .env file:
-# PG_PORT=5433 API_PORT=3001 UI_PORT=5174
-# Then: docker compose up -d
-```
-
-### Redis connection errors in API logs
-
-```bash
-# Check Redis is running
-docker exec mctl-redis redis-cli ping
-
-# If Redis restarted, the API will auto-reconnect (ioredis has retry logic)
-# If still failing, restart the API
-docker compose restart control-api
-```
-
-### Migrations fail
-
-```bash
-# Check current migration state
-docker exec mctl-postgres psql -U postgres -d mission_control -c \
-  "SELECT * FROM _migrations ORDER BY name;"
-
-# Check migration container logs
-docker compose logs migrate
-
-# Re-run migrations by recreating the migrate service
-docker compose up -d --force-recreate migrate
-```
-
-### Database connection pool exhausted
-
-```bash
-# Check active connections
-docker exec mctl-postgres psql -U postgres -d mission_control -c "
-  SELECT count(*) FROM pg_stat_activity WHERE datname = 'mission_control';
-"
-
-# If too many connections, restart services to release them
-docker compose restart
-# The API pool is configured for max 20 connections
-# Each worker uses max 5 connections
-```
-
-### Container build failures
-
-```bash
-# Rebuild without cache
-docker compose build --no-cache
-
-# Check disk space (Docker images can be large)
-docker system df
-
-# Clean up unused images/volumes
-docker system prune -f
-```
-
-### Container won't start (exit code 1)
-
-```bash
-# Check the logs for the failing container
-docker compose logs --tail=100 <service-name>
-
-# Common causes:
-# - Missing env var (check .env file)
-# - Port conflict (change port in .env)
-# - Migration hasn't run (check migrate container)
-```
-
-### Daily standup generator
-
-```bash
-# Run manually
-pnpm --filter @mc/workers daily-standup
-
-# Or via Docker
-docker compose run --rm -e PGHOST=postgres worker apps/workers/src/daily-standup.ts
-```
-
-### OpenClaw: hook auth failures
-
-```bash
-# Check dispatcher logs for HTTP 401/403 errors
 docker compose logs --tail=50 openclaw-dispatcher
 
-# Verify the hooks bearer token matches your OpenClaw config
-# (check your .env file for OPENCLAW_GATEWAY_TOKEN)
-
-# Test connectivity to the gateway directly
+# Verify token in .env matches OpenClaw gateway config
 curl -s -o /dev/null -w "%{http_code}" \
   -H "Authorization: Bearer $OPENCLAW_GATEWAY_TOKEN" \
   "$OPENCLAW_GATEWAY_URL/hooks/agent"
+# Expected: anything except 401/403
 ```
 
 ### OpenClaw: repeated dispatch failures
 
 ```bash
-# Check recent failures in the dispatch tracking table
+# Recent failures
 docker exec mctl-postgres psql -U postgres -d mission_control -c "
-  SELECT d.assignment_id, d.attempt, d.status, d.error,
-         d.created_at::text
+  SELECT d.assignment_id, d.attempt, d.status, d.error, d.created_at::text
   FROM openclaw_dispatch_attempts d
   WHERE d.status = 'failed'
   ORDER BY d.created_at DESC
   LIMIT 20;
 "
 
-# Check assignments stuck with max attempts exhausted
+# Assignments with all 5 attempts exhausted
 docker exec mctl-postgres psql -U postgres -d mission_control -c "
   SELECT a.id AS assignment_id, t.title, ag.name AS agent,
          (SELECT MAX(attempt) FROM openclaw_dispatch_attempts d WHERE d.assignment_id = a.id) AS attempts
@@ -451,37 +452,25 @@ docker exec mctl-postgres psql -U postgres -d mission_control -c "
     AND (SELECT COALESCE(MAX(attempt), 0) FROM openclaw_dispatch_attempts d WHERE d.assignment_id = a.id) >= 5;
 "
 
-# To retry exhausted assignments, delete the failed attempts:
+# Reset attempts to allow retry
 # docker exec mctl-postgres psql -U postgres -d mission_control -c "
 #   DELETE FROM openclaw_dispatch_attempts WHERE assignment_id = '<assignment-id>';
 # "
 ```
 
-### OpenClaw: stale offered assignments
+### OpenClaw: stale `sent` rows (dispatcher crashed mid-attempt)
 
 ```bash
-# Check offered assignments for OpenClaw agents that haven't been dispatched
-docker exec mctl-postgres psql -U postgres -d mission_control -c "
-  SELECT a.id, t.title, ag.name, a.status, a.lease_expires_at::text,
-         (SELECT COUNT(*) FROM openclaw_dispatch_attempts d WHERE d.assignment_id = a.id) AS dispatch_attempts
-  FROM assignments a
-  JOIN tasks t ON t.id = a.task_id
-  JOIN agents ag ON ag.id = a.agent_id
-  WHERE a.status = 'offered'
-    AND ag.capabilities->'openclaw'->>'enabled' = 'true'
-  ORDER BY a.created_at ASC;
-"
-
-# Stale 'sent' status rows (dispatcher crashed between marking sent and recording result):
 docker exec mctl-postgres psql -U postgres -d mission_control -c "
   SELECT * FROM openclaw_dispatch_attempts
   WHERE status = 'sent'
     AND created_at < now() - interval '5 minutes';
 "
 
-# To unstick, update stale 'sent' rows to 'failed':
+# Unstick by marking as failed
 # docker exec mctl-postgres psql -U postgres -d mission_control -c "
-#   UPDATE openclaw_dispatch_attempts SET status = 'failed', error = 'stale sent row — manual cleanup'
+#   UPDATE openclaw_dispatch_attempts
+#   SET status = 'failed', error = 'stale sent row — manual cleanup'
 #   WHERE status = 'sent' AND created_at < now() - interval '5 minutes';
 # "
 ```
@@ -489,15 +478,79 @@ docker exec mctl-postgres psql -U postgres -d mission_control -c "
 ### OpenClaw: disabling the integration
 
 ```bash
-# To immediately stop all OpenClaw workers:
 docker compose stop openclaw-heartbeat-bridge openclaw-dispatcher
 
-# Or remove them entirely:
+# Or restart without the profile
 docker compose down
-docker compose up -d  # starts without openclaw profile
+docker compose up -d   # starts without openclaw profile
 
-# OpenClaw agents will naturally go offline via the offline-detector
-# after 3x their heartbeat interval (~30s with default config)
+# OpenClaw agents go offline naturally after 3× their heartbeat interval (~30s default)
+```
 
-# No data cleanup is needed — the integration is fully inert when workers are stopped
+---
+
+## Common Troubleshooting
+
+### Port already in use
+
+```bash
+lsof -i :5432
+lsof -i :3000
+lsof -i :5173
+
+# Override ports in .env:
+# PG_PORT=5433
+# PORT=3001
+# UI_PORT=5174
+```
+
+### Redis connection errors in API logs
+
+```bash
+docker exec mctl-redis redis-cli ping
+# ioredis has built-in retry logic; API reconnects automatically
+docker compose restart control-api   # if still failing
+```
+
+### Migrations fail
+
+```bash
+docker compose logs migrate
+docker exec mctl-postgres psql -U postgres -d mission_control -c \
+  "SELECT * FROM _migrations ORDER BY name;"
+docker compose up -d --force-recreate migrate
+```
+
+### Connection pool exhausted
+
+```bash
+docker exec mctl-postgres psql -U postgres -d mission_control -c "
+  SELECT count(*) FROM pg_stat_activity WHERE datname = 'mission_control';
+"
+# API: max 20 connections; each worker: max 5 connections
+docker compose restart   # releases all held connections
+```
+
+### Container build failures
+
+```bash
+docker compose build --no-cache
+docker system df           # check disk space
+docker system prune -f     # clean unused images/volumes
+```
+
+### Container exits with code 1
+
+```bash
+docker compose logs --tail=100 <service-name>
+# Common causes: missing env var, port conflict, migrations not run
+```
+
+### Run daily standup manually
+
+```bash
+pnpm --filter @mc/workers daily-standup
+
+# Via Docker
+docker compose run --rm daily-standup
 ```
