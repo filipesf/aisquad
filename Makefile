@@ -9,6 +9,7 @@ help:
 	@printf "Core\n"
 	@printf "  make up                 Start VM + Mission Control\n"
 	@printf "  make down               Stop Mission Control\n"
+	@printf "  make update             Pull latest, rebuild all services, restart everything\n"
 	@printf "  make status             Show VM and Mission Control status\n\n"
 	@printf "  make links              Print operational links\n\n"
 	@printf "Mission Control\n"
@@ -30,6 +31,20 @@ up: vm-up mc-up links
 
 .PHONY: down
 down: mc-down
+
+.PHONY: update
+update:
+	@printf "\n[1/5] Pulling latest changes...\n"
+	@git pull
+	@printf "\n[2/5] Updating OpenClaw in VM (pull + build)...\n"
+	@$(MAKE) -C vm pull
+	@printf "\n[3/5] Deploying Sentinel (build + sync + restart)...\n"
+	@bash sentinel/deploy.sh
+	@printf "\n[4/5] Rebuilding Mission Control images...\n"
+	@docker compose -f mission-control/docker-compose.yml build --pull
+	@printf "\n[5/5] Restarting all services...\n"
+	@$(MAKE) down
+	@$(MAKE) up
 
 .PHONY: status
 status: vm-ps mc-ps links
