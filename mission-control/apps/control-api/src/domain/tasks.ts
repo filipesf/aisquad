@@ -122,6 +122,14 @@ export async function transitionState(id: string, newState: TaskState): Promise<
   return rowToTask(result.rows[0]!);
 }
 
+export async function deleteTask(id: string): Promise<void> {
+  const result = await query<TaskRow>('DELETE FROM tasks WHERE id = $1 RETURNING id', [id]);
+  if (!result.rows[0]) {
+    throw new Error(`Task ${id} not found`);
+  }
+  await activities.emit('task.deleted', { taskId: id });
+}
+
 export async function requeue(id: string): Promise<Task> {
   const result = await query<TaskRow>(
     `UPDATE tasks SET state = 'queued', updated_at = now()

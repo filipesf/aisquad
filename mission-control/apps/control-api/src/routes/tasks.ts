@@ -31,6 +31,20 @@ export async function taskRoutes(app: FastifyInstance): Promise<void> {
     return reply.send({ ...task, current_assignment: assignment });
   });
 
+  // Delete a task
+  app.delete('/tasks/:id', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    try {
+      await taskDomain.deleteTask(id);
+      return reply.status(204).send();
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('not found')) {
+        return reply.status(404).send({ error: err.message });
+      }
+      throw err;
+    }
+  });
+
   // Advance task state
   app.patch('/tasks/:id/state', async (req, reply) => {
     const { id } = req.params as { id: string };
