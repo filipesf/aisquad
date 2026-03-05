@@ -19,11 +19,19 @@ const env = (import.meta as ImportMeta & { env?: Record<string, string | undefin
 const BASE_URL = env.VITE_API_BASE_URL ?? DEFAULT_BASE_URL;
 
 const ENV_BEARER = env.VITE_API_BEARER_TOKEN;
+const ENV_TELEMETRY_TOKEN = env.VITE_TELEMETRY_TOKEN;
 
 function getBearerToken(): string | null {
   if (ENV_BEARER) return ENV_BEARER;
   if (typeof window === 'undefined') return null;
   const token = window.localStorage.getItem('MC_AGENT_TOKEN');
+  return token && token.trim().length > 0 ? token : null;
+}
+
+function getTelemetryToken(): string | null {
+  if (ENV_TELEMETRY_TOKEN) return ENV_TELEMETRY_TOKEN;
+  if (typeof window === 'undefined') return null;
+  const token = window.localStorage.getItem('MC_TELEMETRY_TOKEN');
   return token && token.trim().length > 0 ? token : null;
 }
 
@@ -250,6 +258,39 @@ export function createActivityStream(onActivity: (activity: Activity) => void): 
   });
 
   return source;
+}
+
+// ── Telemetry ──────────────────────────────────────────────────
+
+async function telemetryRequest<T>(path: string, options?: RequestInit): Promise<T> {
+  const url = `${BASE_URL}${path}`;
+  const token = getTelemetryToken();
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options?.headers,
+    },
+  });
+
+  const text = await res.text();
+  const body = text ? (JSON.parse(text) as unknown) : null;
+
+  if (!res.ok) {
+    throw new ApiError(res.status, body ?? { error: res.statusText });
+  }
+
+  return body as T;
+}
+
+export async function getTelemetrySummary(params: {
+  window: import('../types/domain.ts').TelemetryWindow;
+  group_by: import('../types/domain.ts').TelemetryGroupBy;
+}): Promise<import('../types/domain.ts').TelemetrySummary> {
+  return telemetryRequest<import('../types/domain.ts').TelemetrySummary>(
+    `/telemetry/summary?window=${params.window}&group_by=${params.group_by}`,
+  );
 }
 
 export { ApiError };

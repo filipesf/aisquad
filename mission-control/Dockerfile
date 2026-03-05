@@ -14,10 +14,11 @@ RUN pnpm install --frozen-lockfile
 
 # ── Build ───────────────────────────────────────────
 FROM deps AS build
+ARG VITE_TELEMETRY_TOKEN
 COPY . .
 RUN pnpm --filter @mc/shared build
 RUN pnpm --filter @mc/control-api build
-RUN pnpm --filter @mc/mission-ui build
+RUN VITE_TELEMETRY_TOKEN="${VITE_TELEMETRY_TOKEN}" pnpm --filter @mc/mission-ui build
 
 # ── API Runtime ─────────────────────────────────────
 FROM base AS api

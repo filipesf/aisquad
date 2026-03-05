@@ -52,7 +52,7 @@ Started with `--profile openclaw`. Requires `OPENCLAW_ENABLED=true`, `OPENCLAW_G
 **Service name** (e.g. `control-api`, `offline-detector`) is used with `docker compose logs/stop/restart`.
 **Container name** (e.g. `mctl-api`, `mctl-offline-detector`) is used with `docker exec`.
 
-**nginx proxy:** The UI container proxies `/api/` → `http://control-api:3000/` so the dashboard talks to the API without CORS issues.
+**nginx proxy:** The UI container proxies `/api/` → `http://control-api:3000/` so the dashboard talks to the API without CORS issues. The `/api/activities/stream` SSE endpoint has a dedicated location block with `proxy_buffering off` to support real-time event streaming.
 
 ---
 
@@ -188,6 +188,8 @@ Migration files:
 - `002_assignment_invariants.sql` — partial unique index preventing multiple active assignments per task
 - `003_openclaw_dispatch_tracking.sql` — `openclaw_dispatch_attempts` table + 3 indexes
 - `004_telemetry.sql` — `telemetry_events` table + telemetry query indexes
+- `005_seed_corven_agent.sql` — Seeds corven OpenClaw agent (idempotent via `ON CONFLICT DO NOTHING`)
+- `006_clean_slate.sql` — Removes all non-corven agents and clears all operational data
 
 ### Tables
 
@@ -310,6 +312,7 @@ Template: `mission-control/.env.example`. Copy to `mission-control/.env` and fil
 | `PORT`                      | `3000`                  | API                     |                                            |
 | `LOG_LEVEL`                 | `info`                  | API                     |                                            |
 | `CONTROL_API_TELEMETRY_TOKEN` | —                     | API                     | Required bearer token for `/telemetry/*` routes |
+| `VITE_TELEMETRY_TOKEN`  | —                       | Mission UI (build-time) | Baked into JS bundle via Docker build arg; defaults to `CONTROL_API_TELEMETRY_TOKEN` |
 | `OFFLINE_POLL_MS`           | `10000`                 | Offline Detector        |                                            |
 | `ASSIGNER_POLL_MS`          | `10000`                 | Assigner                |                                            |
 | `LEASE_SECONDS`             | `30`                    | Assigner                |                                            |
@@ -323,6 +326,39 @@ Template: `mission-control/.env.example`. Copy to `mission-control/.env` and fil
 | `STANDUP_LOOP`              | —                       | Daily Standup           | Set `true` for continuous loop mode        |
 
 **Connection pool limits:** API max 20 connections; each worker max 5 connections.
+
+---
+
+## Telemetry
+
+### UI Page
+
+The `/telemetry` page in Mission UI displays aggregate token, cost, and latency metrics. It polls `GET /telemetry/summary` every 30 seconds with window (1h/6h/24h/7d) and group_by (provider/model/agent/event_type/channel) selectors.
+
+### Authentication
+
+The telemetry API uses a separate bearer token from the main agent token:
+
+- **Server-side:** `CONTROL_API_TELEMETRY_TOKEN` env var on the `control-api` container.
+- **UI-side:** `VITE_TELEMETRY_TOKEN` is baked into the JS bundle at Docker build time (sourced from `CONTROL_API_TELEMETRY_TOKEN` via docker-compose build args). Falls back to `localStorage.getItem('MC_TELEMETRY_TOKEN')`.
+
+If the token is missing or wrong, the UI shows an auth banner with instructions.
+
+### Ingesting telemetry events
+
+```bash
+curl -s -X POST http://localhost:3000/telemetry/batch \
+  -H "Authorization: Bearer $CONTROL_API_TELEMETRY_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"events": [{"event_type": "llm_output", "provider": "anthropic", "model": "claude-sonnet-4-20250514", "tokens_total": 500, "cost_usd": 0.003, "duration_ms": 1200}]}'
+```
+
+### Querying summary
+
+```bash
+curl -s http://localhost:3000/telemetry/summary?window=24h\&group_by=provider \
+  -H "Authorization: Bearer $CONTROL_API_TELEMETRY_TOKEN" | jq .
+```
 
 ---
 

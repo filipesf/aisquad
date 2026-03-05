@@ -74,3 +74,35 @@ export interface Comment {
   body: string;
   created_at: string;
 }
+
+// ── Telemetry ──────────────────────────────────────────────────
+
+export type TelemetryWindow = '1h' | '6h' | '24h' | '7d';
+export type TelemetryGroupBy = 'provider' | 'model' | 'agent' | 'event_type' | 'channel';
+
+export const TELEMETRY_WINDOWS: TelemetryWindow[] = ['1h', '6h', '24h', '7d'];
+export const TELEMETRY_GROUP_BY_OPTIONS: TelemetryGroupBy[] = [
+  'provider', 'model', 'agent', 'event_type', 'channel',
+];
+
+export interface TelemetryTotals {
+  events: number;
+  tokens_total: number;
+  cost_usd: number;
+  avg_duration_ms: number;
+  min_duration_ms: number;
+  max_duration_ms: number;
+}
+
+export interface TelemetryGroup extends TelemetryTotals {
+  key: string;
+}
+
+export interface TelemetrySummary {
+  window: TelemetryWindow;
+  group_by: TelemetryGroupBy;
+  since: string;
+  generated_at: string;
+  totals: TelemetryTotals;
+  groups: TelemetryGroup[];
+}

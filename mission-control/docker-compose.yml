@@ -93,6 +93,8 @@ services:
     build:
       context: .
       target: ui
+      args:
+        VITE_TELEMETRY_TOKEN: ${CONTROL_API_TELEMETRY_TOKEN:-}
     container_name: mctl-ui
     ports:
       - '${UI_PORT:-5173}:5173'

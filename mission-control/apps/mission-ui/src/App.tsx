@@ -3,6 +3,7 @@ import { Dashboard } from './pages/Dashboard.tsx';
 import { TaskBoard } from './pages/TaskBoard.tsx';
 import { TaskDetail } from './pages/TaskDetail.tsx';
 import { AgentDetail } from './pages/AgentDetail.tsx';
+import { Telemetry } from './pages/Telemetry.tsx';
 
 function NavItem({ to, label }: { to: string; label: string }) {
   return (
@@ -33,6 +34,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             <nav className="flex items-center gap-1">
               <NavItem to="/" label="Dashboard" />
               <NavItem to="/tasks" label="Tasks" />
+              <NavItem to="/telemetry" label="Telemetry" />
             </nav>
           </div>
         </div>
@@ -51,6 +53,7 @@ export default function App() {
           <Route path="/tasks" element={<TaskBoard />} />
           <Route path="/tasks/:id" element={<TaskDetail />} />
           <Route path="/agents/:id" element={<AgentDetail />} />
+          <Route path="/telemetry" element={<Telemetry />} />
         </Routes>
       </Layout>
     </BrowserRouter>
