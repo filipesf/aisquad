@@ -41,6 +41,7 @@ All cross-service operations go through the root `Makefile`:
 
 - Mission Control UI: http://localhost:5173
 - Mission Control API health: http://localhost:3000/health
+- Mission Control Telemetry UI: http://localhost:5173/telemetry
 - OpenClaw VM: http://aisquad.orb.local:18789
 
 ## Runbooks
@@ -50,6 +51,13 @@ Each service has its own runbook:
 - `mission-control/RUNBOOK.md` — Docker ops, backup/restore, troubleshooting
 - `sentinel/RUNBOOK.md` — Deploy, service management, troubleshooting
 - `vm/RUNBOOK.md` — VM maintenance, token rotation, emergency procedures
+
+## Key Operational Details
+
+- **Corven** is the primary OpenClaw-backed agent, seeded via migration `005_seed_corven_agent.sql`. It persists across DB rebuilds.
+- **Telemetry** uses a separate bearer token (`CONTROL_API_TELEMETRY_TOKEN`) from the agent token. The UI gets it baked in at build time via `VITE_TELEMETRY_TOKEN` Docker build arg.
+- **SSE Activity Feed** has a dedicated nginx location block (`/api/activities/stream`) with `proxy_buffering off`. Without this, the Activity Feed shows "Reconnecting..." permanently.
+- **Mission UI rebuilds** require `docker compose build mission-ui && docker compose up -d mission-ui` — the UI is served from a static nginx container, not hot-reloaded.
 
 ## Your Responsibilities
 

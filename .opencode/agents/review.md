@@ -24,7 +24,7 @@ You are a code review specialist for the aisquad monorepo.
 ### Mission Control Patterns
 - Fastify 5 plugin architecture in `mission-control/apps/control-api/`.
 - React 19 patterns in `mission-control/apps/mission-ui/`.
-- Database access through the shared `@mc/db` package.
+- Database access through `services/db.ts` (control-api) and `lib/db.ts` (workers) — raw SQL via `pg` Pool.
 - Worker patterns in `mission-control/apps/workers/`.
 
 ### Infrastructure & Security
