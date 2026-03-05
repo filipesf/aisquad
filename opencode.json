@@ -1,0 +1,62 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  "model": "anthropic/claude-sonnet-4-5",
+  "small_model": "anthropic/claude-haiku-4-5",
+
+  "instructions": ["RUNBOOK.md", "README.md"],
+
+  "default_agent": "build",
+
+  "provider": {
+    "anthropic": {
+      "options": {
+        "timeout": 600000
+      }
+    }
+  },
+
+  "mcp": {
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "enabled": true
+    },
+    "linear": {
+      "type": "local",
+      "command": ["npx", "-y", "@linear/mcp-server"],
+      "enabled": true,
+      "environment": {
+        "LINEAR_API_KEY": "{env:LINEAR_API_KEY}"
+      }
+    }
+  },
+
+  "tools": {
+    "write": true,
+    "edit": true,
+    "bash": true
+  },
+
+  "permission": {
+    "edit": "allow",
+    "bash": "allow",
+    "webfetch": "allow"
+  },
+
+  "agent": {
+    "plan": {
+      "tools": {
+        "write": false,
+        "edit": false
+      }
+    },
+    "review": {
+      "tools": {
+        "write": false,
+        "edit": false,
+        "bash": false
+      }
+    }
+  }
+}
