@@ -36,14 +36,24 @@ export function useActivityStream(): {
       addActivity(activity);
     });
 
-    source.addEventListener('open', () => setConnected(true));
-    source.addEventListener('error', () => setConnected(false));
+    const markConnected = () => setConnected(true);
+    const markDisconnected = () => {
+      if (source.readyState === EventSource.CLOSED) {
+        setConnected(false);
+      }
+    };
+
+    source.addEventListener('open', markConnected);
+    source.addEventListener('ping', markConnected);
+    source.addEventListener('activity', markConnected);
+    source.addEventListener('error', markDisconnected);
 
     sourceRef.current = source;
 
     return () => {
       source.close();
       sourceRef.current = null;
+      setConnected(false);
     };
   }, [addActivity]);
 

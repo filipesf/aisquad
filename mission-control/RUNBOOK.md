@@ -187,6 +187,7 @@ Migration files:
 - `001_init.sql` — 8 tables, 15 indexes, 6 FKs (agents, tasks, assignments, notifications, activities, comments, subscriptions, \_migrations)
 - `002_assignment_invariants.sql` — partial unique index preventing multiple active assignments per task
 - `003_openclaw_dispatch_tracking.sql` — `openclaw_dispatch_attempts` table + 3 indexes
+- `004_telemetry.sql` — `telemetry_events` table + telemetry query indexes
 
 ### Tables
 
@@ -200,6 +201,7 @@ Migration files:
 | `comments`                   | Task comments with @-mention support                                        |
 | `subscriptions`              | Agent-to-task subscriptions                                                 |
 | `openclaw_dispatch_attempts` | Per-attempt record of OpenClaw dispatches — status, error, response excerpt |
+| `telemetry_events`           | Telemetry ingest store for OpenClaw diagnostics events + aggregate columns    |
 | `_migrations`                | Migration tracking                                                          |
 
 ---
@@ -307,6 +309,7 @@ Template: `mission-control/.env.example`. Copy to `mission-control/.env` and fil
 | `HOST`                      | `0.0.0.0`               | API                     |                                            |
 | `PORT`                      | `3000`                  | API                     |                                            |
 | `LOG_LEVEL`                 | `info`                  | API                     |                                            |
+| `CONTROL_API_TELEMETRY_TOKEN` | —                     | API                     | Required bearer token for `/telemetry/*` routes |
 | `OFFLINE_POLL_MS`           | `10000`                 | Offline Detector        |                                            |
 | `ASSIGNER_POLL_MS`          | `10000`                 | Assigner                |                                            |
 | `LEASE_SECONDS`             | `30`                    | Assigner                |                                            |

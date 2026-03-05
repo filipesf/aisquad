@@ -66,6 +66,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: '6379'
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      CONTROL_API_TELEMETRY_TOKEN: ${CONTROL_API_TELEMETRY_TOKEN:-}
     depends_on:
       postgres:
         condition: service_healthy

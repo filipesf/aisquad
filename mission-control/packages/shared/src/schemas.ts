@@ -165,3 +165,29 @@ export const OpenClawHookResponseSchema = z.object({
   error: z.string().optional(),
 });
 export type OpenClawHookResponse = z.infer<typeof OpenClawHookResponseSchema>;
+
+// ── Telemetry Schemas ───────────────────────────────────────────
+
+export const IngestTelemetryEventSchema = z.object({
+  agent_id: z.string().uuid().optional(),
+  event_type: z.string().min(1),
+  provider: z.string().optional(),
+  model: z.string().optional(),
+  channel: z.string().optional(),
+  session_key: z.string().optional(),
+  tokens_input: z.number().int().nonnegative().optional(),
+  tokens_output: z.number().int().nonnegative().optional(),
+  tokens_cache_read: z.number().int().nonnegative().optional(),
+  tokens_cache_write: z.number().int().nonnegative().optional(),
+  tokens_total: z.number().int().nonnegative().optional(),
+  cost_usd: z.number().nonnegative().optional(),
+  duration_ms: z.number().int().nonnegative().optional(),
+  payload: z.record(z.unknown()).default({}),
+  recorded_at: z.string().datetime().optional(),
+});
+export type IngestTelemetryEvent = z.infer<typeof IngestTelemetryEventSchema>;
+
+export const IngestTelemetryBatchSchema = z.object({
+  events: z.array(IngestTelemetryEventSchema).min(1).max(500),
+});
+export type IngestTelemetryBatch = z.infer<typeof IngestTelemetryBatchSchema>;

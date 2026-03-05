@@ -4,11 +4,15 @@ import { BrowserRouter } from 'react-router-dom';
 import { TaskBoard } from './TaskBoard.tsx';
 import type { Task } from '../types/domain.ts';
 
-vi.mock('../lib/api.ts', () => ({
-  listTasks: vi.fn(),
-  changeTaskState: vi.fn(),
-  createTask: vi.fn(),
-}));
+vi.mock('../lib/api.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/api.ts')>();
+  return {
+    ...actual,
+    listTasks: vi.fn(),
+    changeTaskState: vi.fn(),
+    createTask: vi.fn(),
+  };
+});
 
 import { listTasks } from '../lib/api.ts';
 

@@ -7,6 +7,7 @@ import { assignmentRoutes } from './routes/assignments.js';
 import { commentRoutes } from './routes/comments.js';
 import { notificationRoutes } from './routes/notifications.js';
 import { activityRoutes } from './routes/activities.js';
+import { telemetryRoutes } from './routes/telemetry.js';
 import { registerCorrelationMiddleware } from './middleware/correlation.js';
 import { registerIdempotencyMiddleware } from './middleware/idempotency.js';
 import { redis } from './services/redis.js';
@@ -37,6 +38,7 @@ await app.register(assignmentRoutes);
 await app.register(commentRoutes);
 await app.register(notificationRoutes);
 await app.register(activityRoutes);
+await app.register(telemetryRoutes);
 
 // Graceful shutdown
 const shutdown = async () => {

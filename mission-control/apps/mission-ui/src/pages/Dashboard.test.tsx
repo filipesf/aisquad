@@ -5,12 +5,16 @@ import { Dashboard } from './Dashboard.tsx';
 import type { Agent, Task, Activity } from '../types/domain.ts';
 
 // Mock the API module
-vi.mock('../lib/api.ts', () => ({
-  listAgents: vi.fn(),
-  listTasks: vi.fn(),
-  listActivities: vi.fn(),
-  createActivityStream: vi.fn(),
-}));
+vi.mock('../lib/api.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/api.ts')>();
+  return {
+    ...actual,
+    listAgents: vi.fn(),
+    listTasks: vi.fn(),
+    listActivities: vi.fn(),
+    createActivityStream: vi.fn(),
+  };
+});
 
 // Import the mocked functions
 import { listAgents, listTasks, listActivities, createActivityStream } from '../lib/api.ts';
