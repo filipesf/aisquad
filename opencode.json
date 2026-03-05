@@ -21,14 +21,6 @@
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
       "enabled": true
-    },
-    "linear": {
-      "type": "local",
-      "command": ["npx", "-y", "@linear/mcp-server"],
-      "enabled": true,
-      "environment": {
-        "LINEAR_API_KEY": "{env:LINEAR_API_KEY}"
-      }
     }
   },
 
