@@ -1,7 +1,9 @@
 ---
+name: aisquad-reviewer
+color: '#fe6e00'
 description: Code review agent focused on TypeScript and infrastructure patterns
 mode: subagent
-model: anthropic/claude-sonnet-4-5
+model: anthropic/claude-sonnet-4-6
 temperature: 0.1
 tools:
   write: false

@@ -1,7 +1,9 @@
 ---
+name: aisquad-ops
+color: '#fdc700'
 description: Infrastructure and operations agent for the aisquad monorepo
 mode: primary
-model: anthropic/claude-sonnet-4-5
+model: anthropic/claude-sonnet-4-6
 tools:
   write: true
   edit: true

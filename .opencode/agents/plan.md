@@ -1,7 +1,9 @@
 ---
+name: aisquad-planner
+color: '#00bc7d'
 description: Read-only planning and analysis agent
 mode: primary
-model: anthropic/claude-sonnet-4-5
+model: anthropic/claude-sonnet-4-6
 tools:
   write: false
   edit: false
