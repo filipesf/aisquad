@@ -1,6 +1,6 @@
 # OpenClaw VM Runbook
 
-> OpenClaw gateway and Sentinel run as native systemd services inside the OrbStack VM `aisquad` (Ubuntu 25.10, arm64). No Docker involved for these services.
+> OpenClaw gateway and Sentinel run as native systemd services inside the OrbStack VM `aisquad` (Ubuntu 25.10, arm64). No Docker involved for these services. Optional telemetry collector runs as a separate Docker container.
 
 ## Quick Reference
 
@@ -108,6 +108,33 @@ make audit         # node dist/index.js security audit --deep
 make verify-local  # (1) ss -tlnp | grep 18789 — port must appear
                    # (2) curl http://127.0.0.1:18789/ — expected HTTP 200
 ```
+
+### Telemetry collector (OTLP/HTTP)
+
+Tier 1 diagnostics export expects an OTLP/HTTP listener on `127.0.0.1:4318`.
+
+Required OpenClaw config in `/home/filipefernandes/.openclaw/openclaw.json`:
+
+- `diagnostics.enabled: true`
+- `diagnostics.otel.enabled: true`
+- `diagnostics.otel.endpoint: "http://127.0.0.1:4318"`
+- `plugins.entries["diagnostics-otel"].enabled: true` (bundled, but disabled by default unless explicitly enabled)
+
+Current VM deployment:
+
+- Container: `otel-collector`
+- Image: `otel/opentelemetry-collector:0.123.0`
+- Config: `/home/filipefernandes/openclaw/ops/otel-collector-config.yaml`
+- Port: `0.0.0.0:4318 -> 4318/tcp`
+
+Verification:
+
+```bash
+orb -m aisquad bash -lc 'docker ps --format "{{.Names}} {{.Status}} {{.Ports}}"'
+orb -m aisquad bash -lc 'curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:4318/'
+```
+
+Expected: collector container is `Up` and endpoint responds (typically `404` at root path is OK; listener is reachable).
 
 ### Composite checks
 
