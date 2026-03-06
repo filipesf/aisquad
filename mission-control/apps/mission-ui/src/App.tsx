@@ -11,17 +11,29 @@ export default function App() {
     <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
       <TooltipProvider>
         <div className="min-h-screen bg-background text-foreground">
+          {/* Skip link for keyboard navigation - WCAG 2.4.1 */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            Skip to main content
+          </a>
+
           <Tabs defaultValue="dashboard" className="flex flex-col min-h-screen">
             {/* Top bar */}
             <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               <div className="flex h-14 items-center gap-4 px-6">
                 <div className="flex items-center gap-2">
-                  <Crosshair className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-semibold tracking-tight">Mission Control</span>
+                  <Crosshair className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <h1 className="text-sm font-semibold tracking-tight">Mission Control</h1>
                 </div>
                 <TabsList className="h-8">
-                  <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
-                  <TabsTrigger value="telemetry" className="text-xs">Telemetry</TabsTrigger>
+                  <TabsTrigger value="dashboard" className="text-xs">
+                    Dashboard
+                  </TabsTrigger>
+                  <TabsTrigger value="telemetry" className="text-xs">
+                    Telemetry
+                  </TabsTrigger>
                 </TabsList>
                 <div className="ml-auto">
                   <ModeToggle />
@@ -30,12 +42,14 @@ export default function App() {
             </header>
 
             {/* Page content */}
-            <TabsContent value="dashboard" className="flex-1 mt-0">
-              <Dashboard />
-            </TabsContent>
-            <TabsContent value="telemetry" className="flex-1 mt-0">
-              <Telemetry />
-            </TabsContent>
+            <main id="main-content">
+              <TabsContent value="dashboard" className="flex-1 mt-0">
+                <Dashboard />
+              </TabsContent>
+              <TabsContent value="telemetry" className="flex-1 mt-0">
+                <Telemetry />
+              </TabsContent>
+            </main>
           </Tabs>
         </div>
       </TooltipProvider>

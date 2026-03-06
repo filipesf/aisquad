@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import type { Agent, Task } from '@/types/domain';
 import { TASK_STATES } from '@/types/domain';
 import { listAgents, listTasks } from '@/lib/api';
@@ -10,17 +11,30 @@ import { TasksTable } from '@/components/tasks/TasksTable';
 import { MetricCard } from '@/components/MetricCard';
 
 export function Dashboard() {
-  const { data: agents, error: agentsError, refresh: _refreshAgents } = usePolling(listAgents, 5000);
+  const {
+    data: agents,
+    error: agentsError,
+    refresh: _refreshAgents,
+  } = usePolling(listAgents, 5000);
   const { data: tasks, error: tasksError, refresh: refreshTasks } = usePolling(listTasks, 5000);
   const { activities, connected } = useActivityStream();
 
-  const stateCounts = TASK_STATES.reduce<Record<string, number>>((acc, state) => {
-    acc[state] = tasks?.filter((t: Task) => t.state === state).length ?? 0;
-    return acc;
-  }, {});
+  // Memoize expensive task state calculations to prevent re-computing on every render
+  const stateCounts = useMemo(() => {
+    return TASK_STATES.reduce<Record<string, number>>((acc, state) => {
+      acc[state] = tasks?.filter((t: Task) => t.state === state).length ?? 0;
+      return acc;
+    }, {});
+  }, [tasks]);
 
-  const onlineCount = agents?.filter((a: Agent) => a.status === 'online').length ?? 0;
-  const totalAgents = agents?.length ?? 0;
+  // Memoize agent count calculations
+  const { onlineCount, totalAgents } = useMemo(
+    () => ({
+      onlineCount: agents?.filter((a: Agent) => a.status === 'online').length ?? 0,
+      totalAgents: agents?.length ?? 0,
+    }),
+    [agents],
+  );
 
   return (
     <div className="p-6 space-y-8">

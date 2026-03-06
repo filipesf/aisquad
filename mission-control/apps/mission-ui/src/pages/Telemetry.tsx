@@ -16,7 +16,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-
 const POLL_INTERVAL_MS = 30_000;
 
 function TelemetryAuthBanner({ error }: { error: unknown }) {
@@ -76,11 +75,16 @@ export function Telemetry() {
       <div className="flex flex-wrap items-center gap-4">
         <h2 className="text-sm font-semibold tracking-tight">Telemetry</h2>
         <div className="flex items-center gap-3 ml-auto flex-wrap">
-          <span className="text-xs text-muted-foreground">Window</span>
+          <span className="text-xs text-muted-foreground" id="window-label">
+            Window
+          </span>
           <ToggleGroup
             type="single"
             value={window}
-            onValueChange={(v) => { if (v) setWindow(v as TelemetryWindow); }}
+            onValueChange={(v) => {
+              if (v) setWindow(v as TelemetryWindow);
+            }}
+            aria-labelledby="window-label"
           >
             {TELEMETRY_WINDOWS.map((w) => (
               <ToggleGroupItem key={w} value={w} className="text-xs h-8 px-3">
@@ -88,11 +92,16 @@ export function Telemetry() {
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-          <span className="text-xs text-muted-foreground">Group by</span>
+          <span className="text-xs text-muted-foreground" id="groupby-label">
+            Group by
+          </span>
           <ToggleGroup
             type="single"
             value={groupBy}
-            onValueChange={(v) => { if (v) setGroupBy(v as TelemetryGroupBy); }}
+            onValueChange={(v) => {
+              if (v) setGroupBy(v as TelemetryGroupBy);
+            }}
+            aria-labelledby="groupby-label"
           >
             {TELEMETRY_GROUP_BY_OPTIONS.map((g) => (
               <ToggleGroupItem key={g} value={g} className="text-xs h-8 px-3 capitalize">
@@ -112,7 +121,10 @@ export function Telemetry() {
             <MetricCard label="Events" value={data.totals.events.toLocaleString()} />
             <MetricCard label="Tokens" value={data.totals.tokens_total.toLocaleString()} />
             <MetricCard label="Cost (USD)" value={`$${data.totals.cost_usd.toFixed(4)}`} />
-            <MetricCard label="Avg Latency" value={`${Math.round(data.totals.avg_duration_ms)}ms`} />
+            <MetricCard
+              label="Avg Latency"
+              value={`${Math.round(data.totals.avg_duration_ms)}ms`}
+            />
             <MetricCard label="Min Latency" value={`${data.totals.min_duration_ms}ms`} />
             <MetricCard label="Max Latency" value={`${data.totals.max_duration_ms}ms`} />
           </div>
@@ -133,11 +145,20 @@ export function Telemetry() {
                 <TableBody>
                   {data.groups.map((group) => (
                     <TableRow key={group.key}>
-                      <TableCell className="font-mono text-xs">{group.key}</TableCell>
+                      <TableCell
+                        className="font-mono text-xs truncate max-w-[200px]"
+                        title={group.key}
+                      >
+                        {group.key}
+                      </TableCell>
                       <TableCell className="text-right">{group.events.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">{group.tokens_total.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">
+                        {group.tokens_total.toLocaleString()}
+                      </TableCell>
                       <TableCell className="text-right">${group.cost_usd.toFixed(4)}</TableCell>
-                      <TableCell className="text-right">{Math.round(group.avg_duration_ms)}ms</TableCell>
+                      <TableCell className="text-right">
+                        {Math.round(group.avg_duration_ms)}ms
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -148,14 +169,13 @@ export function Telemetry() {
           )}
 
           <p className="text-xs text-muted-foreground">
-            Last updated: {new Date(data.generated_at).toLocaleTimeString()} · auto-refreshes every 30s
+            Last updated: {new Date(data.generated_at).toLocaleTimeString()} · auto-refreshes every
+            30s
           </p>
         </>
       )}
 
-      {loading && !data && (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      )}
+      {loading && !data && <p className="text-sm text-muted-foreground">Loading…</p>}
     </div>
   );
 }

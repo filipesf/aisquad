@@ -31,11 +31,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
   CommandEmpty,
@@ -64,10 +60,7 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
-  const columns = useMemo(
-    () => getTaskColumns(),
-    [],
-  );
+  const columns = useMemo(() => getTaskColumns(), []);
 
   const table = useReactTable({
     data: tasks,
@@ -89,9 +82,7 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
   function toggleFilter(column: 'state' | 'priority', value: string) {
     const col = table.getColumn(column);
     const current = (col?.getFilterValue() as string[] | undefined) ?? [];
-    const next = current.includes(value)
-      ? current.filter((v) => v !== value)
-      : [...current, value];
+    const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
     col?.setFilterValue(next.length > 0 ? next : undefined);
   }
 
@@ -105,13 +96,19 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
           placeholder="Search tasks…"
           value={(table.getColumn('title')?.getFilterValue() as string) ?? ''}
           onChange={(e) => table.getColumn('title')?.setFilterValue(e.target.value)}
-          className="h-8 w-[200px] text-sm"
+          className="h-8 min-w-[200px] text-sm"
+          aria-label="Search tasks by title"
         />
 
         {/* Status filter */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 text-xs">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              aria-label="Filter by status"
+            >
               Status
               {statusFilter.length > 0 && (
                 <>
@@ -123,9 +120,13 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[160px] p-0" align="start">
+          <PopoverContent className="min-w-[160px] p-0" align="start">
             <Command>
-              <CommandInput placeholder="Filter…" className="h-8" />
+              <CommandInput
+                placeholder="Filter…"
+                className="h-8"
+                aria-label="Search status options"
+              />
               <CommandList>
                 <CommandEmpty>No results</CommandEmpty>
                 <CommandGroup>
@@ -162,7 +163,12 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
         {/* Priority filter */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 text-xs">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              aria-label="Filter by priority"
+            >
               Priority
               {priorityFilter.length > 0 && (
                 <>
@@ -174,7 +180,7 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[140px] p-0" align="start">
+          <PopoverContent className="min-w-[140px] p-0" align="start">
             <Command>
               <CommandList>
                 <CommandGroup>
@@ -250,11 +256,7 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
         </DropdownMenu>
 
         {/* New task */}
-        <Button
-          size="sm"
-          className="h-8 text-xs"
-          onClick={() => setCreateOpen(true)}
-        >
+        <Button size="sm" className="h-8 text-xs" onClick={() => setCreateOpen(true)}>
           <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
           New Task
         </Button>
@@ -281,11 +283,20 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  className="cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  className="cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   onClick={() => setSelectedTask(row.original)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedTask(row.original);
+                    }
+                  }}
+                  aria-label={`View details for task: ${row.original.title}`}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="min-w-0">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -293,7 +304,10 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center text-muted-foreground"
+                >
                   No tasks found.
                 </TableCell>
               </TableRow>
@@ -304,7 +318,7 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
 
       {/* Pagination */}
       <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-        <span>
+        <span aria-live="polite" aria-atomic="true">
           {table.getFilteredRowModel().rows.length} task
           {table.getFilteredRowModel().rows.length !== 1 ? 's' : ''}
         </span>
@@ -334,11 +348,7 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
       </div>
 
       <TaskDetailSheet task={selectedTask} onClose={() => setSelectedTask(null)} />
-      <CreateTaskDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onCreated={onRefresh}
-      />
+      <CreateTaskDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={onRefresh} />
     </>
   );
 }

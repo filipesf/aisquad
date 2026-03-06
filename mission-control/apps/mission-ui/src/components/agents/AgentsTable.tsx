@@ -20,11 +20,13 @@ interface AgentsTableProps {
 }
 
 function getInitials(name: string): string {
-  return name
+  const initials = name
     .split(/\s+/)
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? '')
     .join('');
+  // Fallback to '?' if name has no valid characters
+  return initials || '?';
 }
 
 export function AgentsTable({ agents }: AgentsTableProps) {
@@ -33,7 +35,7 @@ export function AgentsTable({ agents }: AgentsTableProps) {
   if (agents.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 rounded-md border py-12 text-center">
-        <Users className="h-8 w-8 text-muted-foreground/40" />
+        <Users className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
         <p className="text-sm text-muted-foreground">No agents registered</p>
       </div>
     );
@@ -57,8 +59,17 @@ export function AgentsTable({ agents }: AgentsTableProps) {
               return (
                 <TableRow
                   key={agent.id}
-                  className="cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  className="cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   onClick={() => setSelectedAgentId(agent.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedAgentId(agent.id);
+                    }
+                  }}
+                  aria-label={`View details for ${agent.name}`}
                 >
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -67,7 +78,9 @@ export function AgentsTable({ agents }: AgentsTableProps) {
                           {getInitials(agent.name)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="font-medium text-sm">{agent.name}</span>
+                      <span className="font-medium text-sm truncate max-w-[200px]">
+                        {agent.name}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -79,7 +92,11 @@ export function AgentsTable({ agents }: AgentsTableProps) {
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {caps.slice(0, 3).map((cap) => (
-                        <Badge key={cap} variant="outline" className="font-mono text-xs">
+                        <Badge
+                          key={cap}
+                          variant="outline"
+                          className="font-mono text-xs truncate max-w-[120px]"
+                        >
                           {cap}
                         </Badge>
                       ))}
@@ -97,10 +114,7 @@ export function AgentsTable({ agents }: AgentsTableProps) {
         </Table>
       </div>
 
-      <AgentDetailSheet
-        agentId={selectedAgentId}
-        onClose={() => setSelectedAgentId(null)}
-      />
+      <AgentDetailSheet agentId={selectedAgentId} onClose={() => setSelectedAgentId(null)} />
     </>
   );
 }
