@@ -75,13 +75,17 @@ const TASKS: SeedTask[] = [
 
 async function cleanData(): Promise<void> {
   console.log('🧹 Cleaning existing data...');
+  // Remove only the agents this seed script manages, by name.
+  // Real/seeded system agents (e.g. corven) are left untouched.
+  const seedAgentNames = AGENTS.map((a) => a.name);
+  await pool.query('DELETE FROM agents WHERE name = ANY($1)', [seedAgentNames]);
+  // Operational data has no system-owned rows so a full wipe is fine.
   await pool.query('DELETE FROM activities');
   await pool.query('DELETE FROM subscriptions');
   await pool.query('DELETE FROM comments');
   await pool.query('DELETE FROM notifications');
   await pool.query('DELETE FROM assignments');
   await pool.query('DELETE FROM tasks');
-  await pool.query('DELETE FROM agents');
 }
 
 async function seedAgents(): Promise<void> {

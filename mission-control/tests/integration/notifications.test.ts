@@ -1,6 +1,6 @@
 import { Redis } from 'ioredis';
 import pg from 'pg';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 
@@ -67,16 +67,6 @@ async function get<T>(path: string): Promise<{ status: number; data: T }> {
   return { status: res.status, data: (await res.json()) as T };
 }
 
-async function cleanDb() {
-  await pool.query('DELETE FROM activities');
-  await pool.query('DELETE FROM subscriptions');
-  await pool.query('DELETE FROM comments');
-  await pool.query('DELETE FROM notifications');
-  await pool.query('DELETE FROM assignments');
-  await pool.query('DELETE FROM tasks');
-  await pool.query('DELETE FROM agents');
-}
-
 async function cleanRedis() {
   const keys = await redis.keys('hb:seq:*');
   if (keys.length > 0) {
@@ -88,28 +78,11 @@ async function cleanRedis() {
   }
 }
 
-async function createAgent(name: string): Promise<AgentResp> {
-  const { data } = await post<AgentResp>('/agents', {
-    name,
-    session_key: `sk-${name}-${Date.now()}-${Math.random()}`,
-    capabilities: { code: true },
-    heartbeat_interval_ms: 10000
-  });
-  // Send heartbeat to make online
-  await post(`/agents/${data.id}/heartbeat`, {});
-  return data;
-}
-
-async function createTask(title: string): Promise<TaskResp> {
-  const { data } = await post<TaskResp>('/tasks', {
-    title,
-    description: `Description for ${title}`,
-    priority: 5
-  });
-  return data;
-}
-
 describe('notifications integration', () => {
+  let testRunStart: Date;
+  const createdAgentIds: string[] = [];
+  const createdTaskIds: string[] = [];
+
   beforeAll(async () => {
     await redis.connect();
   });
@@ -119,10 +92,46 @@ describe('notifications integration', () => {
     await redis.quit();
   });
 
-  beforeEach(async () => {
-    await cleanDb();
+  beforeEach(() => {
+    testRunStart = new Date();
+    createdAgentIds.length = 0;
+    createdTaskIds.length = 0;
+  });
+
+  afterEach(async () => {
+    // Deleting agents cascades: comments, notifications, subscriptions
+    if (createdAgentIds.length > 0) {
+      await pool.query('DELETE FROM agents WHERE id = ANY($1)', [createdAgentIds]);
+    }
+    // Deleting tasks cascades: comments, subscriptions
+    if (createdTaskIds.length > 0) {
+      await pool.query('DELETE FROM tasks WHERE id = ANY($1)', [createdTaskIds]);
+    }
+    await pool.query('DELETE FROM activities WHERE created_at >= $1', [testRunStart]);
     await cleanRedis();
   });
+
+  async function createAgent(name: string): Promise<AgentResp> {
+    const { data } = await post<AgentResp>('/agents', {
+      name,
+      session_key: `sk-${name}-${Date.now()}-${Math.random()}`,
+      capabilities: { code: true },
+      heartbeat_interval_ms: 10000
+    });
+    createdAgentIds.push(data.id);
+    await post(`/agents/${data.id}/heartbeat`, {});
+    return data;
+  }
+
+  async function createTask(title: string): Promise<TaskResp> {
+    const { data } = await post<TaskResp>('/tasks', {
+      title,
+      description: `Description for ${title}`,
+      priority: 5
+    });
+    createdTaskIds.push(data.id);
+    return data;
+  }
 
   it('posts a comment and auto-subscribes the author', async () => {
     const author = await createAgent('author-agent');
@@ -138,7 +147,6 @@ describe('notifications integration', () => {
     expect(comment.author_id).toBe(author.id);
     expect(comment.body).toBe('This is a comment');
 
-    // Verify subscription was created
     const subs = await pool.query(
       'SELECT * FROM subscriptions WHERE task_id = $1 AND agent_id = $2',
       [task.id, author.id]
@@ -172,14 +180,12 @@ describe('notifications integration', () => {
       body: 'Hey @target-agent please review'
     });
 
-    // Verify mentioned agent was subscribed
     const subs = await pool.query(
       'SELECT * FROM subscriptions WHERE task_id = $1 AND agent_id = $2',
       [task.id, mentioned.id]
     );
     expect(subs.rows).toHaveLength(1);
 
-    // Verify notification was enqueued for the mentioned agent
     const notifs = await pool.query('SELECT * FROM notifications WHERE target_agent_id = $1', [
       mentioned.id
     ]);
@@ -192,7 +198,6 @@ describe('notifications integration', () => {
     const author = await createAgent('self-commenter');
     const task = await createTask('Self Task');
 
-    // Author comments — they should NOT get a notification for their own comment
     await post<CommentResp>(`/tasks/${task.id}/comments?author_id=${author.id}`, {
       body: 'My own comment'
     });
@@ -209,7 +214,6 @@ describe('notifications integration', () => {
     const sub2 = await createAgent('subscriber2');
     const task = await createTask('Multi Sub Task');
 
-    // Subscribe sub1 and sub2 by having them comment first
     await post<CommentResp>(`/tasks/${task.id}/comments?author_id=${sub1.id}`, {
       body: 'Subscribing myself'
     });
@@ -217,10 +221,8 @@ describe('notifications integration', () => {
       body: 'Me too'
     });
 
-    // Clean dedup keys so the next comment can generate fresh notifications
     await cleanRedis();
 
-    // Now author comments — both sub1 and sub2 should get notifications
     await post<CommentResp>(`/tasks/${task.id}/comments?author_id=${author.id}`, {
       body: 'New update everyone'
     });
@@ -234,12 +236,9 @@ describe('notifications integration', () => {
       [sub2.id]
     );
 
-    // sub1 gets 1 notification (from sub2's comment, they were subscribed before author posted)
-    // After author posts, both sub1 and sub2 should get new notifications
     expect(notifsSub1.rows.length).toBeGreaterThanOrEqual(1);
     expect(notifsSub2.rows.length).toBeGreaterThanOrEqual(1);
 
-    // Author should NOT get notifications for their own comment
     const notifsAuthor = await pool.query(
       `SELECT * FROM notifications WHERE target_agent_id = $1
        AND source_id IN (SELECT id FROM comments WHERE author_id = $1)`,
@@ -253,33 +252,24 @@ describe('notifications integration', () => {
     const subscriber = await createAgent('watcher');
     const task = await createTask('Dedup Task');
 
-    // Subscribe watcher
     await post<CommentResp>(`/tasks/${task.id}/comments?author_id=${subscriber.id}`, {
       body: 'Watching this'
     });
 
-    // Clean dedup keys
     await cleanRedis();
 
-    // Author posts twice rapidly — the second should NOT create an extra notification
-    // for the same (target, source_type, source_id) combo. However each comment has
-    // a different source_id (comment.id), so both should create notifications.
-    const { data: _c1 } = await post<CommentResp>(
-      `/tasks/${task.id}/comments?author_id=${author.id}`,
-      { body: 'First rapid comment' }
-    );
-    const { data: _c2 } = await post<CommentResp>(
-      `/tasks/${task.id}/comments?author_id=${author.id}`,
-      { body: 'Second rapid comment' }
-    );
+    await post<CommentResp>(`/tasks/${task.id}/comments?author_id=${author.id}`, {
+      body: 'First rapid comment'
+    });
+    await post<CommentResp>(`/tasks/${task.id}/comments?author_id=${author.id}`, {
+      body: 'Second rapid comment'
+    });
 
     const notifs = await pool.query(
       "SELECT * FROM notifications WHERE target_agent_id = $1 AND source_type = 'comment'",
       [subscriber.id]
     );
 
-    // Both comments have different IDs, so both generate notifications
-    // (dedup is per source_id, not per task)
     expect(notifs.rows.length).toBe(2);
   });
 
@@ -288,7 +278,6 @@ describe('notifications integration', () => {
     const target = await createAgent('notif-target');
     const task = await createTask('Notif List Task');
 
-    // Subscribe target and then author posts
     await post<CommentResp>(`/tasks/${task.id}/comments?author_id=${target.id}`, {
       body: 'Subscribing'
     });
@@ -310,7 +299,6 @@ describe('notifications integration', () => {
     const target = await createAgent('ack-target');
     const task = await createTask('Ack Task');
 
-    // Create a notification
     await post<CommentResp>(`/tasks/${task.id}/comments?author_id=${target.id}`, {
       body: 'Subscribing'
     });
@@ -319,14 +307,12 @@ describe('notifications integration', () => {
       body: 'Please review'
     });
 
-    // Get the notification
     const { data: notifs } = await get<NotificationResp[]>(`/agents/${target.id}/notifications`);
     expect(notifs.length).toBeGreaterThanOrEqual(1);
 
     const queued = notifs.find((n) => n.status === 'queued');
     expect(queued).toBeTruthy();
 
-    // Acknowledge it
     const { status, data: acked } = await post<NotificationResp>(
       `/notifications/${queued?.id}/ack`,
       {}

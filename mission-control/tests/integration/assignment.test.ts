@@ -1,6 +1,6 @@
 import { Redis } from 'ioredis';
 import pg from 'pg';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 
@@ -68,16 +68,6 @@ async function get<T>(path: string): Promise<{ status: number; data: T }> {
   return { status: res.status, data: (await res.json()) as T };
 }
 
-async function cleanDb() {
-  await pool.query('DELETE FROM activities');
-  await pool.query('DELETE FROM subscriptions');
-  await pool.query('DELETE FROM comments');
-  await pool.query('DELETE FROM notifications');
-  await pool.query('DELETE FROM assignments');
-  await pool.query('DELETE FROM tasks');
-  await pool.query('DELETE FROM agents');
-}
-
 async function cleanRedis() {
   const keys = await redis.keys('hb:seq:*');
   if (keys.length > 0) {
@@ -85,35 +75,11 @@ async function cleanRedis() {
   }
 }
 
-async function createAgent(
-  name: string,
-  capabilities: Record<string, unknown> = {}
-): Promise<AgentResp> {
-  const { data } = await post<AgentResp>('/agents', {
-    name,
-    session_key: `sk-${name}-${Date.now()}`,
-    capabilities,
-    heartbeat_interval_ms: 10000
-  });
-  // Send heartbeat to make online
-  await post(`/agents/${data.id}/heartbeat`, {});
-  return data;
-}
-
-async function createTask(
-  title: string,
-  requiredCapabilities: Record<string, unknown> = {}
-): Promise<TaskResp> {
-  const { data } = await post<TaskResp>('/tasks', {
-    title,
-    description: `Description for ${title}`,
-    priority: 5,
-    required_capabilities: requiredCapabilities
-  });
-  return data;
-}
-
 describe('assignment integration', () => {
+  let testRunStart: Date;
+  const createdAgentIds: string[] = [];
+  const createdTaskIds: string[] = [];
+
   beforeAll(async () => {
     await redis.connect();
   });
@@ -123,10 +89,53 @@ describe('assignment integration', () => {
     await redis.quit();
   });
 
-  beforeEach(async () => {
-    await cleanDb();
+  beforeEach(() => {
+    testRunStart = new Date();
+    createdAgentIds.length = 0;
+    createdTaskIds.length = 0;
+  });
+
+  afterEach(async () => {
+    // Deleting agents cascades: assignments, comments, notifications, subscriptions
+    if (createdAgentIds.length > 0) {
+      await pool.query('DELETE FROM agents WHERE id = ANY($1)', [createdAgentIds]);
+    }
+    // Deleting tasks cascades: assignments, comments, subscriptions
+    if (createdTaskIds.length > 0) {
+      await pool.query('DELETE FROM tasks WHERE id = ANY($1)', [createdTaskIds]);
+    }
+    await pool.query('DELETE FROM activities WHERE created_at >= $1', [testRunStart]);
     await cleanRedis();
   });
+
+  async function createAgent(
+    name: string,
+    capabilities: Record<string, unknown> = {}
+  ): Promise<AgentResp> {
+    const { data } = await post<AgentResp>('/agents', {
+      name,
+      session_key: `sk-${name}-${Date.now()}`,
+      capabilities,
+      heartbeat_interval_ms: 10000
+    });
+    createdAgentIds.push(data.id);
+    await post(`/agents/${data.id}/heartbeat`, {});
+    return data;
+  }
+
+  async function createTask(
+    title: string,
+    requiredCapabilities: Record<string, unknown> = {}
+  ): Promise<TaskResp> {
+    const { data } = await post<TaskResp>('/tasks', {
+      title,
+      description: `Description for ${title}`,
+      priority: 5,
+      required_capabilities: requiredCapabilities
+    });
+    createdTaskIds.push(data.id);
+    return data;
+  }
 
   it('creates a task in queued state', async () => {
     const task = await createTask('Test Task');
@@ -134,23 +143,21 @@ describe('assignment integration', () => {
   });
 
   it('lists tasks filtered by state', async () => {
-    await createTask('Task A');
-    await createTask('Task B');
-
-    const { data: all } = await get<TaskResp[]>('/tasks');
-    expect(all).toHaveLength(2);
+    const t1 = await createTask('Task A');
+    const t2 = await createTask('Task B');
 
     const { data: queued } = await get<TaskResp[]>('/tasks?state=queued');
-    expect(queued).toHaveLength(2);
+    const ourQueued = queued.filter((t) => [t1.id, t2.id].includes(t.id));
+    expect(ourQueued).toHaveLength(2);
 
     const { data: done } = await get<TaskResp[]>('/tasks?state=done');
-    expect(done).toHaveLength(0);
+    const ourDone = done.filter((t) => [t1.id, t2.id].includes(t.id));
+    expect(ourDone).toHaveLength(0);
   });
 
   it('rejects invalid state transitions', async () => {
     const task = await createTask('No Skip');
 
-    // queued → done is invalid
     const { status, data } = await patch<{ error: string }>(`/tasks/${task.id}/state`, {
       state: 'done'
     });
@@ -161,7 +168,6 @@ describe('assignment integration', () => {
   it('allows valid state transitions', async () => {
     const task = await createTask('Progressing');
 
-    // queued → assigned (need to do via internal mechanism or direct)
     const { data: assigned } = await patch<TaskResp>(`/tasks/${task.id}/state`, {
       state: 'assigned'
     });
@@ -172,7 +178,6 @@ describe('assignment integration', () => {
     const agent = await createAgent('worker-1', { code: true });
     const task = await createTask('Build feature', { code: true });
 
-    // Manually offer assignment via DB (simulating assigner worker)
     const assignmentResult = await pool.query(
       `INSERT INTO assignments (id, task_id, agent_id, status, lease_expires_at, created_at, updated_at)
        VALUES (gen_random_uuid(), $1, $2, 'offered', now() + interval '30 seconds', now(), now())
@@ -181,28 +186,23 @@ describe('assignment integration', () => {
     );
     const assignmentId = assignmentResult.rows[0].id;
 
-    // Update task state
     await pool.query("UPDATE tasks SET state = 'assigned' WHERE id = $1", [task.id]);
 
-    // Accept
     const { data: accepted } = await post<AssignmentResp>(
       `/assignments/${assignmentId}/accept`,
       {}
     );
     expect(accepted.status).toBe('accepted');
 
-    // Check task is in_progress
     const { data: inProgress } = await get<TaskResp>(`/tasks/${task.id}`);
     expect(inProgress.state).toBe('in_progress');
 
-    // Complete
     const { data: completed } = await post<AssignmentResp>(
       `/assignments/${assignmentId}/complete`,
       {}
     );
     expect(completed.status).toBe('completed');
 
-    // Check task is in review
     const { data: review } = await get<TaskResp>(`/tasks/${task.id}`);
     expect(review.state).toBe('review');
   });
@@ -211,7 +211,6 @@ describe('assignment integration', () => {
     const agent = await createAgent('worker-exp', { code: true });
     const task = await createTask('Expiring task', { code: true });
 
-    // Create an assignment with an already-expired lease
     await pool.query(
       `INSERT INTO assignments (id, task_id, agent_id, status, lease_expires_at, created_at, updated_at)
        VALUES (gen_random_uuid(), $1, $2, 'offered', now() - interval '1 second', now(), now())`,
@@ -219,14 +218,13 @@ describe('assignment integration', () => {
     );
     await pool.query("UPDATE tasks SET state = 'assigned' WHERE id = $1", [task.id]);
 
-    // Simulate what the assigner worker does: expire stale leases
     const expired = await pool.query(
       `SELECT id, task_id FROM assignments
-       WHERE status IN ('offered', 'accepted') AND lease_expires_at < now()`
+       WHERE task_id = $1 AND status IN ('offered', 'accepted') AND lease_expires_at < now()`,
+      [task.id]
     );
     expect(expired.rows).toHaveLength(1);
 
-    // Expire it
     await pool.query(
       "UPDATE assignments SET status = 'expired', updated_at = now() WHERE id = $1",
       [expired.rows[0].id]
@@ -235,7 +233,6 @@ describe('assignment integration', () => {
       task.id
     ]);
 
-    // Verify task is back to queued
     const { data: requeued } = await get<TaskResp>(`/tasks/${task.id}`);
     expect(requeued.state).toBe('queued');
   });
@@ -245,7 +242,6 @@ describe('assignment integration', () => {
     const agent2 = await createAgent('backup-agent', { code: true });
     const task = await createTask('Critical task', { code: true });
 
-    // Assign to agent1
     const a1Result = await pool.query(
       `INSERT INTO assignments (id, task_id, agent_id, status, lease_expires_at, created_at, updated_at)
        VALUES (gen_random_uuid(), $1, $2, 'offered', now() - interval '1 second', now(), now())
@@ -254,7 +250,6 @@ describe('assignment integration', () => {
     );
     await pool.query("UPDATE tasks SET state = 'assigned' WHERE id = $1", [task.id]);
 
-    // Agent1 "crashes" — expire the lease
     await pool.query(
       "UPDATE assignments SET status = 'expired', updated_at = now() WHERE id = $1",
       [a1Result.rows[0].id]
@@ -263,7 +258,6 @@ describe('assignment integration', () => {
       task.id
     ]);
 
-    // Now assign to agent2
     const a2Result = await pool.query(
       `INSERT INTO assignments (id, task_id, agent_id, status, lease_expires_at, created_at, updated_at)
        VALUES (gen_random_uuid(), $1, $2, 'offered', now() + interval '30 seconds', now(), now())
@@ -272,7 +266,6 @@ describe('assignment integration', () => {
     );
     await pool.query("UPDATE tasks SET state = 'assigned' WHERE id = $1", [task.id]);
 
-    // Agent2 accepts and completes
     const { data: accepted } = await post<AssignmentResp>(
       `/assignments/${a2Result.rows[0].id}/accept`,
       {}

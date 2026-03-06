@@ -1,6 +1,6 @@
 import { Redis } from 'ioredis';
 import pg from 'pg';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 
@@ -54,16 +54,6 @@ async function get<T>(path: string): Promise<{ status: number; data: T }> {
   return { status: res.status, data: (await res.json()) as T };
 }
 
-async function cleanDb(): Promise<void> {
-  await pool.query('DELETE FROM activities');
-  await pool.query('DELETE FROM subscriptions');
-  await pool.query('DELETE FROM comments');
-  await pool.query('DELETE FROM notifications');
-  await pool.query('DELETE FROM assignments');
-  await pool.query('DELETE FROM tasks');
-  await pool.query('DELETE FROM agents');
-}
-
 async function cleanRedis(): Promise<void> {
   const keys = await redis.keys('hb:seq:*');
   if (keys.length > 0) await redis.del(...keys);
@@ -71,34 +61,6 @@ async function cleanRedis(): Promise<void> {
   if (idemKeys.length > 0) await redis.del(...idemKeys);
   const dedupKeys = await redis.keys('notif:dedup:*');
   if (dedupKeys.length > 0) await redis.del(...dedupKeys);
-}
-
-async function createAgent(
-  name: string,
-  caps: Record<string, unknown> = { code: true }
-): Promise<AgentResp> {
-  const { data } = await post<AgentResp>('/agents', {
-    name,
-    session_key: `sk-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    capabilities: caps,
-    heartbeat_interval_ms: 5000
-  });
-  await post(`/agents/${data.id}/heartbeat`, {});
-  return data;
-}
-
-async function createTask(title: string, caps: Record<string, unknown> = {}): Promise<TaskResp> {
-  const { data } = await post<TaskResp>('/tasks', {
-    title,
-    description: '',
-    priority: 5,
-    required_capabilities: caps
-  });
-  return data;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
 }
 
 beforeAll(async () => {
@@ -110,20 +72,55 @@ afterAll(async () => {
   await redis.quit();
 });
 
+// ── chaos: agent churn ────────────────────────────────────────────
+
 describe('chaos: agent churn', () => {
-  beforeEach(async () => {
-    await cleanDb();
+  let testRunStart: Date;
+  const createdAgentIds: string[] = [];
+  const createdTaskIds: string[] = [];
+
+  async function createAgent(
+    name: string,
+    caps: Record<string, unknown> = { code: true }
+  ): Promise<AgentResp> {
+    const { data } = await post<AgentResp>('/agents', {
+      name,
+      session_key: `sk-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      capabilities: caps,
+      heartbeat_interval_ms: 5000
+    });
+    createdAgentIds.push(data.id);
+    await post(`/agents/${data.id}/heartbeat`, {});
+    return data;
+  }
+
+  beforeEach(() => {
+    testRunStart = new Date();
+    createdAgentIds.length = 0;
+    createdTaskIds.length = 0;
+  });
+
+  afterEach(async () => {
+    if (createdAgentIds.length > 0) {
+      await pool.query('DELETE FROM agents WHERE id = ANY($1)', [createdAgentIds]);
+    }
+    if (createdTaskIds.length > 0) {
+      await pool.query('DELETE FROM tasks WHERE id = ANY($1)', [createdTaskIds]);
+    }
+    await pool.query('DELETE FROM activities WHERE created_at >= $1', [testRunStart]);
     await cleanRedis();
   });
 
+  function sleep(ms: number): Promise<void> {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
   it('handles rapid online/offline transitions with concurrent heartbeats', async () => {
-    // Create 5 agents
     const agents: AgentResp[] = [];
     for (let i = 0; i < 5; i++) {
       agents.push(await createAgent(`churn-agent-${i}`));
     }
 
-    // Concurrently send heartbeats from all agents
     const heartbeatPromises = agents.map(async (agent) => {
       for (let j = 0; j < 10; j++) {
         await post(`/agents/${agent.id}/heartbeat`, {});
@@ -133,37 +130,36 @@ describe('chaos: agent churn', () => {
 
     await Promise.all(heartbeatPromises);
 
-    // All agents should be online
+    // Check only the agents we created
     const { data: allAgents } = await get<AgentResp[]>('/agents');
-    const onlineCount = allAgents.filter((a) => a.status === 'online').length;
+    const ours = allAgents.filter((a) => createdAgentIds.includes(a.id));
+    const onlineCount = ours.filter((a) => a.status === 'online').length;
     expect(onlineCount).toBe(5);
 
-    // Force some offline via DB (simulating offline-detector)
     for (let i = 0; i < 3; i++) {
       await pool.query("UPDATE agents SET status = 'offline', updated_at = now() WHERE id = $1", [
         agents[i]?.id
       ]);
     }
 
-    // Verify mixed states
     const { data: mixedAgents } = await get<AgentResp[]>('/agents');
-    const offlineCount = mixedAgents.filter((a) => a.status === 'offline').length;
+    const oursMixed = mixedAgents.filter((a) => createdAgentIds.includes(a.id));
+    const offlineCount = oursMixed.filter((a) => a.status === 'offline').length;
     expect(offlineCount).toBe(3);
 
-    // Resume heartbeats for offline agents — they should recover
     for (let i = 0; i < 3; i++) {
       await post(`/agents/${agents[i]?.id}/heartbeat`, {});
     }
 
     const { data: recoveredAgents } = await get<AgentResp[]>('/agents');
-    const allOnline = recoveredAgents.every((a) => a.status === 'online');
+    const oursRecovered = recoveredAgents.filter((a) => createdAgentIds.includes(a.id));
+    const allOnline = oursRecovered.every((a) => a.status === 'online');
     expect(allOnline).toBe(true);
   });
 
   it('maintains data consistency after rapid agent state changes', async () => {
     const agent = await createAgent('consistency-agent');
 
-    // Rapid heartbeats interlaced with offline transitions
     const operations: Promise<unknown>[] = [];
     for (let i = 0; i < 20; i++) {
       operations.push(post(`/agents/${agent.id}/heartbeat`, {}));
@@ -171,29 +167,69 @@ describe('chaos: agent churn', () => {
 
     await Promise.all(operations);
 
-    // Agent should still be in a valid state
     const { data: finalAgent } = await get<AgentResp>(`/agents/${agent.id}`);
     expect(['online', 'offline']).toContain(finalAgent.status);
   });
 });
 
+// ── chaos: concurrent assignment attempts ─────────────────────────
+
 describe('chaos: concurrent assignment attempts', () => {
-  beforeEach(async () => {
-    await cleanDb();
+  let testRunStart: Date;
+  const createdAgentIds: string[] = [];
+  const createdTaskIds: string[] = [];
+
+  async function createAgent(
+    name: string,
+    caps: Record<string, unknown> = { code: true }
+  ): Promise<AgentResp> {
+    const { data } = await post<AgentResp>('/agents', {
+      name,
+      session_key: `sk-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      capabilities: caps,
+      heartbeat_interval_ms: 5000
+    });
+    createdAgentIds.push(data.id);
+    await post(`/agents/${data.id}/heartbeat`, {});
+    return data;
+  }
+
+  async function createTask(title: string, caps: Record<string, unknown> = {}): Promise<TaskResp> {
+    const { data } = await post<TaskResp>('/tasks', {
+      title,
+      description: '',
+      priority: 5,
+      required_capabilities: caps
+    });
+    createdTaskIds.push(data.id);
+    return data;
+  }
+
+  beforeEach(() => {
+    testRunStart = new Date();
+    createdAgentIds.length = 0;
+    createdTaskIds.length = 0;
+  });
+
+  afterEach(async () => {
+    if (createdAgentIds.length > 0) {
+      await pool.query('DELETE FROM agents WHERE id = ANY($1)', [createdAgentIds]);
+    }
+    if (createdTaskIds.length > 0) {
+      await pool.query('DELETE FROM tasks WHERE id = ANY($1)', [createdTaskIds]);
+    }
+    await pool.query('DELETE FROM activities WHERE created_at >= $1', [testRunStart]);
     await cleanRedis();
   });
 
   it('prevents double assignment when multiple agents race for the same task', async () => {
-    // Create 5 agents
     const agents: AgentResp[] = [];
     for (let i = 0; i < 5; i++) {
       agents.push(await createAgent(`racer-${i}`));
     }
 
-    // Create 1 task
     const task = await createTask('Contested Task');
 
-    // Race: all agents try to get assigned via DB (simulating concurrent assigner)
     const raceResults = await Promise.allSettled(
       agents.map(async (agent) => {
         return pool.query(
@@ -204,14 +240,12 @@ describe('chaos: concurrent assignment attempts', () => {
       })
     );
 
-    // Exactly 1 should succeed, rest should fail (unique partial index)
     const successes = raceResults.filter((r) => r.status === 'fulfilled');
     const failures = raceResults.filter((r) => r.status === 'rejected');
 
     expect(successes).toHaveLength(1);
     expect(failures).toHaveLength(4);
 
-    // Verify DB has exactly 1 active assignment
     const activeResult = await pool.query(
       `SELECT COUNT(*) as cnt FROM assignments
        WHERE task_id = $1 AND status IN ('offered', 'accepted', 'started')`,
@@ -224,7 +258,6 @@ describe('chaos: concurrent assignment attempts', () => {
     const agent = await createAgent('accepter');
     const task = await createTask('Accept Race Task');
 
-    // Create an assignment
     const insertResult = await pool.query(
       `INSERT INTO assignments (id, task_id, agent_id, status, lease_expires_at, created_at, updated_at)
        VALUES (gen_random_uuid(), $1, $2, 'offered', now() + interval '30 seconds', now(), now())
@@ -234,35 +267,75 @@ describe('chaos: concurrent assignment attempts', () => {
     await pool.query("UPDATE tasks SET state = 'assigned' WHERE id = $1", [task.id]);
     const assignmentId = insertResult.rows[0].id;
 
-    // Race: multiple concurrent accept calls
     const acceptResults = await Promise.all(
       Array.from({ length: 5 }, () =>
         post<AssignmentResp>(`/assignments/${assignmentId}/accept`, {})
       )
     );
 
-    // Exactly 1 should succeed (200), rest get 404 (already accepted)
     const succeeded = acceptResults.filter((r) => r.status === 200);
     expect(succeeded).toHaveLength(1);
     expect(succeeded[0]?.data.status).toBe('accepted');
   });
 });
 
+// ── chaos: worker restart simulation ─────────────────────────────
+
 describe('chaos: worker restart simulation', () => {
-  beforeEach(async () => {
-    await cleanDb();
+  let testRunStart: Date;
+  const createdAgentIds: string[] = [];
+  const createdTaskIds: string[] = [];
+
+  async function createAgent(
+    name: string,
+    caps: Record<string, unknown> = { code: true }
+  ): Promise<AgentResp> {
+    const { data } = await post<AgentResp>('/agents', {
+      name,
+      session_key: `sk-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      capabilities: caps,
+      heartbeat_interval_ms: 5000
+    });
+    createdAgentIds.push(data.id);
+    await post(`/agents/${data.id}/heartbeat`, {});
+    return data;
+  }
+
+  async function createTask(title: string, caps: Record<string, unknown> = {}): Promise<TaskResp> {
+    const { data } = await post<TaskResp>('/tasks', {
+      title,
+      description: '',
+      priority: 5,
+      required_capabilities: caps
+    });
+    createdTaskIds.push(data.id);
+    return data;
+  }
+
+  beforeEach(() => {
+    testRunStart = new Date();
+    createdAgentIds.length = 0;
+    createdTaskIds.length = 0;
+  });
+
+  afterEach(async () => {
+    if (createdAgentIds.length > 0) {
+      await pool.query('DELETE FROM agents WHERE id = ANY($1)', [createdAgentIds]);
+    }
+    if (createdTaskIds.length > 0) {
+      await pool.query('DELETE FROM tasks WHERE id = ANY($1)', [createdTaskIds]);
+    }
+    await pool.query('DELETE FROM activities WHERE created_at >= $1', [testRunStart]);
     await cleanRedis();
   });
 
   it('state remains consistent after simulated worker restart mid-processing', async () => {
-    // Create agents and tasks
     const agent = await createAgent('restart-agent');
     const tasks: TaskResp[] = [];
     for (let i = 0; i < 10; i++) {
       tasks.push(await createTask(`restart-task-${i}`));
     }
 
-    // Assign some tasks (simulating assigner work)
     for (let i = 0; i < 5; i++) {
       try {
         await pool.query(
@@ -276,10 +349,10 @@ describe('chaos: worker restart simulation', () => {
       }
     }
 
-    // "Restart" — verify state is still consistent
-    // No tasks should be in an invalid state
+    // Verify only our tasks are in valid states
     const taskResult = await pool.query(
-      'SELECT state, COUNT(*)::text as cnt FROM tasks GROUP BY state'
+      'SELECT state, COUNT(*)::text as cnt FROM tasks WHERE id = ANY($1) GROUP BY state',
+      [createdTaskIds]
     );
 
     const validStates = new Set(['queued', 'assigned', 'in_progress', 'review', 'done', 'blocked']);
@@ -287,24 +360,27 @@ describe('chaos: worker restart simulation', () => {
       expect(validStates.has(row.state)).toBe(true);
     }
 
-    // Every assigned task should have exactly 1 active assignment
+    // Every assigned task (among ours) should have exactly 1 active assignment
     const orphanCheck = await pool.query(
       `SELECT t.id, t.title FROM tasks t
-       WHERE t.state = 'assigned'
+       WHERE t.id = ANY($1)
+         AND t.state = 'assigned'
          AND NOT EXISTS (
            SELECT 1 FROM assignments a
            WHERE a.task_id = t.id AND a.status IN ('offered', 'accepted', 'started')
-         )`
+         )`,
+      [createdTaskIds]
     );
     expect(orphanCheck.rows).toHaveLength(0);
 
-    // No task should have multiple active assignments
+    // No task (among ours) should have multiple active assignments
     const doubleActive = await pool.query(
       `SELECT task_id, COUNT(*) as cnt
        FROM assignments
-       WHERE status IN ('offered', 'accepted', 'started')
+       WHERE task_id = ANY($1) AND status IN ('offered', 'accepted', 'started')
        GROUP BY task_id
-       HAVING COUNT(*) > 1`
+       HAVING COUNT(*) > 1`,
+      [createdTaskIds]
     );
     expect(doubleActive.rows).toHaveLength(0);
   });
