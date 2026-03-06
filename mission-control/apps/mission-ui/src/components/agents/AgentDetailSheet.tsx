@@ -77,20 +77,20 @@ export function AgentDetailSheet({ agentId, onClose }: AgentDetailSheetProps) {
             {data?.agent.id ? (
               <span className="font-mono text-xs">{data.agent.id}</span>
             ) : (
-              'Loading agent details...'
+              'Loading…'
             )}
           </SheetDescription>
         </SheetHeader>
 
         {loading && !data && (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="px-4 text-sm text-muted-foreground">Loading…</p>
         )}
         {error && (
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="px-4 text-sm text-destructive">{error}</p>
         )}
 
         {data && (
-          <div className="space-y-6">
+          <div className="space-y-6 px-4 pb-6">
             {/* Status */}
             <div className="flex items-center gap-3">
               <StatusBadge status={data.agent.status} />
@@ -127,9 +127,12 @@ export function AgentDetailSheet({ agentId, onClose }: AgentDetailSheetProps) {
               ) : (
                 <ul className="space-y-2">
                   {data.assignments.slice(0, 10).map((a) => (
-                    <li key={a.id} className="flex items-center justify-between text-sm">
-                      <span className="font-mono text-xs text-muted-foreground truncate max-w-[160px]">
-                        {a.task_id}
+                    <li key={a.id} className="flex items-center justify-between gap-3 text-sm">
+                      <span
+                        className="font-mono text-xs text-muted-foreground truncate"
+                        title={a.task_id}
+                      >
+                        {a.task_id.slice(0, 8)}…
                       </span>
                       <StatusBadge status={a.status} />
                     </li>

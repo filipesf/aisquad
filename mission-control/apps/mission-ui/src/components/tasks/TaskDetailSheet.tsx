@@ -10,6 +10,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { StatusBadge } from '@/components/StatusBadge';
+import { priorityLabel } from './columns';
 import { TimeAgo } from '@/components/TimeAgo';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
@@ -109,19 +110,19 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
         </SheetHeader>
 
         {loading && !data && (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="px-4 text-sm text-muted-foreground">Loading…</p>
         )}
         {error && (
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="px-4 text-sm text-destructive">{error}</p>
         )}
 
         {data && (
-          <div className="space-y-5">
+          <div className="space-y-5 px-4 pb-6">
             {/* Status + priority row */}
             <div className="flex items-center gap-3 flex-wrap">
               <StatusBadge status={data.task.state} />
-              <Badge variant="outline" className="text-xs">
-                Priority {data.task.priority}
+              <Badge variant="outline" className="text-xs capitalize">
+                {priorityLabel(data.task.priority)}
               </Badge>
             </div>
 
@@ -163,8 +164,11 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
                     Current Assignment
                   </p>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-mono text-xs text-muted-foreground truncate max-w-[200px]">
-                      {data.task.current_assignment.agent_id}
+                    <span
+                      className="font-mono text-xs text-muted-foreground truncate"
+                      title={data.task.current_assignment.agent_id}
+                    >
+                      {data.task.current_assignment.agent_id.slice(0, 8)}…
                     </span>
                     <StatusBadge status={data.task.current_assignment.status} />
                   </div>
@@ -183,8 +187,11 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
                   <ul className="space-y-2">
                     {data.assignments.map((a) => (
                       <li key={a.id} className="flex items-center justify-between text-sm">
-                        <span className="font-mono text-xs text-muted-foreground truncate max-w-[160px]">
-                          {a.agent_id}
+                        <span
+                          className="font-mono text-xs text-muted-foreground truncate"
+                          title={a.agent_id}
+                        >
+                          {a.agent_id.slice(0, 8)}…
                         </span>
                         <StatusBadge status={a.status} />
                       </li>

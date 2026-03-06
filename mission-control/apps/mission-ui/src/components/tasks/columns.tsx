@@ -3,17 +3,7 @@ import type { Task } from '@/types/domain';
 import { StatusBadge } from '@/components/StatusBadge';
 import { TimeAgo } from '@/components/TimeAgo';
 import { Button } from '@/components/ui/button';
-import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-
-interface ColumnOptions {
-  onView: (task: Task) => void;
-}
+import { ArrowUpDown } from 'lucide-react';
 
 const PRIORITY_LABELS: Record<number, string> = {
   10: 'Urgent',
@@ -29,7 +19,7 @@ function priorityLabel(priority: number): string {
   return 'Low';
 }
 
-export function getTaskColumns({ onView }: ColumnOptions): ColumnDef<Task>[] {
+export function getTaskColumns(): ColumnDef<Task>[] {
   return [
     {
       accessorKey: 'title',
@@ -83,24 +73,6 @@ export function getTaskColumns({ onView }: ColumnOptions): ColumnDef<Task>[] {
         <span className="text-sm text-muted-foreground">
           <TimeAgo date={row.getValue('updated_at')} />
         </span>
-      ),
-    },
-    {
-      id: 'actions',
-      cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Open menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onView(row.original)}>
-              View details
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       ),
     },
   ];

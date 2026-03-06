@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 interface TimeAgoProps {
   date: string | null;
@@ -33,7 +34,7 @@ export function TimeAgo({ date, className = '' }: TimeAgoProps) {
   }, []);
 
   if (!date) {
-    return <span className={`text-gray-500 ${className}`}>never</span>;
+    return <span className={cn('text-muted-foreground', className)}>never</span>;
   }
 
   return (

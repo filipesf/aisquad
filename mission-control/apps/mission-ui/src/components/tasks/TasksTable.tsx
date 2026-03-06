@@ -65,7 +65,7 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   const columns = useMemo(
-    () => getTaskColumns({ onView: setSelectedTask }),
+    () => getTaskColumns(),
     [],
   );
 

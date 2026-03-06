@@ -2,6 +2,7 @@ import { ThemeProvider } from 'next-themes';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ModeToggle } from '@/components/ModeToggle';
+import { Crosshair } from 'lucide-react';
 import { Dashboard } from './pages/Dashboard';
 import { Telemetry } from './pages/Telemetry';
 
@@ -14,7 +15,10 @@ export default function App() {
             {/* Top bar */}
             <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               <div className="flex h-14 items-center gap-4 px-6">
-                <span className="text-base font-semibold tracking-tight">Mission Control</span>
+                <div className="flex items-center gap-2">
+                  <Crosshair className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-semibold tracking-tight">Mission Control</span>
+                </div>
                 <TabsList className="h-8">
                   <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
                   <TabsTrigger value="telemetry" className="text-xs">Telemetry</TabsTrigger>

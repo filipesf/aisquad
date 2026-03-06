@@ -7,25 +7,10 @@ import { ApiAuthBanner } from '@/components/ApiAuthBanner';
 import { ActivityFeed } from '@/components/ActivityFeed';
 import { AgentsTable } from '@/components/agents/AgentsTable';
 import { TasksTable } from '@/components/tasks/TasksTable';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-function StatCard({ label, count }: { label: string; count: number }) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-medium capitalize text-muted-foreground">
-          {label.replace(/_/g, ' ')}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{count}</div>
-      </CardContent>
-    </Card>
-  );
-}
+import { MetricCard } from '@/components/MetricCard';
 
 export function Dashboard() {
-  const { data: agents, error: agentsError, refresh: refreshAgents } = usePolling(listAgents, 5000);
+  const { data: agents, error: agentsError, refresh: _refreshAgents } = usePolling(listAgents, 5000);
   const { data: tasks, error: tasksError, refresh: refreshTasks } = usePolling(listTasks, 5000);
   const { activities, connected } = useActivityStream();
 
@@ -44,8 +29,8 @@ export function Dashboard() {
       {/* Fleet */}
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold">Fleet</h2>
-          <span className="text-sm text-muted-foreground">
+          <h2 className="text-sm font-semibold tracking-tight">Fleet</h2>
+          <span className="text-xs text-muted-foreground">
             {onlineCount}/{totalAgents} online
           </span>
         </div>
@@ -54,17 +39,21 @@ export function Dashboard() {
 
       {/* Task state stats */}
       <section>
-        <h2 className="mb-4 text-base font-semibold">Tasks Overview</h2>
+        <h2 className="mb-4 text-sm font-semibold tracking-tight">Tasks Overview</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {TASK_STATES.map((state) => (
-            <StatCard key={state} label={state} count={stateCounts[state] ?? 0} />
+            <MetricCard
+              key={state}
+              label={state.replace(/_/g, ' ')}
+              value={stateCounts[state] ?? 0}
+            />
           ))}
         </div>
       </section>
 
       {/* Tasks table */}
       <section>
-        <h2 className="mb-4 text-base font-semibold">Tasks</h2>
+        <h2 className="mb-4 text-sm font-semibold tracking-tight">Tasks</h2>
         <TasksTable tasks={tasks ?? []} onRefresh={refreshTasks} />
       </section>
 

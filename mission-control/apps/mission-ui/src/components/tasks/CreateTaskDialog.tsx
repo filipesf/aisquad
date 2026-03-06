@@ -64,7 +64,7 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
           <DialogTitle>New Task</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="task-title">Title</Label>
             <Input
               id="task-title"
@@ -74,7 +74,7 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
               required
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="task-description">Description</Label>
             <Textarea
               id="task-description"
@@ -84,7 +84,7 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
               rows={3}
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="task-priority">Priority</Label>
             <Select value={priority} onValueChange={setPriority}>
               <SelectTrigger id="task-priority">

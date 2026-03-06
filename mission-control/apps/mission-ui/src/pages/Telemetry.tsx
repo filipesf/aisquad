@@ -4,8 +4,8 @@ import { TELEMETRY_WINDOWS, TELEMETRY_GROUP_BY_OPTIONS } from '@/types/domain';
 import { getTelemetrySummary } from '@/lib/api';
 import { ApiError } from '@/lib/api';
 import { usePolling } from '@/hooks/usePolling';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { MetricCard } from '@/components/MetricCard';
+import { ErrorBanner } from '@/components/ErrorBanner';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   Table,
@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { AlertTriangle } from 'lucide-react';
+
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -24,55 +24,39 @@ function TelemetryAuthBanner({ error }: { error: unknown }) {
 
   if (error.status === 401 || error.status === 403) {
     return (
-      <Alert>
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Telemetry API authorization required</AlertTitle>
-        <AlertDescription>
-          Set a telemetry token in browser storage and reload:{' '}
-          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-            localStorage.setItem('MC_TELEMETRY_TOKEN', '&lt;token&gt;')
-          </code>
-        </AlertDescription>
-      </Alert>
+      <ErrorBanner
+        variant="default"
+        title="Telemetry API authorization required"
+        description={
+          <>
+            Set a telemetry token in browser storage and reload:{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
+              localStorage.setItem('MC_TELEMETRY_TOKEN', '&lt;token&gt;')
+            </code>
+          </>
+        }
+      />
     );
   }
 
   if (error.status === 503) {
     return (
-      <Alert variant="destructive">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Telemetry service unavailable</AlertTitle>
-        <AlertDescription>
-          The server telemetry token is not configured. Check{' '}
-          <code className="rounded bg-muted px-1 text-xs">CONTROL_API_TELEMETRY_TOKEN</code>{' '}
-          on the server.
-        </AlertDescription>
-      </Alert>
+      <ErrorBanner
+        title="Telemetry service unavailable"
+        description={
+          <>
+            The server telemetry token is not configured. Check{' '}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+              CONTROL_API_TELEMETRY_TOKEN
+            </code>{' '}
+            on the server.
+          </>
+        }
+      />
     );
   }
 
-  return (
-    <Alert variant="destructive">
-      <AlertTriangle className="h-4 w-4" />
-      <AlertTitle>Telemetry error</AlertTitle>
-      <AlertDescription>{error.message}</AlertDescription>
-    </Alert>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: string }) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-medium capitalize text-muted-foreground">
-          {label.replace(/_/g, ' ')}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-xl font-bold">{value}</div>
-      </CardContent>
-    </Card>
-  );
+  return <ErrorBanner title="Telemetry error" description={error.message} />;
 }
 
 export function Telemetry() {
@@ -90,7 +74,7 @@ export function Telemetry() {
     <div className="p-6 space-y-6">
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-4">
-        <h2 className="text-base font-semibold">Telemetry</h2>
+        <h2 className="text-sm font-semibold tracking-tight">Telemetry</h2>
         <div className="flex items-center gap-3 ml-auto flex-wrap">
           <span className="text-xs text-muted-foreground">Window</span>
           <ToggleGroup
@@ -170,7 +154,7 @@ export function Telemetry() {
       )}
 
       {loading && !data && (
-        <p className="text-sm text-muted-foreground">Loading telemetry…</p>
+        <p className="text-sm text-muted-foreground">Loading…</p>
       )}
     </div>
   );
