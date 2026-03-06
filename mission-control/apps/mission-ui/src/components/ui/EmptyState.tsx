@@ -58,7 +58,7 @@ export function EmptyState({
       <Icon className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
       <p className="font-medium text-foreground/70 text-sm">{message}</p>
       {description && (
-        <p className="max-w-xs text-muted-foreground text-xs leading-relaxed">{description}</p>
+        <p className="max-w-md whitespace-normal text-balance text-muted-foreground text-xs leading-relaxed">{description}</p>
       )}
       {action && <div className="mt-2">{action}</div>}
     </div>

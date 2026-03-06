@@ -101,7 +101,7 @@ export function TasksTable({
           placeholder="Search by title…"
           value={(table.getColumn('title')?.getFilterValue() as string) ?? ''}
           onChange={(e) => table.getColumn('title')?.setFilterValue(e.target.value)}
-          className="h-8 min-w-[200px] text-sm"
+          className="h-8 min-w-50 text-sm"
           aria-label="Search tasks by title…"
         />
 
@@ -130,7 +130,7 @@ export function TasksTable({
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="min-w-[160px] p-0" align="start">
+          <PopoverContent className="min-w-40 p-0" align="start">
             <Command>
               <CommandInput
                 placeholder="Search statuses…"
@@ -194,7 +194,7 @@ export function TasksTable({
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="min-w-[140px] p-0" align="start">
+          <PopoverContent className="min-w-35 p-0" align="start">
             <Command>
               <CommandList>
                 <CommandGroup>
