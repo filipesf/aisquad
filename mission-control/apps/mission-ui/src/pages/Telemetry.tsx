@@ -113,17 +113,38 @@ export function Telemetry() {
 
       {data && (
         <>
-          {/* Totals */}
+          {/* Totals — stagger cascades left-to-right on each data load */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            <MetricCard label="Events" value={data.totals.events.toLocaleString()} />
-            <MetricCard label="Tokens" value={data.totals.tokens_total.toLocaleString()} />
-            <MetricCard label="Cost (USD)" value={`$${data.totals.cost_usd.toFixed(4)}`} />
+            <MetricCard
+              label="Events"
+              value={data.totals.events.toLocaleString()}
+              staggerIndex={0}
+            />
+            <MetricCard
+              label="Tokens"
+              value={data.totals.tokens_total.toLocaleString()}
+              staggerIndex={1}
+            />
+            <MetricCard
+              label="Cost (USD)"
+              value={`$${data.totals.cost_usd.toFixed(4)}`}
+              staggerIndex={2}
+            />
             <MetricCard
               label="Avg Latency"
               value={`${Math.round(data.totals.avg_duration_ms)}ms`}
+              staggerIndex={3}
             />
-            <MetricCard label="Min Latency" value={`${data.totals.min_duration_ms}ms`} />
-            <MetricCard label="Max Latency" value={`${data.totals.max_duration_ms}ms`} />
+            <MetricCard
+              label="Min Latency"
+              value={`${data.totals.min_duration_ms}ms`}
+              staggerIndex={4}
+            />
+            <MetricCard
+              label="Max Latency"
+              value={`${data.totals.max_duration_ms}ms`}
+              staggerIndex={5}
+            />
           </div>
 
           {/* Groups table */}
@@ -171,7 +192,17 @@ export function Telemetry() {
         </>
       )}
 
-      {loading && !data && <p className="text-sm text-muted-foreground">Loading telemetry…</p>}
+      {loading && !data && (
+        /* Shimmer skeleton — communicates that data is loading without a spinner */
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6" aria-hidden="true">
+          {(['events', 'tokens', 'cost', 'avg-lat', 'min-lat', 'max-lat'] as const).map((k) => (
+            <div key={k} className="rounded-md border px-4 py-3 skeleton-shimmer bg-muted/40">
+              <div className="h-3 w-12 rounded bg-muted mb-3" />
+              <div className="h-6 w-16 rounded bg-muted" />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

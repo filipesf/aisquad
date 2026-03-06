@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import type { Task, TaskWithAssignment, Assignment, Comment } from '@/types/domain';
 import { TASK_STATES } from '@/types/domain';
 import {
@@ -21,6 +21,7 @@ import { TimeAgo } from '@/components/TimeAgo';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Loader2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -49,6 +50,9 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
   const [error, setError] = useState<string | null>(null);
   const [commentBody, setCommentBody] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Tracks whether a success flash should be shown on the textarea
+  const [commentPosted, setCommentPosted] = useState(false);
+  const commentFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!task) {
@@ -100,6 +104,10 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
     try {
       await createComment(data.task.id, 'dashboard', commentBody.trim());
       setCommentBody('');
+      // Brief success feedback on the composer area
+      setCommentPosted(true);
+      if (commentFlashTimer.current) clearTimeout(commentFlashTimer.current);
+      commentFlashTimer.current = setTimeout(() => setCommentPosted(false), 800);
     } catch {
       // silently ignore
     } finally {
@@ -217,19 +225,29 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
 
               {/* Comment composer */}
               <div className="space-y-2">
+                {/* success-flash briefly pulses opacity after a comment posts */}
                 <Textarea
                   placeholder="Write a comment…"
                   value={commentBody}
                   onChange={(e) => setCommentBody(e.target.value)}
                   rows={3}
                   aria-label="Write a comment"
+                  className={commentPosted ? 'animate-[success-flash_0.6s_ease-out_both]' : ''}
                 />
                 <Button
                   size="sm"
                   disabled={!commentBody.trim() || submitting}
                   onClick={handleSubmitComment}
+                  className="active:scale-[0.97] transition-transform duration-[--dur-instant] min-w-[100px]"
                 >
-                  {submitting ? 'Posting…' : 'Post comment'}
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                      Posting…
+                    </>
+                  ) : (
+                    'Post comment'
+                  )}
                 </Button>
               </div>
             </div>

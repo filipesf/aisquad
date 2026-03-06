@@ -30,8 +30,8 @@ export function Dashboard() {
     <div className="p-6 space-y-8">
       <ApiAuthBanner error={tasksError ?? agentsError} />
 
-      {/* Fleet */}
-      <section>
+      {/* Fleet — stagger index 0 */}
+      <section className="animate-fade-up" style={{ '--stagger-i': 0 } as React.CSSProperties}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold tracking-tight">Agents</h2>
           <span className="text-xs text-muted-foreground">
@@ -41,14 +41,16 @@ export function Dashboard() {
         <AgentsTable agents={agents ?? []} />
       </section>
 
-      {/* Tasks */}
-      <section>
+      {/* Tasks — stagger index 1 */}
+      <section className="animate-fade-up" style={{ '--stagger-i': 1 } as React.CSSProperties}>
         <h2 className="mb-4 text-sm font-semibold tracking-tight">Tasks</h2>
         <TasksTable tasks={tasks ?? []} onRefresh={refreshTasks} />
       </section>
 
-      {/* Activity feed */}
-      <ActivityFeed activities={activities} connected={connected} maxHeight="400px" />
+      {/* Activity feed — stagger index 2 */}
+      <div className="animate-fade-up" style={{ '--stagger-i': 2 } as React.CSSProperties}>
+        <ActivityFeed activities={activities} connected={connected} maxHeight="400px" />
+      </div>
     </div>
   );
 }

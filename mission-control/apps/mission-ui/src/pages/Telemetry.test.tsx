@@ -73,8 +73,10 @@ describe('Telemetry', () => {
   it('shows loading state before data', () => {
     vi.mocked(getTelemetrySummary).mockReturnValue(new Promise(() => {}));
     render(<Telemetry />);
-    // Component renders "Loading telemetry…" while the first fetch is in-flight
-    expect(screen.getByText(/loading telemetry/i)).toBeInTheDocument();
+    // Loading state now renders a shimmer skeleton grid (aria-hidden) instead of text.
+    // Verify that no metric data is rendered yet — the data section is absent.
+    expect(screen.queryByText('42')).not.toBeInTheDocument(); // events metric not visible yet
+    expect(screen.queryByText('15,000')).not.toBeInTheDocument(); // tokens metric not visible yet
   });
 
   it('shows 401 auth banner on unauthorized error', async () => {

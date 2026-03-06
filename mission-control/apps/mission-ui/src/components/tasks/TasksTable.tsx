@@ -105,7 +105,12 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
               {statusFilter.length > 0 && (
                 <>
                   <Separator orientation="vertical" className="mx-1.5 h-4" />
-                  <Badge variant="secondary" className="rounded px-1 text-xs font-normal">
+                  {/* animate-badge-pop replays on each count change via key */}
+                  <Badge
+                    key={statusFilter.length}
+                    variant="secondary"
+                    className="rounded px-1 text-xs font-normal animate-badge-pop"
+                  >
                     {statusFilter.length}
                   </Badge>
                 </>
@@ -165,7 +170,11 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
               {priorityFilter.length > 0 && (
                 <>
                   <Separator orientation="vertical" className="mx-1.5 h-4" />
-                  <Badge variant="secondary" className="rounded px-1 text-xs font-normal">
+                  <Badge
+                    key={priorityFilter.length}
+                    variant="secondary"
+                    className="rounded px-1 text-xs font-normal animate-badge-pop"
+                  >
                     {priorityFilter.length}
                   </Badge>
                 </>
@@ -206,12 +215,12 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
           </PopoverContent>
         </Popover>
 
-        {/* Reset all filters */}
+        {/* Reset all filters — fades in when any filter is active */}
         {hasFilters && (
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 px-2 text-xs"
+            className="h-8 px-2 text-xs animate-badge-pop"
             onClick={() => {
               table.getColumn('state')?.setFilterValue(undefined);
               table.getColumn('priority')?.setFilterValue(undefined);
@@ -222,7 +231,11 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
         )}
 
         {/* New task */}
-        <Button size="sm" className="ml-auto h-8 text-xs" onClick={() => setCreateOpen(true)}>
+        <Button
+          size="sm"
+          className="ml-auto h-8 text-xs active:scale-[0.97] transition-transform duration-[--dur-instant]"
+          onClick={() => setCreateOpen(true)}
+        >
           <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
           New task
         </Button>
@@ -251,7 +264,7 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
                   key={row.id}
                   role="button"
                   tabIndex={0}
-                  className="cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:bg-muted/60 transition-colors duration-[--dur-instant]"
                   onClick={() => setSelectedTask(row.original)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {

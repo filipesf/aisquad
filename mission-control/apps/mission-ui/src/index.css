@@ -4,6 +4,29 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ── Motion Tokens ──────────────────────────────────────────────────────────
+ * Centralised easing curves and duration values. Use these tokens throughout
+ * the UI for a consistent, purposeful feel.
+ *
+ * Easing philosophy: exponential deceleration (ease-out-expo/quart) for
+ * entrances; ease-in-quart for exits (~75% of enter duration); ease-in-out
+ * for bidirectional toggles. No bounce or elastic — this is a control room.
+ */
+:root {
+  /* Easing */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1); /* confident, snappy entrance */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1); /* smooth, refined entrance   */
+  --ease-in-quart: cubic-bezier(0.5, 0, 0.75, 0); /* clean exit                 */
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1); /* bidirectional toggle       */
+
+  /* Durations */
+  --dur-instant: 100ms; /* button press, toggle color */
+  --dur-fast: 200ms; /* hover states, badge changes */
+  --dur-normal: 300ms; /* state changes, drawers */
+  --dur-slow: 500ms; /* entrance animations        */
+  --dur-exit: 150ms; /* exits — 75% of enter dur   */
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -145,6 +168,176 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ── Keyframes ──────────────────────────────────────────────────────────────
+ * All keyframes centralised here. Only transform + opacity animated (GPU).
+ */
+
+/* Activity feed: new items slide down from above */
+@keyframes activity-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dashboard sections: staggered fade-up on first paint */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tab content: crossfade between tabs */
+@keyframes tab-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pulsing live indicator dot */
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+}
+
+/* Success flash: brief green glow on element */
+@keyframes success-flash {
+  0% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Shimmer skeleton loading */
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Filter badge pop-in */
+@keyframes badge-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  70% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Metric card count reveal */
+@keyframes metric-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header logo: single rotation on mount — a "system is live" signal */
+@keyframes crosshair-init {
+  from {
+    opacity: 0.3;
+    transform: rotate(-45deg) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+/* ── Animation Utility Classes ───────────────────────────────────────────────
+ * Consume motion tokens. Apply directly to elements that need animation.
+ */
+
+/* Activity feed item entrance */
+.animate-activity-enter {
+  animation: activity-enter var(--dur-normal) var(--ease-out-expo) both;
+}
+
+/* Section fade-up (stagger via --stagger-i CSS var on each element) */
+.animate-fade-up {
+  animation: fade-up var(--dur-slow) var(--ease-out-quart) both;
+  animation-delay: calc(var(--stagger-i, 0) * 80ms);
+}
+
+/* Tab content reveal */
+.animate-tab-in {
+  animation: tab-in var(--dur-normal) var(--ease-out-expo) both;
+}
+
+/* Live dot pulse */
+.animate-live-pulse {
+  animation: live-pulse 2s var(--ease-inout) infinite;
+}
+
+/* Filter badge pop */
+.animate-badge-pop {
+  animation: badge-pop var(--dur-fast) var(--ease-out-expo) both;
+}
+
+/* Metric card reveal */
+.animate-metric-reveal {
+  animation: metric-reveal var(--dur-normal) var(--ease-out-quart) both;
+  animation-delay: calc(var(--stagger-i, 0) * 60ms);
+}
+
+/* Header crosshair — single spin on first paint */
+.animate-crosshair-init {
+  animation: crosshair-init var(--dur-slow) var(--ease-out-expo) both;
+}
+
+/* Shimmer skeleton */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent 0%, oklch(1 0 0 / 6%) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
 }
 
 /* ── Reduced Motion Support ─────────────────────────────────────────────────

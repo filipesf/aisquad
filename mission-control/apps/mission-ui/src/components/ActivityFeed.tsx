@@ -1,4 +1,4 @@
-import { useRef, memo } from 'react';
+import { useRef, useEffect, useState, memo } from 'react';
 import type { Activity } from '@/types/domain';
 import { TimeAgo } from './TimeAgo';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -82,6 +82,11 @@ function getActivityDescription(activity: Activity): string {
 /**
  * Memoized — only re-renders when activities array or connected status changes.
  * SSE events push new items into the array, so identity changes are intentional.
+ *
+ * Animation strategy:
+ * - New items (first N since last render) slide in from above with fade
+ * - The live/reconnecting dot pulses continuously when connected
+ * - Tracked via a ref to avoid stale-closure issues in the memoized component
  */
 export const ActivityFeed = memo(function ActivityFeed({
   activities,
@@ -90,16 +95,44 @@ export const ActivityFeed = memo(function ActivityFeed({
 }: ActivityFeedProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Track which activity IDs are "new" (i.e., appeared since the last render)
+  // so we can play their entrance animation only once.
+  const prevIdsRef = useRef<Set<string>>(new Set());
+  const [newIds, setNewIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const currentIds = new Set(activities.map((a) => a.id));
+    const added = activities.filter((a) => !prevIdsRef.current.has(a.id)).map((a) => a.id);
+
+    if (added.length > 0) {
+      setNewIds(new Set(added));
+      // Clear "new" flag after the animation completes so re-mounts don't re-animate
+      const timer = setTimeout(() => setNewIds(new Set()), 400);
+      return () => clearTimeout(timer);
+    }
+
+    prevIdsRef.current = currentIds;
+  }, [activities]);
+
+  // Keep prevIdsRef in sync after new IDs are recorded
+  useEffect(() => {
+    prevIdsRef.current = new Set(activities.map((a) => a.id));
+  }, [activities]);
+
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-semibold tracking-tight">Activity</h2>
         <div className="flex items-center gap-2">
+          {/* Live dot: pulses when connected, stays static red when disconnected */}
           <div
-            className={cn('h-2 w-2 rounded-full', connected ? 'bg-emerald-500' : 'bg-red-500')}
+            className={cn(
+              'h-2 w-2 rounded-full transition-colors',
+              connected ? 'bg-emerald-500 animate-live-pulse' : 'bg-red-500',
+            )}
             aria-hidden="true"
           />
-          <span className="text-xs text-muted-foreground" role="status" aria-live="polite">
+          <span className="text-xs text-muted-foreground" aria-live="polite">
             {connected ? 'Live' : 'Reconnecting…'}
           </span>
         </div>
@@ -108,7 +141,7 @@ export const ActivityFeed = memo(function ActivityFeed({
       <TableShell>
         <ScrollArea style={{ height: maxHeight }} ref={scrollRef}>
           {activities.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center animate-fade-up">
               <Bell className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
               <p className="text-sm text-muted-foreground">
                 No activity yet. Events will appear here as agents work.
@@ -118,10 +151,15 @@ export const ActivityFeed = memo(function ActivityFeed({
             <ul className="divide-y" aria-live="polite" aria-atomic="false">
               {activities.map((activity) => {
                 const { icon: Icon, colour } = getActivityMeta(activity.type);
+                const isNew = newIds.has(activity.id);
                 return (
                   <li
                     key={activity.id}
-                    className="flex items-start gap-3 px-4 py-3 hover:bg-muted/30"
+                    className={cn(
+                      'flex items-start gap-3 px-4 py-3 hover:bg-muted/30',
+                      'transition-colors duration-[--dur-fast]',
+                      isNew && 'animate-activity-enter',
+                    )}
                   >
                     <Icon className={cn('mt-0.5 h-4 w-4 shrink-0', colour)} aria-hidden="true" />
                     <div className="min-w-0 flex-1">

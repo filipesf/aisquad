@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Loader2 } from 'lucide-react';
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -106,14 +107,38 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
             </Select>
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {/* Error — animate-fade-up so it doesn't pop in jarringly */}
+          {error && (
+            <p
+              className="text-sm text-destructive animate-fade-up"
+              style={{ '--stagger-i': 0 } as React.CSSProperties}
+            >
+              {error}
+            </p>
+          )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              className="active:scale-[0.97] transition-transform duration-[--dur-instant]"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={submitting || !title.trim()}>
-              {submitting ? 'Creating…' : 'Create task'}
+            <Button
+              type="submit"
+              disabled={submitting || !title.trim()}
+              className="active:scale-[0.97] transition-transform duration-[--dur-instant] min-w-[100px]"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                  Creating…
+                </>
+              ) : (
+                'Create task'
+              )}
             </Button>
           </DialogFooter>
         </form>

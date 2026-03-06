@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { ThemeProvider } from 'next-themes';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +11,9 @@ import { Dashboard } from './pages/Dashboard';
 const Telemetry = lazy(() => import('./pages/Telemetry').then((m) => ({ default: m.Telemetry })));
 
 export default function App() {
+  // Track the active tab so we can key the content and trigger the entrance animation
+  const [activeTab, setActiveTab] = useState('dashboard');
+
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
       <TooltipProvider>
@@ -23,13 +26,23 @@ export default function App() {
             Skip to main content
           </a>
 
-          <Tabs defaultValue="dashboard" className="flex flex-col min-h-screen">
+          <Tabs
+            defaultValue="dashboard"
+            onValueChange={setActiveTab}
+            className="flex flex-col min-h-screen"
+          >
             {/* Top bar */}
             <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               <div className="flex h-14 items-center gap-4 px-6">
                 <div className="flex items-center gap-2">
-                  <Crosshair className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                  <h1 className="text-sm font-semibold tracking-tight">Mission Control</h1>
+                  {/* Single rotation on mount — signals the system is initialising */}
+                  <Crosshair
+                    className="h-4 w-4 text-muted-foreground animate-crosshair-init"
+                    aria-hidden="true"
+                  />
+                  <h1 className="text-sm font-semibold tracking-tight animate-fade-up">
+                    Mission Control
+                  </h1>
                 </div>
                 <TabsList className="h-8">
                   <TabsTrigger value="dashboard" className="text-xs">
@@ -45,19 +58,31 @@ export default function App() {
               </div>
             </header>
 
-            {/* Page content */}
+            {/* Page content
+                The `key` on each inner wrapper forces a remount when the tab is
+                activated, replaying the animate-tab-in entrance animation.       */}
             <main id="main-content">
               <TabsContent value="dashboard" className="flex-1 mt-0">
-                <Dashboard />
+                <div
+                  key={activeTab === 'dashboard' ? 'dashboard-active' : 'dashboard'}
+                  className="animate-tab-in"
+                >
+                  <Dashboard />
+                </div>
               </TabsContent>
               <TabsContent value="telemetry" className="flex-1 mt-0">
-                <Suspense
-                  fallback={
-                    <div className="p-6 text-sm text-muted-foreground">Loading Telemetry…</div>
-                  }
+                <div
+                  key={activeTab === 'telemetry' ? 'telemetry-active' : 'telemetry'}
+                  className="animate-tab-in"
                 >
-                  <Telemetry />
-                </Suspense>
+                  <Suspense
+                    fallback={
+                      <div className="p-6 text-sm text-muted-foreground">Loading Telemetry…</div>
+                    }
+                  >
+                    <Telemetry />
+                  </Suspense>
+                </div>
               </TabsContent>
             </main>
           </Tabs>

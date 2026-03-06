@@ -91,7 +91,7 @@ const AgentRow = memo(function AgentRow({ agent, caps, onSelect }: AgentRowProps
     <TableRow
       role="button"
       tabIndex={0}
-      className="cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      className="cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:bg-muted/60 transition-colors duration-[--dur-instant]"
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       aria-label={`View details for ${agent.name}`}
