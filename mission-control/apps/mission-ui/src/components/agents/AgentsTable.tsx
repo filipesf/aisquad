@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import type { Agent } from '@/types/domain';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Users } from 'lucide-react';
@@ -29,8 +29,14 @@ function getInitials(name: string): string {
   return initials || '?';
 }
 
-export function AgentsTable({ agents }: AgentsTableProps) {
+/**
+ * Memoized — re-renders only when the `agents` array reference changes
+ * (i.e., after a successful 5-second poll with new data).
+ */
+export const AgentsTable = memo(function AgentsTable({ agents }: AgentsTableProps) {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+
+  const handleClose = useCallback(() => setSelectedAgentId(null), []);
 
   if (agents.length === 0) {
     return (
@@ -57,64 +63,79 @@ export function AgentsTable({ agents }: AgentsTableProps) {
             {agents.map((agent) => {
               const caps = Object.keys(agent.capabilities);
               return (
-                <TableRow
-                  key={agent.id}
-                  role="button"
-                  tabIndex={0}
-                  className="cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  onClick={() => setSelectedAgentId(agent.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setSelectedAgentId(agent.id);
-                    }
-                  }}
-                  aria-label={`View details for ${agent.name}`}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="text-xs font-medium">
-                          {getInitials(agent.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium text-sm truncate max-w-[200px]">
-                        {agent.name}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={agent.status} />
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    <TimeAgo date={agent.last_seen_at} />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {caps.slice(0, 3).map((cap) => (
-                        <Badge
-                          key={cap}
-                          variant="outline"
-                          className="font-mono text-xs truncate max-w-[120px]"
-                        >
-                          {cap}
-                        </Badge>
-                      ))}
-                      {caps.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{caps.length - 3}
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <AgentRow key={agent.id} agent={agent} caps={caps} onSelect={setSelectedAgentId} />
               );
             })}
           </TableBody>
         </Table>
       </div>
 
-      <AgentDetailSheet agentId={selectedAgentId} onClose={() => setSelectedAgentId(null)} />
+      <AgentDetailSheet agentId={selectedAgentId} onClose={handleClose} />
     </>
   );
+});
+
+interface AgentRowProps {
+  agent: Agent;
+  caps: string[];
+  onSelect: (id: string) => void;
 }
+
+/**
+ * Each row is memoized independently — only rows whose agent data changed
+ * will re-render on the next poll cycle.
+ */
+const AgentRow = memo(function AgentRow({ agent, caps, onSelect }: AgentRowProps) {
+  const handleClick = useCallback(() => onSelect(agent.id), [agent.id, onSelect]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onSelect(agent.id);
+      }
+    },
+    [agent.id, onSelect],
+  );
+
+  return (
+    <TableRow
+      role="button"
+      tabIndex={0}
+      className="cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      aria-label={`View details for ${agent.name}`}
+    >
+      <TableCell>
+        <div className="flex items-center gap-3">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="text-xs font-medium">
+              {getInitials(agent.name)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="font-medium text-sm truncate max-w-[200px]">{agent.name}</span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <StatusBadge status={agent.status} />
+      </TableCell>
+      <TableCell className="text-sm text-muted-foreground">
+        <TimeAgo date={agent.last_seen_at} />
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-wrap gap-1">
+          {caps.slice(0, 3).map((cap) => (
+            <Badge key={cap} variant="outline" className="font-mono text-xs truncate max-w-[120px]">
+              {cap}
+            </Badge>
+          ))}
+          {caps.length > 3 && (
+            <Badge variant="outline" className="text-xs">
+              +{caps.length - 3}
+            </Badge>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+});

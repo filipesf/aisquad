@@ -13,11 +13,11 @@ describe('StatusBadge', () => {
     expect(screen.getByText('in progress')).toBeInTheDocument();
   });
 
-  it('renders online status with default badge variant', () => {
+  it('renders online status with the emerald colour scheme', () => {
     render(<StatusBadge status="online" />);
     const badge = screen.getByText('online');
-    // shadcn default variant uses bg-primary
-    expect(badge.className).toContain('bg-primary');
+    // online maps to the emerald positive tier
+    expect(badge.className).toContain('bg-emerald-500');
   });
 
   it('renders unknown status with outline badge variant', () => {

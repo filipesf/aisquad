@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { useTickClock } from '@/hooks/useTickClock';
 
 interface TimeAgoProps {
   date: string | null;
@@ -25,13 +25,16 @@ function formatTimeAgo(dateStr: string): string {
   return `${diffD}d ago`;
 }
 
+/**
+ * Renders a human-readable relative time string that updates every ~10s.
+ *
+ * All mounted TimeAgo instances share a single global setInterval via
+ * useTickClock — no per-instance timers.
+ */
 export function TimeAgo({ date, className = '' }: TimeAgoProps) {
-  const [, setTick] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 10_000);
-    return () => clearInterval(id);
-  }, []);
+  // Subscribes to the shared 10-second clock — causes a re-render on each tick.
+  // The actual tick value is unused; the side-effect (re-render) is what matters.
+  useTickClock();
 
   if (!date) {
     return <span className={cn('text-muted-foreground', className)}>never</span>;

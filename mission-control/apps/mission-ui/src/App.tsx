@@ -1,10 +1,14 @@
+import { lazy, Suspense } from 'react';
 import { ThemeProvider } from 'next-themes';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ModeToggle } from '@/components/ModeToggle';
 import { Crosshair } from 'lucide-react';
 import { Dashboard } from './pages/Dashboard';
-import { Telemetry } from './pages/Telemetry';
+
+// Telemetry is not needed on initial load — split it into its own chunk.
+// It only loads when the user clicks the Telemetry tab.
+const Telemetry = lazy(() => import('./pages/Telemetry').then((m) => ({ default: m.Telemetry })));
 
 export default function App() {
   return (
@@ -47,7 +51,11 @@ export default function App() {
                 <Dashboard />
               </TabsContent>
               <TabsContent value="telemetry" className="flex-1 mt-0">
-                <Telemetry />
+                <Suspense
+                  fallback={<div className="p-6 text-sm text-muted-foreground">Loading…</div>}
+                >
+                  <Telemetry />
+                </Suspense>
               </TabsContent>
             </main>
           </Tabs>

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, memo } from 'react';
 import type { Activity } from '@/types/domain';
 import { TimeAgo } from './TimeAgo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,7 +79,15 @@ function getActivityDescription(activity: Activity): string {
   }
 }
 
-export function ActivityFeed({ activities, connected, maxHeight = '400px' }: ActivityFeedProps) {
+/**
+ * Memoized — only re-renders when activities array or connected status changes.
+ * SSE events push new items into the array, so identity changes are intentional.
+ */
+export const ActivityFeed = memo(function ActivityFeed({
+  activities,
+  connected,
+  maxHeight = '400px',
+}: ActivityFeedProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -128,4 +136,4 @@ export function ActivityFeed({ activities, connected, maxHeight = '400px' }: Act
       </CardContent>
     </Card>
   );
-}
+});
