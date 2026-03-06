@@ -93,11 +93,11 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
       {/* Toolbar */}
       <div className="flex items-center gap-2 flex-wrap mb-3">
         <Input
-          placeholder="Search tasks…"
+          placeholder="Search by title…"
           value={(table.getColumn('title')?.getFilterValue() as string) ?? ''}
           onChange={(e) => table.getColumn('title')?.setFilterValue(e.target.value)}
           className="h-8 min-w-[200px] text-sm"
-          aria-label="Search tasks by title"
+          aria-label="Search tasks by title…"
         />
 
         {/* Status filter */}
@@ -123,12 +123,12 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
           <PopoverContent className="min-w-[160px] p-0" align="start">
             <Command>
               <CommandInput
-                placeholder="Filter…"
+                placeholder="Search statuses…"
                 className="h-8"
-                aria-label="Search status options"
+                aria-label="Search statuses"
               />
               <CommandList>
-                <CommandEmpty>No results</CommandEmpty>
+                <CommandEmpty>No matching statuses</CommandEmpty>
                 <CommandGroup>
                   {TASK_STATES.map((state) => (
                     <CommandItem key={state} onSelect={() => toggleFilter('state', state)}>
@@ -225,7 +225,7 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
               table.getColumn('priority')?.setFilterValue(undefined);
             }}
           >
-            Reset <X className="ml-1 h-3.5 w-3.5" />
+            Clear all <X className="ml-1 h-3.5 w-3.5" />
           </Button>
         )}
 
@@ -234,7 +234,7 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="ml-auto h-8 text-xs">
               <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
-              View
+              Columns
               <ChevronDown className="ml-1 h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
@@ -258,7 +258,7 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
         {/* New task */}
         <Button size="sm" className="h-8 text-xs" onClick={() => setCreateOpen(true)}>
           <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
-          New Task
+          New task
         </Button>
       </div>
 
@@ -308,7 +308,7 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
                   colSpan={columns.length}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  No tasks found.
+                  {hasFilters ? 'No tasks match your filters.' : 'No tasks yet.'}
                 </TableCell>
               </TableRow>
             )}

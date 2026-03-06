@@ -43,9 +43,9 @@ export function Dashboard() {
       {/* Fleet */}
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold tracking-tight">Fleet</h2>
+          <h2 className="text-sm font-semibold tracking-tight">Agents</h2>
           <span className="text-xs text-muted-foreground">
-            {onlineCount}/{totalAgents} online
+            {onlineCount} of {totalAgents} online
           </span>
         </div>
         <AgentsTable agents={agents ?? []} />
@@ -53,7 +53,7 @@ export function Dashboard() {
 
       {/* Task state stats */}
       <section>
-        <h2 className="mb-4 text-sm font-semibold tracking-tight">Tasks Overview</h2>
+        <h2 className="mb-4 text-sm font-semibold tracking-tight">Task Summary</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {TASK_STATES.map((state) => (
             <MetricCard
@@ -67,7 +67,7 @@ export function Dashboard() {
 
       {/* Tasks table */}
       <section>
-        <h2 className="mb-4 text-sm font-semibold tracking-tight">Tasks</h2>
+        <h2 className="mb-4 text-sm font-semibold tracking-tight">All Tasks</h2>
         <TasksTable tasks={tasks ?? []} onRefresh={refreshTasks} />
       </section>
 

@@ -6,10 +6,10 @@ export function ApiAuthBanner({ error }: { error: unknown }) {
 
   return (
     <ErrorBanner
-      title="Mission Control API authorization required"
+      title="API access token required"
       description={
         <>
-          Set an agent token in browser storage and reload:{' '}
+          Paste your agent token in the browser console, then reload the page:{' '}
           <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
             localStorage.setItem('MC_AGENT_TOKEN', '&lt;token&gt;')
           </code>

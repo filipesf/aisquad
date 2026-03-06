@@ -42,7 +42,7 @@ export const AgentsTable = memo(function AgentsTable({ agents }: AgentsTableProp
     return (
       <div className="flex flex-col items-center justify-center gap-2 rounded-md border py-12 text-center">
         <Users className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
-        <p className="text-sm text-muted-foreground">No agents registered</p>
+        <p className="text-sm text-muted-foreground">No agents connected yet</p>
       </div>
     );
   }

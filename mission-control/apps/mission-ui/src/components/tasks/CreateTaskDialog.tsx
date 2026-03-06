@@ -11,7 +11,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -51,7 +57,7 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
       onOpenChange(false);
       onCreated();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create task');
+      setError(err instanceof Error ? err.message : "Couldn't create task. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -61,14 +67,14 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New Task</DialogTitle>
+          <DialogTitle>New task</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           <div className="space-y-2">
             <Label htmlFor="task-title">Title</Label>
             <Input
               id="task-title"
-              placeholder="Task title"
+              placeholder="Enter a task title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -78,7 +84,7 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
             <Label htmlFor="task-description">Description</Label>
             <Textarea
               id="task-description"
-              placeholder="Optional description"
+              placeholder="Add a description (optional)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}

@@ -25,10 +25,10 @@ function TelemetryAuthBanner({ error }: { error: unknown }) {
     return (
       <ErrorBanner
         variant="default"
-        title="Telemetry API authorization required"
+        title="Telemetry access token required"
         description={
           <>
-            Set a telemetry token in browser storage and reload:{' '}
+            Paste your telemetry token in the browser console, then reload the page:{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
               localStorage.setItem('MC_TELEMETRY_TOKEN', '&lt;token&gt;')
             </code>
@@ -41,21 +41,21 @@ function TelemetryAuthBanner({ error }: { error: unknown }) {
   if (error.status === 503) {
     return (
       <ErrorBanner
-        title="Telemetry service unavailable"
+        title="Telemetry not configured on the server"
         description={
           <>
-            The server telemetry token is not configured. Check{' '}
+            The server is missing its telemetry token. Set{' '}
             <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
               CONTROL_API_TELEMETRY_TOKEN
             </code>{' '}
-            on the server.
+            and restart the API.
           </>
         }
       />
     );
   }
 
-  return <ErrorBanner title="Telemetry error" description={error.message} />;
+  return <ErrorBanner title="Something went wrong loading telemetry" description={error.message} />;
 }
 
 export function Telemetry() {
@@ -76,7 +76,7 @@ export function Telemetry() {
         <h2 className="text-sm font-semibold tracking-tight">Telemetry</h2>
         <div className="flex items-center gap-3 ml-auto flex-wrap">
           <span className="text-xs text-muted-foreground" id="window-label">
-            Window
+            Period
           </span>
           <ToggleGroup
             type="single"
@@ -165,17 +165,16 @@ export function Telemetry() {
               </Table>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No telemetry events in this window.</p>
+            <p className="text-sm text-muted-foreground">No data for this time period.</p>
           )}
 
           <p className="text-xs text-muted-foreground">
-            Last updated: {new Date(data.generated_at).toLocaleTimeString()} · auto-refreshes every
-            30s
+            Last updated: {new Date(data.generated_at).toLocaleTimeString()} · refreshes every 30s
           </p>
         </>
       )}
 
-      {loading && !data && <p className="text-sm text-muted-foreground">Loading…</p>}
+      {loading && !data && <p className="text-sm text-muted-foreground">Loading telemetry…</p>}
     </div>
   );
 }

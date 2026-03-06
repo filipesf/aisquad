@@ -69,7 +69,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
         })
         .catch((err: unknown) => {
           if (!cancelled) {
-            setError(err instanceof Error ? err.message : 'Failed to load task');
+            setError(err instanceof Error ? err.message : "Couldn't load task details");
             setLoading(false);
           }
         });
@@ -114,13 +114,13 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
     >
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader className="mb-4">
-          <SheetTitle>{data?.task.title ?? task?.title ?? 'Task Detail'}</SheetTitle>
+          <SheetTitle>{data?.task.title ?? task?.title ?? 'Task'}</SheetTitle>
           <SheetDescription>
             {task ? <span className="font-mono text-xs">{task.id}</span> : null}
           </SheetDescription>
         </SheetHeader>
 
-        {loading && !data && <p className="px-4 text-sm text-muted-foreground">Loading…</p>}
+        {loading && !data && <p className="px-4 text-sm text-muted-foreground">Loading task…</p>}
         {error && <p className="px-4 text-sm text-destructive">{error}</p>}
 
         {data && (
@@ -139,7 +139,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
                 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
                 id="state-label"
               >
-                Change State
+                Change Status
               </p>
               <Select defaultValue={data.task.state} onValueChange={handleStateChange}>
                 <SelectTrigger className="w-[180px]" aria-labelledby="state-label">
@@ -192,7 +192,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
                 <Separator />
                 <div>
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Assignments ({data.assignments.length})
+                    Assignment History ({data.assignments.length})
                   </p>
                   <ul className="space-y-2">
                     {data.assignments.map((a) => (
@@ -233,13 +233,13 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground mb-4">No comments yet.</p>
+                <p className="text-sm text-muted-foreground mb-4">No comments yet</p>
               )}
 
               {/* Comment composer */}
               <div className="space-y-2">
                 <Textarea
-                  placeholder="Add a comment…"
+                  placeholder="Write a comment…"
                   value={commentBody}
                   onChange={(e) => setCommentBody(e.target.value)}
                   rows={3}

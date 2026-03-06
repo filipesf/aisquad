@@ -59,21 +59,21 @@ function getActivityDescription(activity: Activity): string {
     case 'agent.offline':
       return 'Agent went offline';
     case 'task.created':
-      return `Task created: ${String(p['title'] ?? '')}`;
+      return `New task: ${String(p['title'] ?? '')}`;
     case 'task.state_changed':
-      return `Task state: ${String(p['from'] ?? '?')} → ${String(p['to'] ?? '?')}`;
+      return `Status changed: ${String(p['from'] ?? '?')} → ${String(p['to'] ?? '?')}`;
     case 'task.requeued':
-      return 'Task requeued';
+      return 'Task returned to queue';
     case 'assignment.offered':
-      return 'Assignment offered';
+      return 'Task assigned to agent';
     case 'assignment.accepted':
-      return 'Assignment accepted';
+      return 'Agent accepted task';
     case 'assignment.completed':
-      return 'Assignment completed';
+      return 'Agent completed task';
     case 'assignment.expired':
-      return 'Assignment expired (lease timeout)';
+      return 'Assignment timed out';
     case 'comment.created':
-      return 'Comment posted';
+      return 'New comment added';
     default:
       return activity.type;
   }
@@ -93,14 +93,14 @@ export const ActivityFeed = memo(function ActivityFeed({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-sm font-semibold">Activity Feed</CardTitle>
+        <CardTitle className="text-sm font-semibold">Live Activity</CardTitle>
         <div className="flex items-center gap-2">
           <div
             className={cn('h-2 w-2 rounded-full', connected ? 'bg-emerald-500' : 'bg-red-500')}
             aria-hidden="true"
           />
           <span className="text-xs text-muted-foreground" role="status" aria-live="polite">
-            {connected ? 'Live' : 'Reconnecting...'}
+            {connected ? 'Live' : 'Reconnecting…'}
           </span>
         </div>
       </CardHeader>
@@ -109,7 +109,9 @@ export const ActivityFeed = memo(function ActivityFeed({
           {activities.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
               <Bell className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
-              <p className="text-sm text-muted-foreground">No activities yet</p>
+              <p className="text-sm text-muted-foreground">
+                No activity yet. Events will appear here as agents work.
+              </p>
             </div>
           ) : (
             <ul className="divide-y" aria-live="polite" aria-atomic="false">

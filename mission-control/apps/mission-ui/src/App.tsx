@@ -52,7 +52,9 @@ export default function App() {
               </TabsContent>
               <TabsContent value="telemetry" className="flex-1 mt-0">
                 <Suspense
-                  fallback={<div className="p-6 text-sm text-muted-foreground">Loading…</div>}
+                  fallback={
+                    <div className="p-6 text-sm text-muted-foreground">Loading Telemetry…</div>
+                  }
                 >
                   <Telemetry />
                 </Suspense>
