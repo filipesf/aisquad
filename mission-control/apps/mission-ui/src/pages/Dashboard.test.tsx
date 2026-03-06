@@ -103,11 +103,11 @@ describe('Dashboard', () => {
     });
   });
 
-  it('shows task state counters', async () => {
+  it('shows task states in the tasks table', async () => {
     render(<Dashboard />);
 
     await waitFor(() => {
-      // StatCards show state labels as card titles
+      // Tasks table shows task state via StatusBadge
       expect(screen.getByText('queued')).toBeInTheDocument();
       expect(screen.getByText('done')).toBeInTheDocument();
     });

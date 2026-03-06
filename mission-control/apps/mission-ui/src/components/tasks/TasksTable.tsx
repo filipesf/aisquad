@@ -8,7 +8,6 @@ import {
   flexRender,
   type SortingState,
   type ColumnFiltersState,
-  type VisibilityState,
 } from '@tanstack/react-table';
 import type { Task } from '@/types/domain';
 import { TASK_STATES } from '@/types/domain';
@@ -25,12 +24,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
@@ -42,7 +35,7 @@ import {
   CommandSeparator,
 } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
-import { Check, ChevronDown, PlusCircle, SlidersHorizontal, X } from 'lucide-react';
+import { Check, PlusCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
@@ -58,17 +51,15 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   const columns = useMemo(() => getTaskColumns(), []);
 
   const table = useReactTable({
     data: tasks,
     columns,
-    state: { sorting, columnFilters, columnVisibility },
+    state: { sorting, columnFilters },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -229,34 +220,8 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
           </Button>
         )}
 
-        {/* Column visibility */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="ml-auto h-8 text-xs">
-              <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
-              Columns
-              <ChevronDown className="ml-1 h-3.5 w-3.5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((col) => col.getCanHide())
-              .map((col) => (
-                <DropdownMenuCheckboxItem
-                  key={col.id}
-                  className="capitalize text-xs"
-                  checked={col.getIsVisible()}
-                  onCheckedChange={(v) => col.toggleVisibility(v)}
-                >
-                  {col.id}
-                </DropdownMenuCheckboxItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
         {/* New task */}
-        <Button size="sm" className="h-8 text-xs" onClick={() => setCreateOpen(true)}>
+        <Button size="sm" className="ml-auto h-8 text-xs" onClick={() => setCreateOpen(true)}>
           <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
           New task
         </Button>

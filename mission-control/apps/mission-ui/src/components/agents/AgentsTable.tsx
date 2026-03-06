@@ -3,7 +3,6 @@ import type { Agent } from '@/types/domain';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Users } from 'lucide-react';
 import { TimeAgo } from '@/components/TimeAgo';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Table,
   TableBody,
@@ -17,16 +16,6 @@ import { AgentDetailSheet } from './AgentDetailSheet';
 
 interface AgentsTableProps {
   agents: Agent[];
-}
-
-function getInitials(name: string): string {
-  const initials = name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('');
-  // Fallback to '?' if name has no valid characters
-  return initials || '?';
 }
 
 /**
@@ -107,14 +96,7 @@ const AgentRow = memo(function AgentRow({ agent, caps, onSelect }: AgentRowProps
       aria-label={`View details for ${agent.name}`}
     >
       <TableCell>
-        <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="text-xs font-medium">
-              {getInitials(agent.name)}
-            </AvatarFallback>
-          </Avatar>
-          <span className="font-medium text-sm truncate max-w-[200px]">{agent.name}</span>
-        </div>
+        <span className="font-medium text-sm truncate max-w-[200px]">{agent.name}</span>
       </TableCell>
       <TableCell>
         <StatusBadge status={agent.status} />

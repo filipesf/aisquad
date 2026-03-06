@@ -183,11 +183,13 @@ Meta fields (small labels for timestamps, IDs, configuration values) follow thes
 
 Headings on the main dashboard orient the operator to three distinct content areas. Each should be distinct in meaning with no overlap.
 
-| Heading        | Rationale                                                                                                           |
-| -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `Agents`       | Replaces "Fleet". Names what the table contains.                                                                    |
-| `Task Summary` | Replaces "Tasks Overview". The six metric cards summarise task states — "Summary" is more accurate.                 |
-| `All Tasks`    | Replaces bare "Tasks". Distinguishes this interactive table from the "Task Summary" metric cards directly above it. |
+| Heading    | Rationale                                                                                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Agents`   | Replaces "Fleet". Names what the table contains.                                                                                                              |
+| `Tasks`    | The single task section. Formerly "All Tasks" (to distinguish it from the now-removed "Task Summary" stat cards above it). The qualifier is no longer needed. |
+| `Activity` | The live event feed. Formerly "Live Activity" — "Live" was an adjective that duplicated the Live/Reconnecting status indicator already in the header row.     |
+
+> **Note:** The "Task Summary" metric cards section (six per-state counters) was removed in the 2026-03-06 simplification pass. See `SIMPLIFICATION_SUMMARY.md`. The `All Tasks` heading rationale is now moot; the heading is `Tasks`.
 
 ---
 

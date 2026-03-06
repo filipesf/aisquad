@@ -1,7 +1,6 @@
 import { useRef, memo } from 'react';
 import type { Activity } from '@/types/domain';
 import { TimeAgo } from './TimeAgo';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import {
@@ -91,9 +90,9 @@ export const ActivityFeed = memo(function ActivityFeed({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-sm font-semibold">Live Activity</CardTitle>
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-semibold tracking-tight">Activity</h2>
         <div className="flex items-center gap-2">
           <div
             className={cn('h-2 w-2 rounded-full', connected ? 'bg-emerald-500' : 'bg-red-500')}
@@ -103,8 +102,9 @@ export const ActivityFeed = memo(function ActivityFeed({
             {connected ? 'Live' : 'Reconnecting…'}
           </span>
         </div>
-      </CardHeader>
-      <CardContent className="p-0">
+      </div>
+
+      <div className="rounded-md border">
         <ScrollArea style={{ height: maxHeight }} ref={scrollRef}>
           {activities.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
@@ -135,7 +135,7 @@ export const ActivityFeed = memo(function ActivityFeed({
             </ul>
           )}
         </ScrollArea>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 });
