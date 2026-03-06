@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import pg from 'pg';
+import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 const pool = new pg.Pool({
-  host: process.env['PGHOST'] ?? 'localhost',
-  port: Number(process.env['PGPORT'] ?? 5432),
-  user: process.env['PGUSER'] ?? 'postgres',
-  password: process.env['PGPASSWORD'] ?? 'postgres',
-  database: process.env['PGDATABASE'] ?? 'mission_control',
+  host: process.env.PGHOST ?? 'localhost',
+  port: Number(process.env.PGPORT ?? 5432),
+  user: process.env.PGUSER ?? 'postgres',
+  password: process.env.PGPASSWORD ?? 'postgres',
+  database: process.env.PGDATABASE ?? 'mission_control'
 });
 
 async function cleanDb() {
@@ -36,7 +36,7 @@ describe('load: assignment invariants', () => {
         `INSERT INTO agents (id, name, session_key, status, capabilities, heartbeat_interval_ms, last_seen_at, created_at, updated_at)
          VALUES (gen_random_uuid(), $1, $2, 'online', '{"code": true}', 10000, now(), now(), now())
          RETURNING id`,
-        [`load-agent-${i}`, `sk-load-${i}-${Date.now()}`],
+        [`load-agent-${i}`, `sk-load-${i}-${Date.now()}`]
       );
       agentIds.push(result.rows[0].id);
     }
@@ -48,7 +48,7 @@ describe('load: assignment invariants', () => {
         `INSERT INTO tasks (id, title, description, state, priority, required_capabilities, created_at, updated_at)
          VALUES (gen_random_uuid(), $1, '', 'queued', 5, '{}', now(), now())
          RETURNING id`,
-        [`load-task-${i}`],
+        [`load-task-${i}`]
       );
       taskIds.push(result.rows[0].id);
     }
@@ -56,7 +56,7 @@ describe('load: assignment invariants', () => {
     // Assign each task to an agent sequentially (simulating the assigner worker).
     // The real assigner worker may race with this test, so we tolerate constraint
     // violations (meaning the task was already assigned by the worker).
-    let assignedByUs = 0;
+    let _assignedByUs = 0;
     for (let i = 0; i < taskIds.length; i++) {
       const taskId = taskIds[i]!;
       const agentId = agentIds[i % agentIds.length]!;
@@ -65,10 +65,10 @@ describe('load: assignment invariants', () => {
         await pool.query(
           `INSERT INTO assignments (id, task_id, agent_id, status, lease_expires_at, created_at, updated_at)
            VALUES (gen_random_uuid(), $1, $2, 'offered', now() + interval '30 seconds', now(), now())`,
-          [taskId, agentId],
+          [taskId, agentId]
         );
         await pool.query("UPDATE tasks SET state = 'assigned' WHERE id = $1", [taskId]);
-        assignedByUs++;
+        _assignedByUs++;
       } catch {
         // Unique constraint violation — assigner worker already assigned this task
       }
@@ -82,7 +82,7 @@ describe('load: assignment invariants', () => {
         await pool.query(
           `INSERT INTO assignments (id, task_id, agent_id, status, lease_expires_at, created_at, updated_at)
            VALUES (gen_random_uuid(), $1, $2, 'offered', now() + interval '30 seconds', now(), now())`,
-          [taskId, agentId],
+          [taskId, agentId]
         );
       } catch {
         doubleAssignFailures++;
@@ -100,7 +100,7 @@ describe('load: assignment invariants', () => {
        FROM assignments
        WHERE status IN ('offered', 'accepted', 'started')
        GROUP BY task_id
-       HAVING COUNT(*) > 1`,
+       HAVING COUNT(*) > 1`
     );
 
     expect(doubleActive.rows).toHaveLength(0);
@@ -109,7 +109,7 @@ describe('load: assignment invariants', () => {
     const activeCount = await pool.query(
       `SELECT COUNT(DISTINCT task_id) as cnt
        FROM assignments
-       WHERE status IN ('offered', 'accepted', 'started')`,
+       WHERE status IN ('offered', 'accepted', 'started')`
     );
 
     expect(Number(activeCount.rows[0].cnt)).toBe(200);

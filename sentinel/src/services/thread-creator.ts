@@ -26,12 +26,9 @@ import {
   type ChatInputCommandInteraction,
   type Guild,
   type TextChannel,
-  type ThreadAutoArchiveDuration,
+  type ThreadAutoArchiveDuration
 } from 'discord.js';
-import {
-  agentConfigs,
-  channelAgentDefaults,
-} from '../config/server-architecture.js';
+import { agentConfigs, channelAgentDefaults } from '../config/server-architecture.js';
 import { AUTO_ARCHIVE_DURATION } from '../utils/constants.js';
 import { deriveThreadName } from '../utils/helpers.js';
 import { logAction } from './audit-logger.js';
@@ -63,7 +60,7 @@ export interface CreateSessionOptions {
  */
 function findTextChannel(guild: Guild, channelName: string): TextChannel | undefined {
   return guild.channels.cache.find(
-    (ch) => ch.name === channelName && ch.type === ChannelType.GuildText,
+    (ch) => ch.name === channelName && ch.type === ChannelType.GuildText
   ) as TextChannel | undefined;
 }
 
@@ -75,22 +72,18 @@ async function resolveAgentBot(guild: Guild, roleName: string) {
   // Ensure guild member cache is populated
   await guild.members.fetch();
 
-  const botRole = guild.roles.cache.find(
-    (r) => r.name === roleName && r.managed,
-  );
+  const botRole = guild.roles.cache.find((r) => r.name === roleName && r.managed);
 
   if (!botRole) {
     console.warn(
-      `[THREAD] Bot role @${roleName} (managed) not found — agent may not be in the server yet`,
+      `[THREAD] Bot role @${roleName} (managed) not found — agent may not be in the server yet`
     );
     return undefined;
   }
 
   const member = botRole.members.first();
   if (!member) {
-    console.warn(
-      `[THREAD] Managed role @${roleName} has no members — cache may be stale`,
-    );
+    console.warn(`[THREAD] Managed role @${roleName} has no members — cache may be stale`);
   }
   return member;
 }
@@ -101,9 +94,7 @@ async function resolveAgentBot(guild: Guild, roleName: string) {
  * Handles both contextual (current channel) and routed (destination channel)
  * modes. Creates the thread, adds members, and triggers the agent via OpenClaw.
  */
-export async function createSessionThread(
-  options: CreateSessionOptions,
-): Promise<ThreadResult> {
+export async function createSessionThread(options: CreateSessionOptions): Promise<ThreadResult> {
   const { interaction, prompt, destinationChannel } = options;
   const guild = interaction.guild!;
 
@@ -116,7 +107,7 @@ export async function createSessionThread(
     if (!found) {
       return {
         success: false,
-        error: `Channel #${destinationChannel} not found. Run \`/setup full\` to create it.`,
+        error: `Channel #${destinationChannel} not found. Run \`/setup full\` to create it.`
       };
     }
     targetChannel = found;
@@ -126,15 +117,14 @@ export async function createSessionThread(
     if (!channel || channel.type !== ChannelType.GuildText) {
       return {
         success: false,
-        error: 'This command can only be used in a text channel.',
+        error: 'This command can only be used in a text channel.'
       };
     }
     targetChannel = channel as TextChannel;
   }
 
   // Resolve agent
-  const agentKey =
-    options.agentKey ?? channelAgentDefaults[targetChannel.name] ?? 'corven';
+  const agentKey = options.agentKey ?? channelAgentDefaults[targetChannel.name] ?? 'corven';
   const agent = agentConfigs[agentKey];
 
   if (!agent) {
@@ -149,7 +139,7 @@ export async function createSessionThread(
     const thread = await targetChannel.threads.create({
       name: threadName,
       autoArchiveDuration: AUTO_ARCHIVE_DURATION as ThreadAutoArchiveDuration,
-      reason: `${agent.name} session: "${threadName}" — invoked by ${interaction.user.tag}`,
+      reason: `${agent.name} session: "${threadName}" — invoked by ${interaction.user.tag}`
     });
 
     // Add invoker
@@ -162,9 +152,7 @@ export async function createSessionThread(
     if (agentBot) {
       await thread.members.add(agentBot.id);
       agentMention = `<@${agentBot.id}>`;
-      console.log(
-        `[THREAD] Added ${agent.name} bot (${agentBot.id}) to thread`,
-      );
+      console.log(`[THREAD] Added ${agent.name} bot (${agentBot.id}) to thread`);
     }
 
     // Trigger agent via OpenClaw hooks API (fire-and-forget).
@@ -174,12 +162,12 @@ export async function createSessionThread(
     const triggered = await triggerAgent({
       prompt,
       agentId: agentKey,
-      threadId: thread.id,
+      threadId: thread.id
     });
 
     if (!triggered) {
       console.warn(
-        `[THREAD] Agent trigger failed for ${agentKey} — thread created but agent won't auto-respond`,
+        `[THREAD] Agent trigger failed for ${agentKey} — thread created but agent won't auto-respond`
       );
     }
 
@@ -187,14 +175,14 @@ export async function createSessionThread(
     await logAction(
       guild,
       'THREAD',
-      `${agent.emoji} ${agent.name} session in #${targetChannel.name}: "${threadName}"`,
+      `${agent.emoji} ${agent.name} session in #${targetChannel.name}: "${threadName}"`
     );
 
     return { success: true, threadId: thread.id, agentMention };
   } catch (err) {
     return {
       success: false,
-      error: `Failed to create thread: ${err}`,
+      error: `Failed to create thread: ${err}`
     };
   }
 }

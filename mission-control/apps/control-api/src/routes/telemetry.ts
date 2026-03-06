@@ -1,19 +1,19 @@
+import { IngestTelemetryBatchSchema } from '@mc/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { IngestTelemetryBatchSchema } from '@mc/shared';
 import * as telemetryDomain from '../domain/telemetry.js';
 import { requireTelemetryAuth } from '../middleware/telemetry-auth.js';
 
 const TelemetrySummaryQuerySchema = z.object({
   window: z.enum(['1h', '6h', '24h', '7d']).default('24h'),
-  group_by: z.enum(['provider', 'model', 'agent', 'event_type', 'channel']).default('provider'),
+  group_by: z.enum(['provider', 'model', 'agent', 'event_type', 'channel']).default('provider')
 });
 
 const WINDOW_TO_MS: Record<z.infer<typeof TelemetrySummaryQuerySchema>['window'], number> = {
   '1h': 60 * 60 * 1000,
   '6h': 6 * 60 * 60 * 1000,
   '24h': 24 * 60 * 60 * 1000,
-  '7d': 7 * 24 * 60 * 60 * 1000,
+  '7d': 7 * 24 * 60 * 60 * 1000
 };
 
 export async function telemetryRoutes(app: FastifyInstance): Promise<void> {
@@ -22,7 +22,7 @@ export async function telemetryRoutes(app: FastifyInstance): Promise<void> {
     if (!parsed.success) {
       return reply.status(400).send({
         error: 'Invalid telemetry batch payload',
-        details: parsed.error.flatten(),
+        details: parsed.error.flatten()
       });
     }
 
@@ -35,7 +35,7 @@ export async function telemetryRoutes(app: FastifyInstance): Promise<void> {
     if (!parsed.success) {
       return reply.status(400).send({
         error: 'Invalid telemetry summary query',
-        details: parsed.error.flatten(),
+        details: parsed.error.flatten()
       });
     }
 

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "lint": "echo 'ok'",
+    "lint": "biome lint src",
+    "check": "biome check src",
     "typecheck": "tsc --noEmit",
     "build": "echo 'ok'"
   },

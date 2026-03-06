@@ -1,6 +1,6 @@
-import { query, close } from './lib/db.js';
+import { close, query } from './lib/db.js';
 
-const POLL_INTERVAL_MS = Number(process.env['NOTIF_POLL_MS'] ?? 5_000);
+const POLL_INTERVAL_MS = Number(process.env.NOTIF_POLL_MS ?? 5_000);
 const MAX_RETRIES = 5;
 const BATCH_SIZE = 50;
 
@@ -35,7 +35,7 @@ async function dispatchNotifications(): Promise<number> {
        AND created_at + (power(2, retry_count) || ' seconds')::interval <= now()
      ORDER BY created_at ASC
      LIMIT $2`,
-    [MAX_RETRIES, BATCH_SIZE],
+    [MAX_RETRIES, BATCH_SIZE]
   );
 
   if (result.rows.length === 0) return 0;
@@ -44,10 +44,9 @@ async function dispatchNotifications(): Promise<number> {
 
   for (const notification of result.rows) {
     // Check if target agent is online
-    const agentResult = await query<AgentRow>(
-      'SELECT id, status FROM agents WHERE id = $1',
-      [notification.target_agent_id],
-    );
+    const agentResult = await query<AgentRow>('SELECT id, status FROM agents WHERE id = $1', [
+      notification.target_agent_id
+    ]);
 
     const agent = agentResult.rows[0];
 
@@ -57,10 +56,10 @@ async function dispatchNotifications(): Promise<number> {
         `UPDATE notifications
          SET status = 'delivered', delivered_at = now()
          WHERE id = $1`,
-        [notification.id],
+        [notification.id]
       );
       console.log(
-        `notification-dispatcher: delivered ${notification.id} to agent ${notification.target_agent_id}`,
+        `notification-dispatcher: delivered ${notification.id} to agent ${notification.target_agent_id}`
       );
       dispatched++;
     } else {
@@ -72,16 +71,16 @@ async function dispatchNotifications(): Promise<number> {
         `UPDATE notifications
          SET retry_count = $2, status = $3
          WHERE id = $1`,
-        [notification.id, newRetryCount, newStatus],
+        [notification.id, newRetryCount, newStatus]
       );
 
       if (newStatus === 'failed') {
         console.log(
-          `notification-dispatcher: failed ${notification.id} after ${MAX_RETRIES} retries`,
+          `notification-dispatcher: failed ${notification.id} after ${MAX_RETRIES} retries`
         );
       } else {
         console.log(
-          `notification-dispatcher: retry ${newRetryCount}/${MAX_RETRIES} for ${notification.id}`,
+          `notification-dispatcher: retry ${newRetryCount}/${MAX_RETRIES} for ${notification.id}`
         );
       }
     }

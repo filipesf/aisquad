@@ -5,10 +5,10 @@
  * Reports: matching, missing, extra, misconfigured.
  */
 
-import { Guild, ChannelType, type GuildBasedChannel } from 'discord.js';
+import { ChannelType, type Guild } from 'discord.js';
 import {
-  roles as roleConfigs,
   categories as categoryConfigs,
+  roles as roleConfigs
 } from '../config/server-architecture.js';
 
 export interface VerifyResult {
@@ -23,7 +23,7 @@ export async function executeVerify(guild: Guild): Promise<VerifyResult> {
     matching: [],
     missing: [],
     extra: [],
-    misconfigured: [],
+    misconfigured: []
   };
 
   // Ensure we have fresh data
@@ -33,10 +33,10 @@ export async function executeVerify(guild: Guild): Promise<VerifyResult> {
   // ── Verify roles ──────────────────────────────────────────────
 
   const specRoleNames = new Set(roleConfigs.map((r) => r.name));
-  const serverRoleNames = new Set(
+  const _serverRoleNames = new Set(
     guild.roles.cache
       .filter((r) => r.name !== '@everyone' && !r.managed) // Skip @everyone and bot-managed roles
-      .map((r) => r.name),
+      .map((r) => r.name)
   );
 
   for (const roleConfig of roleConfigs) {
@@ -55,14 +55,14 @@ export async function executeVerify(guild: Guild): Promise<VerifyResult> {
     // Check color
     if (serverRole.color !== roleConfig.color) {
       result.misconfigured.push(
-        `Role @${roleConfig.name}: color is #${serverRole.color.toString(16).padStart(6, '0')}, expected #${roleConfig.color.toString(16).padStart(6, '0')}`,
+        `Role @${roleConfig.name}: color is #${serverRole.color.toString(16).padStart(6, '0')}, expected #${roleConfig.color.toString(16).padStart(6, '0')}`
       );
     }
 
     // Check hoist
     if (serverRole.hoist !== roleConfig.hoist) {
       result.misconfigured.push(
-        `Role @${roleConfig.name}: hoist is ${serverRole.hoist}, expected ${roleConfig.hoist}`,
+        `Role @${roleConfig.name}: hoist is ${serverRole.hoist}, expected ${roleConfig.hoist}`
       );
     }
 
@@ -87,7 +87,7 @@ export async function executeVerify(guild: Guild): Promise<VerifyResult> {
 
   for (const catConfig of categoryConfigs) {
     const serverCategory = guild.channels.cache.find(
-      (ch) => ch.name === catConfig.name && ch.type === ChannelType.GuildCategory,
+      (ch) => ch.name === catConfig.name && ch.type === ChannelType.GuildCategory
     );
 
     if (!serverCategory) {
@@ -98,7 +98,7 @@ export async function executeVerify(guild: Guild): Promise<VerifyResult> {
     // Check category position
     if ('position' in serverCategory && serverCategory.position !== catConfig.position) {
       result.misconfigured.push(
-        `Category ${catConfig.name}: position is ${serverCategory.position}, expected ${catConfig.position}`,
+        `Category ${catConfig.name}: position is ${serverCategory.position}, expected ${catConfig.position}`
       );
     } else {
       result.matching.push(`Category: ${catConfig.name}`);
@@ -106,9 +106,7 @@ export async function executeVerify(guild: Guild): Promise<VerifyResult> {
 
     // Check for extra channels within this category (not in config)
     const expectedChannelNames = new Set(catConfig.channels.map((c) => c.name));
-    const childChannels = guild.channels.cache.filter(
-      (ch) => ch.parentId === serverCategory.id,
-    );
+    const childChannels = guild.channels.cache.filter((ch) => ch.parentId === serverCategory.id);
     for (const [, ch] of childChannels) {
       if (!expectedChannelNames.has(ch.name)) {
         const prefix = ch.type === ChannelType.GuildVoice ? '(voice) ' : '#';
@@ -120,9 +118,7 @@ export async function executeVerify(guild: Guild): Promise<VerifyResult> {
     for (let i = 0; i < catConfig.channels.length; i++) {
       const channelConfig = catConfig.channels[i];
       const serverChannel = guild.channels.cache.find(
-        (ch) =>
-          ch.name === channelConfig.name &&
-          ch.parentId === serverCategory.id,
+        (ch) => ch.name === channelConfig.name && ch.parentId === serverCategory.id
       );
 
       if (!serverChannel) {
@@ -150,17 +146,18 @@ export async function executeVerify(guild: Guild): Promise<VerifyResult> {
 
       // Check channel position within category
       if ('position' in serverChannel && serverChannel.position !== i) {
-        issues.push(`position is ${(serverChannel as any).position}, expected ${i}`);
+        issues.push(
+          `position is ${(serverChannel as { position: number }).position}, expected ${i}`
+        );
       }
 
-      const label = channelConfig.type === ChannelType.GuildVoice
-        ? `(voice) ${channelConfig.name}`
-        : `#${channelConfig.name}`;
+      const label =
+        channelConfig.type === ChannelType.GuildVoice
+          ? `(voice) ${channelConfig.name}`
+          : `#${channelConfig.name}`;
 
       if (issues.length > 0) {
-        result.misconfigured.push(
-          `Channel ${label}: ${issues.join(', ')}`,
-        );
+        result.misconfigured.push(`Channel ${label}: ${issues.join(', ')}`);
       } else {
         result.matching.push(`Channel: ${label}`);
       }
@@ -169,7 +166,7 @@ export async function executeVerify(guild: Guild): Promise<VerifyResult> {
 
   // Check for extra categories
   const serverCategories = guild.channels.cache.filter(
-    (ch) => ch.type === ChannelType.GuildCategory,
+    (ch) => ch.type === ChannelType.GuildCategory
   );
   for (const [, cat] of serverCategories) {
     if (!specCategoryNames.has(cat.name)) {

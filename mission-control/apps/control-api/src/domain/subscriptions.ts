@@ -18,14 +18,14 @@ export async function subscribe(taskId: string, agentId: string): Promise<Subscr
      VALUES ($1, $2, $3, now())
      ON CONFLICT (task_id, agent_id) DO NOTHING
      RETURNING *`,
-    [id, taskId, agentId],
+    [id, taskId, agentId]
   );
 
   // If ON CONFLICT hit, fetch existing
   if (result.rows.length === 0) {
     const existing = await query<SubscriptionRow>(
       'SELECT * FROM subscriptions WHERE task_id = $1 AND agent_id = $2',
-      [taskId, agentId],
+      [taskId, agentId]
     );
     return existing.rows[0]!;
   }
@@ -39,7 +39,7 @@ export async function subscribe(taskId: string, agentId: string): Promise<Subscr
 export async function getSubscribers(taskId: string): Promise<string[]> {
   const result = await query<{ agent_id: string }>(
     'SELECT agent_id FROM subscriptions WHERE task_id = $1',
-    [taskId],
+    [taskId]
   );
   return result.rows.map((r) => r.agent_id);
 }
@@ -50,7 +50,7 @@ export async function getSubscribers(taskId: string): Promise<string[]> {
 export async function isSubscribed(taskId: string, agentId: string): Promise<boolean> {
   const result = await query<{ id: string }>(
     'SELECT id FROM subscriptions WHERE task_id = $1 AND agent_id = $2',
-    [taskId, agentId],
+    [taskId, agentId]
   );
   return result.rows.length > 0;
 }

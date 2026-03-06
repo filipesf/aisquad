@@ -1,8 +1,8 @@
-import type { FastifyInstance } from 'fastify';
 import { CreateCommentSchema } from '@mc/shared';
+import type { FastifyInstance } from 'fastify';
+import * as agentDomain from '../domain/agents.js';
 import * as commentDomain from '../domain/comments.js';
 import * as taskDomain from '../domain/tasks.js';
-import * as agentDomain from '../domain/agents.js';
 
 export async function commentRoutes(app: FastifyInstance): Promise<void> {
   // Post a comment on a task

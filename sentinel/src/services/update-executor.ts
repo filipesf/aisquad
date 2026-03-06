@@ -17,12 +17,12 @@ import {
   type OverwriteResolvable,
   PermissionsBitField,
   type Role,
-  type TextChannel,
+  type TextChannel
 } from 'discord.js';
 import {
   categories as categoryConfigs,
   type PermissionOverwrite,
-  roles as roleConfigs,
+  roles as roleConfigs
 } from '../config/server-architecture.js';
 import { AUTO_ARCHIVE_DURATION } from '../utils/constants.js';
 import { sleep } from '../utils/helpers.js';
@@ -51,10 +51,7 @@ function resolveRole(guild: Guild, roleName: string): Role | undefined {
   return guild.roles.cache.find((r) => r.name === roleName);
 }
 
-function buildOverwrites(
-  guild: Guild,
-  overwrites: PermissionOverwrite[],
-): OverwriteResolvable[] {
+function buildOverwrites(guild: Guild, overwrites: PermissionOverwrite[]): OverwriteResolvable[] {
   const result: OverwriteResolvable[] = [];
   for (const ow of overwrites) {
     const role = resolveRole(guild, ow.role);
@@ -68,10 +65,7 @@ function buildOverwrites(
 }
 
 function getPermissionName(bit: bigint): string | null {
-  const entries = Object.entries(PermissionsBitField.Flags) as [
-    string,
-    bigint,
-  ][];
+  const entries = Object.entries(PermissionsBitField.Flags) as [string, bigint][];
   for (const [name, value] of entries) {
     if (value === bit) return name;
   }
@@ -81,10 +75,7 @@ function getPermissionName(bit: bigint): string | null {
 /**
  * Run a full reconciliation — create missing, update drifted, skip matching.
  */
-export async function executeUpdate(
-  guild: Guild,
-  invokerId: string,
-): Promise<UpdateResult> {
+export async function executeUpdate(guild: Guild, invokerId: string): Promise<UpdateResult> {
   const result: UpdateResult = {
     rolesCreated: 0,
     rolesUpdated: 0,
@@ -96,7 +87,7 @@ export async function executeUpdate(
     channelsUpdated: 0,
     channelsUnchanged: 0,
     changes: [],
-    errors: [],
+    errors: []
   };
 
   const invoker = await guild.members.fetch(invokerId).catch(() => null);
@@ -110,16 +101,14 @@ export async function executeUpdate(
 
   for (const roleConfig of roleConfigs) {
     try {
-      const existing = guild.roles.cache.find(
-        (r) => r.name === roleConfig.name,
-      );
+      const existing = guild.roles.cache.find((r) => r.name === roleConfig.name);
 
       if (!existing) {
         if (roleConfig.managed) {
           // Managed roles are created by Discord when the bot joins.
           // If the bot hasn't joined yet, this is expected — not an error.
           console.log(
-            `[UPDATE] Role "${roleConfig.name}" (managed) not in server yet — bot hasn't joined`,
+            `[UPDATE] Role "${roleConfig.name}" (managed) not in server yet — bot hasn't joined`
           );
           result.rolesUnchanged++;
           continue;
@@ -137,7 +126,7 @@ export async function executeUpdate(
           hoist: roleConfig.hoist,
           mentionable: roleConfig.mentionable,
           permissions: new PermissionsBitField(permBitfield),
-          reason: 'Setup bot: update — created missing role',
+          reason: 'Setup bot: update — created missing role'
         });
 
         result.rolesCreated++;
@@ -157,7 +146,7 @@ export async function executeUpdate(
       if (existing.color !== roleConfig.color) {
         edits.colors = { primaryColor: roleConfig.color };
         diffs.push(
-          `color #${existing.color.toString(16).padStart(6, '0')} -> #${roleConfig.color.toString(16).padStart(6, '0')}`,
+          `color #${existing.color.toString(16).padStart(6, '0')} -> #${roleConfig.color.toString(16).padStart(6, '0')}`
         );
       }
 
@@ -171,9 +160,7 @@ export async function executeUpdate(
       if (!roleConfig.managed) {
         if (existing.mentionable !== roleConfig.mentionable) {
           edits.mentionable = roleConfig.mentionable;
-          diffs.push(
-            `mentionable ${existing.mentionable} -> ${roleConfig.mentionable}`,
-          );
+          diffs.push(`mentionable ${existing.mentionable} -> ${roleConfig.mentionable}`);
         }
 
         const expectedBitfield =
@@ -190,7 +177,7 @@ export async function executeUpdate(
       if (Object.keys(edits).length > 0) {
         await existing.edit({
           ...edits,
-          reason: `Setup bot: update — reconciling @${roleConfig.name}${roleConfig.managed ? ' (managed)' : ''}`,
+          reason: `Setup bot: update — reconciling @${roleConfig.name}${roleConfig.managed ? ' (managed)' : ''}`
         });
 
         result.rolesUpdated++;
@@ -212,9 +199,7 @@ export async function executeUpdate(
 
   console.log('[UPDATE] Step 1b: Positioning roles...');
 
-  const sortedConfigs = [...roleConfigs].sort(
-    (a, b) => b.position - a.position,
-  );
+  const sortedConfigs = [...roleConfigs].sort((a, b) => b.position - a.position);
   for (const roleConfig of sortedConfigs) {
     try {
       const role = guild.roles.cache.find((r) => r.name === roleConfig.name);
@@ -222,23 +207,16 @@ export async function executeUpdate(
 
       const botMember = await guild.members.fetchMe();
       const botHighestPosition = botMember.roles.highest.position;
-      const targetPosition = Math.min(
-        roleConfig.position,
-        botHighestPosition - 1,
-      );
+      const targetPosition = Math.min(roleConfig.position, botHighestPosition - 1);
 
       if (role.position !== targetPosition && targetPosition > 0) {
         await role.setPosition(targetPosition).catch((err) => {
-          console.warn(
-            `[UPDATE] Could not set position for "${roleConfig.name}": ${err.message}`,
-          );
+          console.warn(`[UPDATE] Could not set position for "${roleConfig.name}": ${err.message}`);
         });
         await sleep(300);
       }
     } catch (err) {
-      console.warn(
-        `[UPDATE] Error positioning role "${roleConfig.name}": ${err}`,
-      );
+      console.warn(`[UPDATE] Error positioning role "${roleConfig.name}": ${err}`);
     }
   }
 
@@ -251,14 +229,10 @@ export async function executeUpdate(
     if (everyoneRole.permissions.has(PermissionsBitField.Flags.ViewChannel)) {
       await everyoneRole.setPermissions(
         everyoneRole.permissions.remove(PermissionsBitField.Flags.ViewChannel),
-        'Setup bot: update — lock @everyone',
+        'Setup bot: update — lock @everyone'
       );
       result.changes.push('@everyone ViewChannel denied');
-      await logAction(
-        guild,
-        'PERM',
-        '@everyone ViewChannel denied (server-level)',
-      );
+      await logAction(guild, 'PERM', '@everyone ViewChannel denied (server-level)');
     }
   } catch (err) {
     result.errors.push(`Failed to lock @everyone: ${err}`);
@@ -271,8 +245,7 @@ export async function executeUpdate(
   for (const catConfig of categoryConfigs) {
     try {
       const existing = guild.channels.cache.find(
-        (ch) =>
-          ch.name === catConfig.name && ch.type === ChannelType.GuildCategory,
+        (ch) => ch.name === catConfig.name && ch.type === ChannelType.GuildCategory
       ) as CategoryChannel | undefined;
 
       if (!existing) {
@@ -282,7 +255,7 @@ export async function executeUpdate(
           type: ChannelType.GuildCategory,
           position: catConfig.position,
           permissionOverwrites: overwrites,
-          reason: 'Setup bot: update — created missing category',
+          reason: 'Setup bot: update — created missing category'
         });
 
         result.categoriesCreated++;
@@ -294,11 +267,7 @@ export async function executeUpdate(
       }
 
       // Update permission overwrites on existing category
-      const updated = await reconcileOverwrites(
-        guild,
-        existing,
-        catConfig.overwrites,
-      );
+      const updated = await reconcileOverwrites(guild, existing, catConfig.overwrites);
       if (updated) {
         result.categoriesUpdated++;
         const change = `Updated permissions on ${catConfig.name}`;
@@ -308,9 +277,7 @@ export async function executeUpdate(
         result.categoriesUnchanged++;
       }
     } catch (err) {
-      result.errors.push(
-        `Failed to reconcile category "${catConfig.name}": ${err}`,
-      );
+      result.errors.push(`Failed to reconcile category "${catConfig.name}": ${err}`);
     }
   }
 
@@ -323,48 +290,35 @@ export async function executeUpdate(
 
   for (const catConfig of categoryConfigs) {
     const parentCategory = guild.channels.cache.find(
-      (ch) =>
-        ch.name === catConfig.name && ch.type === ChannelType.GuildCategory,
+      (ch) => ch.name === catConfig.name && ch.type === ChannelType.GuildCategory
     ) as CategoryChannel | undefined;
 
     if (!parentCategory && catConfig.channels.length > 0) {
-      result.errors.push(
-        `Category "${catConfig.name}" not found, can't reconcile its channels`,
-      );
+      result.errors.push(`Category "${catConfig.name}" not found, can't reconcile its channels`);
       continue;
     }
 
     for (const channelConfig of catConfig.channels) {
       try {
         const existing = guild.channels.cache.find(
-          (ch) =>
-            ch.name === channelConfig.name &&
-            ch.parentId === parentCategory?.id,
+          (ch) => ch.name === channelConfig.name && ch.parentId === parentCategory?.id
         );
 
         if (!existing) {
           // Create missing channel
-          const channelOverwrites = buildOverwrites(
-            guild,
-            channelConfig.overwrites,
-          );
+          const channelOverwrites = buildOverwrites(guild, channelConfig.overwrites);
           const isText = channelConfig.type === ChannelType.GuildText;
 
           await guild.channels.create({
             name: channelConfig.name,
             type: channelConfig.type,
-            topic:
-              isText && channelConfig.topic ? channelConfig.topic : undefined,
+            topic: isText && channelConfig.topic ? channelConfig.topic : undefined,
             parent: parentCategory?.id,
             permissionOverwrites:
-              channelConfig.overwrites.length > 0
-                ? channelOverwrites
-                : undefined,
+              channelConfig.overwrites.length > 0 ? channelOverwrites : undefined,
             defaultAutoArchiveDuration:
-              isText && channelConfig.autoArchive
-                ? AUTO_ARCHIVE_DURATION
-                : undefined,
-            reason: 'Setup bot: update — created missing channel',
+              isText && channelConfig.autoArchive ? AUTO_ARCHIVE_DURATION : undefined,
+            reason: 'Setup bot: update — created missing channel'
           });
 
           result.channelsCreated++;
@@ -397,7 +351,7 @@ export async function executeUpdate(
           if (Object.keys(edits).length > 0) {
             await textChannel.edit({
               ...edits,
-              reason: `Setup bot: update — reconciling #${channelConfig.name}`,
+              reason: `Setup bot: update — reconciling #${channelConfig.name}`
             } as Parameters<TextChannel['edit']>[0]);
 
             result.channelsUpdated++;
@@ -409,14 +363,11 @@ export async function executeUpdate(
         }
 
         // Reconcile channel-level permission overwrites (both text and voice)
-        if (
-          channelConfig.overwrites.length > 0 &&
-          'permissionOverwrites' in existing
-        ) {
+        if (channelConfig.overwrites.length > 0 && 'permissionOverwrites' in existing) {
           const permUpdated = await reconcileOverwrites(
             guild,
             existing as CategoryChannel | TextChannel,
-            channelConfig.overwrites,
+            channelConfig.overwrites
           );
           if (permUpdated) {
             result.channelsUpdated++;
@@ -432,9 +383,7 @@ export async function executeUpdate(
           result.channelsUnchanged++;
         }
       } catch (err) {
-        result.errors.push(
-          `Failed to reconcile channel "#${channelConfig.name}": ${err}`,
-        );
+        result.errors.push(`Failed to reconcile channel "#${channelConfig.name}": ${err}`);
       }
     }
   }
@@ -448,12 +397,12 @@ export async function executeUpdate(
     if (posResult.categoriesMoved > 0 || posResult.channelsMoved > 0) {
       if (posResult.categoriesMoved > 0) {
         result.changes.push(
-          `Reordered ${posResult.categoriesMoved} categor${posResult.categoriesMoved === 1 ? 'y' : 'ies'}`,
+          `Reordered ${posResult.categoriesMoved} categor${posResult.categoriesMoved === 1 ? 'y' : 'ies'}`
         );
       }
       if (posResult.channelsMoved > 0) {
         result.changes.push(
-          `Reordered ${posResult.channelsMoved} channel${posResult.channelsMoved === 1 ? '' : 's'}`,
+          `Reordered ${posResult.channelsMoved} channel${posResult.channelsMoved === 1 ? '' : 's'}`
         );
       }
     }
@@ -478,32 +427,30 @@ export async function executeUpdate(
 
   await logSummary(
     guild,
-    totalChanges > 0
-      ? 'Setup Update Complete'
-      : 'Setup Update — No Changes Needed',
+    totalChanges > 0 ? 'Setup Update Complete' : 'Setup Update — No Changes Needed',
     [
       {
         name: 'Roles',
         value: `${result.rolesCreated} created, ${result.rolesUpdated} updated, ${result.rolesUnchanged} unchanged`,
-        inline: false,
+        inline: false
       },
       {
         name: 'Categories',
         value: `${result.categoriesCreated} created, ${result.categoriesUpdated} updated, ${result.categoriesUnchanged} unchanged`,
-        inline: false,
+        inline: false
       },
       {
         name: 'Channels',
         value: `${result.channelsCreated} created, ${result.channelsUpdated} updated, ${result.channelsUnchanged} unchanged`,
-        inline: false,
+        inline: false
       },
       ...(result.changes.length > 0
         ? [
             {
               name: 'Changes',
               value: result.changes.slice(0, 15).join('\n').slice(0, 1024),
-              inline: false,
-            },
+              inline: false
+            }
           ]
         : []),
       ...(result.errors.length > 0
@@ -511,16 +458,14 @@ export async function executeUpdate(
             {
               name: 'Errors',
               value: result.errors.join('\n').slice(0, 1024),
-              inline: false,
-            },
+              inline: false
+            }
           ]
-        : []),
-    ],
+        : [])
+    ]
   );
 
-  console.log(
-    `[UPDATE] Complete. ${totalChanges} change(s), ${result.errors.length} error(s).`,
-  );
+  console.log(`[UPDATE] Complete. ${totalChanges} change(s), ${result.errors.length} error(s).`);
   return result;
 }
 
@@ -531,7 +476,7 @@ export async function executeUpdate(
 async function reconcileOverwrites(
   guild: Guild,
   target: CategoryChannel | TextChannel,
-  configOverwrites: PermissionOverwrite[],
+  configOverwrites: PermissionOverwrite[]
 ): Promise<boolean> {
   let changed = false;
 
@@ -569,13 +514,13 @@ async function reconcileOverwrites(
 
     try {
       await target.permissionOverwrites.edit(role, permObj, {
-        reason: 'Setup bot: update — reconciling permissions',
+        reason: 'Setup bot: update — reconciling permissions'
       });
       changed = true;
       await sleep(200);
     } catch (err) {
       console.warn(
-        `[UPDATE] Could not update overwrite for "${ow.role}" on "${target.name}": ${err}`,
+        `[UPDATE] Could not update overwrite for "${ow.role}" on "${target.name}": ${err}`
       );
     }
   }

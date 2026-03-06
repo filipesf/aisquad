@@ -1,23 +1,23 @@
-import { useRef, useEffect, useState, memo, useMemo } from 'react';
-import type { Activity } from '@/types/domain';
-import { TimeAgo } from './TimeAgo';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { TableShell } from '@/components/ui/TableShell';
-import { cn } from '@/lib/utils';
 import {
+  Bell,
+  CheckCircle2,
   CircleDot,
   CircleOff,
   ClipboardList,
+  Clock,
+  Flag,
+  MessageSquare,
+  Pin,
   RefreshCw,
   RotateCcw,
-  Send,
-  CheckCircle2,
-  Flag,
-  Clock,
-  MessageSquare,
-  Bell,
-  Pin,
+  Send
 } from 'lucide-react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { TableShell } from '@/components/ui/TableShell';
+import { cn } from '@/lib/utils';
+import type { Activity } from '@/types/domain';
+import { TimeAgo } from './TimeAgo';
 
 interface ActivityFeedProps {
   activities: Activity[];
@@ -41,7 +41,7 @@ const ACTIVITY_META: Record<string, ActivityMeta> = {
   'assignment.completed': { icon: Flag, colour: 'text-muted-foreground' },
   'assignment.expired': { icon: Clock, colour: 'text-red-500' },
   'comment.created': { icon: MessageSquare, colour: 'text-foreground' },
-  'notification.dispatched': { icon: Bell, colour: 'text-foreground' },
+  'notification.dispatched': { icon: Bell, colour: 'text-foreground' }
 };
 
 const FALLBACK_META: ActivityMeta = { icon: Pin, colour: 'text-muted-foreground' };
@@ -53,7 +53,7 @@ const EMPTY_STATE_LINES = [
   'All quiet. Either nothing is happening, or everything is fine.',
   'Events will appear here as agents work. Or as agents procrastinate.',
   'No activity yet. The agents are standing by.',
-  'Waiting for something to happen. This could take a while.',
+  'Waiting for something to happen. This could take a while.'
 ] as const;
 
 function getActivityMeta(type: string): ActivityMeta {
@@ -69,9 +69,9 @@ function getActivityDescription(activity: Activity): string {
     case 'agent.offline':
       return 'Agent went offline';
     case 'task.created':
-      return `New task: ${String(p['title'] ?? '')}`;
+      return `New task: ${String(p.title ?? '')}`;
     case 'task.state_changed':
-      return `Status changed: ${String(p['from'] ?? '?')} → ${String(p['to'] ?? '?')}`;
+      return `Status changed: ${String(p.from ?? '?')} → ${String(p.to ?? '?')}`;
     case 'task.requeued':
       return 'Task returned to queue';
     case 'assignment.offered':
@@ -101,7 +101,7 @@ function getActivityDescription(activity: Activity): string {
 export const ActivityFeed = memo(function ActivityFeed({
   activities,
   connected,
-  maxHeight = '400px',
+  maxHeight = '400px'
 }: ActivityFeedProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -113,7 +113,7 @@ export const ActivityFeed = memo(function ActivityFeed({
   // Rotate empty state message — stable within a session, varies across sessions
   const emptyMessage = useMemo(
     () => EMPTY_STATE_LINES[new Date().getMinutes() % EMPTY_STATE_LINES.length],
-    [],
+    []
   );
 
   useEffect(() => {
@@ -138,7 +138,7 @@ export const ActivityFeed = memo(function ActivityFeed({
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+        <h2 className="flex items-center gap-2 font-semibold text-sm tracking-tight">
           <span className="block h-3.5 w-0.5 rounded-full bg-primary" aria-hidden="true" />
           Activity
         </h2>
@@ -147,11 +147,11 @@ export const ActivityFeed = memo(function ActivityFeed({
           <div
             className={cn(
               'h-2 w-2 rounded-full transition-colors',
-              connected ? 'bg-emerald-500 animate-live-pulse' : 'bg-red-500',
+              connected ? 'animate-live-pulse bg-emerald-500' : 'bg-red-500'
             )}
             aria-hidden="true"
           />
-          <span className="text-xs text-muted-foreground" aria-live="polite">
+          <span className="text-muted-foreground text-xs" aria-live="polite">
             {connected ? 'Live' : 'Reconnecting…'}
           </span>
         </div>
@@ -160,9 +160,9 @@ export const ActivityFeed = memo(function ActivityFeed({
       <TableShell>
         <ScrollArea style={{ height: maxHeight }} ref={scrollRef}>
           {activities.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center animate-fade-up">
+            <div className="flex animate-fade-up flex-col items-center justify-center gap-2 py-12 text-center">
               <Bell className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
-              <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+              <p className="text-muted-foreground text-sm">{emptyMessage}</p>
             </div>
           ) : (
             <ul className="divide-y" aria-live="polite" aria-atomic="false">
@@ -178,20 +178,20 @@ export const ActivityFeed = memo(function ActivityFeed({
                     className={cn(
                       'flex items-start gap-3 px-4 py-3 hover:bg-muted/30',
                       'transition-colors duration-[--dur-fast]',
-                      isNew && 'animate-activity-enter',
+                      isNew && 'animate-activity-enter'
                     )}
                   >
                     <Icon
                       className={cn(
                         'mt-0.5 h-4 w-4 shrink-0',
                         colour,
-                        isAgentStatusEvent && 'animate-agent-blink',
+                        isAgentStatusEvent && 'animate-agent-blink'
                       )}
                       aria-hidden="true"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm break-words">{getActivityDescription(activity)}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
+                      <p className="break-words text-sm">{getActivityDescription(activity)}</p>
+                      <p className="mt-0.5 text-muted-foreground text-xs">
                         <TimeAgo date={activity.created_at} />
                       </p>
                     </div>

@@ -1,4 +1,4 @@
-import { X, Crosshair, Cpu, ClipboardList, Radio } from 'lucide-react';
+import { ClipboardList, Cpu, Crosshair, Radio, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/hooks/useOnboarding';
 
@@ -25,7 +25,7 @@ export function WelcomeBanner() {
 
   return (
     <section
-      className="relative rounded-lg border border-primary/20 bg-primary/5 p-4 animate-fade-up"
+      className="relative animate-fade-up rounded-lg border border-primary/20 bg-primary/5 p-4"
       style={{ '--stagger-i': 0 } as React.CSSProperties}
       aria-label="Welcome to Mission Control"
     >
@@ -33,7 +33,7 @@ export function WelcomeBanner() {
       <button
         type="button"
         onClick={dismiss}
-        className="absolute right-3 top-3 rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors duration-[--dur-instant] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 outline-none"
+        className="absolute top-3 right-3 rounded p-1 text-muted-foreground outline-none transition-colors duration-[--dur-instant] hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
         aria-label="Dismiss welcome banner"
       >
         <X className="h-3.5 w-3.5" />
@@ -41,15 +41,15 @@ export function WelcomeBanner() {
 
       {/* Headline */}
       <div className="mb-3 flex items-center gap-2">
-        <Crosshair className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
-        <span className="text-sm font-semibold tracking-tight">Welcome to Mission Control</span>
+        <Crosshair className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+        <span className="font-semibold text-sm tracking-tight">Welcome to Mission Control</span>
       </div>
 
       {/* Three core concepts */}
       <ul className="mb-4 space-y-2" aria-label="Core concepts">
         <li className="flex items-start gap-2.5">
           <Cpu className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/70" aria-hidden="true" />
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-muted-foreground text-xs leading-relaxed">
             <span className="font-medium text-foreground">Agents</span> — AI workers that register
             via the API, send heartbeats, and receive task assignments.
           </p>
@@ -59,14 +59,14 @@ export function WelcomeBanner() {
             className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/70"
             aria-hidden="true"
           />
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-muted-foreground text-xs leading-relaxed">
             <span className="font-medium text-foreground">Tasks</span> — work items that flow
             through a state machine: queued → assigned → in progress → review → done.
           </p>
         </li>
         <li className="flex items-start gap-2.5">
           <Radio className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/70" aria-hidden="true" />
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-muted-foreground text-xs leading-relaxed">
             <span className="font-medium text-foreground">Activity feed</span> — a live stream of
             every event: agents coming online, tasks changing state, assignments being offered.
           </p>
@@ -78,7 +78,7 @@ export function WelcomeBanner() {
         <Button size="sm" className="h-7 text-xs" onClick={dismiss}>
           Got it
         </Button>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-muted-foreground text-xs">
           Start by connecting an agent or creating a task below.
         </span>
       </div>

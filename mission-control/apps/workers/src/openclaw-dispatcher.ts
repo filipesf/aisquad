@@ -10,10 +10,10 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { query, close } from './lib/db.js';
-import { openclawConfig } from './lib/openclaw-config.js';
-import { OpenClawCapabilitySchema } from '@mc/shared';
 import type { OpenClawHookRequest, OpenClawHookResponse } from '@mc/shared';
+import { OpenClawCapabilitySchema } from '@mc/shared';
+import { close, query } from './lib/db.js';
+import { openclawConfig } from './lib/openclaw-config.js';
 
 const POLL_INTERVAL_MS = openclawConfig.dispatchPollMs;
 const MAX_ATTEMPTS = 5;
@@ -68,7 +68,7 @@ async function findDispatchableAssignments(): Promise<OfferedAssignmentRow[]> {
        ) < $1
      ORDER BY a.created_at ASC
      LIMIT $2`,
-    [MAX_ATTEMPTS, BATCH_SIZE],
+    [MAX_ATTEMPTS, BATCH_SIZE]
   );
   return result.rows;
 }
@@ -81,7 +81,7 @@ async function getNextAttempt(assignmentId: string): Promise<number> {
     `SELECT COALESCE(MAX(attempt), 0) AS attempt
      FROM openclaw_dispatch_attempts
      WHERE assignment_id = $1`,
-    [assignmentId],
+    [assignmentId]
   );
   return (result.rows[0]?.attempt ?? 0) + 1;
 }
@@ -94,14 +94,14 @@ async function recordAttempt(
   attempt: number,
   status: 'queued' | 'sent' | 'succeeded' | 'failed',
   error?: string,
-  responseExcerpt?: string,
+  responseExcerpt?: string
 ): Promise<void> {
   await query(
     `INSERT INTO openclaw_dispatch_attempts (id, assignment_id, attempt, status, error, response_excerpt, created_at)
      VALUES ($1, $2, $3, $4, $5, $6, now())
      ON CONFLICT (assignment_id, attempt)
      DO UPDATE SET status = $4, error = $5, response_excerpt = $6`,
-    [randomUUID(), assignmentId, attempt, status, error ?? null, responseExcerpt ?? null],
+    [randomUUID(), assignmentId, attempt, status, error ?? null, responseExcerpt ?? null]
   );
 }
 
@@ -109,7 +109,7 @@ async function recordAttempt(
  * Build the OpenClaw hook payload from assignment + task + agent context.
  */
 function buildHookPayload(row: OfferedAssignmentRow): OpenClawHookRequest {
-  const cap = OpenClawCapabilitySchema.safeParse(row.capabilities['openclaw']);
+  const cap = OpenClawCapabilitySchema.safeParse(row.capabilities.openclaw);
   const agentName = cap.success ? cap.data.agentName : row.agent_name;
   const model = cap.success ? cap.data.model : undefined;
 
@@ -120,8 +120,8 @@ function buildHookPayload(row: OfferedAssignmentRow): OpenClawHookRequest {
     metadata: {
       assignmentId: row.assignment_id,
       taskId: row.task_id,
-      agentId: row.agent_id,
-    },
+      agentId: row.agent_id
+    }
   };
 }
 
@@ -134,9 +134,9 @@ async function dispatchToGateway(payload: OpenClawHookRequest): Promise<OpenClaw
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${openclawConfig.gatewayToken}`,
+      Authorization: `Bearer ${openclawConfig.gatewayToken}`
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(payload)
   });
 
   if (!res.ok) {
@@ -156,7 +156,7 @@ async function postComment(taskId: string, agentId: string, responseText: string
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ body: responseText }),
+    body: JSON.stringify({ body: responseText })
   });
 
   if (!res.ok) {
@@ -188,7 +188,7 @@ async function processAssignment(row: OfferedAssignmentRow): Promise<void> {
       const excerpt = response.response?.slice(0, 1000) ?? '';
       await recordAttempt(row.assignment_id, attempt, 'succeeded', undefined, excerpt);
       console.log(
-        `openclaw-dispatcher: assignment ${row.assignment_id} attempt ${attempt}/${MAX_ATTEMPTS} succeeded (task: "${row.task_title}", agent: "${row.agent_name}")`,
+        `openclaw-dispatcher: assignment ${row.assignment_id} attempt ${attempt}/${MAX_ATTEMPTS} succeeded (task: "${row.task_title}", agent: "${row.agent_name}")`
       );
 
       // Persist OpenClaw response as a task comment
@@ -199,7 +199,7 @@ async function processAssignment(row: OfferedAssignmentRow): Promise<void> {
           // Log but don't fail the dispatch — the response was already recorded
           console.error(
             `openclaw-dispatcher: failed to post comment for assignment ${row.assignment_id}:`,
-            commentErr instanceof Error ? commentErr.message : commentErr,
+            commentErr instanceof Error ? commentErr.message : commentErr
           );
         }
       }
@@ -207,14 +207,14 @@ async function processAssignment(row: OfferedAssignmentRow): Promise<void> {
       const errorMsg = response.error ?? 'unknown error from gateway';
       await recordAttempt(row.assignment_id, attempt, 'failed', errorMsg);
       console.warn(
-        `openclaw-dispatcher: assignment ${row.assignment_id} attempt ${attempt}/${MAX_ATTEMPTS} — gateway returned error: ${errorMsg}`,
+        `openclaw-dispatcher: assignment ${row.assignment_id} attempt ${attempt}/${MAX_ATTEMPTS} — gateway returned error: ${errorMsg}`
       );
     }
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     await recordAttempt(row.assignment_id, attempt, 'failed', errorMsg);
     console.error(
-      `openclaw-dispatcher: assignment ${row.assignment_id} attempt ${attempt}/${MAX_ATTEMPTS} failed — ${errorMsg}`,
+      `openclaw-dispatcher: assignment ${row.assignment_id} attempt ${attempt}/${MAX_ATTEMPTS} failed — ${errorMsg}`
     );
   }
 }
@@ -234,7 +234,7 @@ async function pollDispatches(): Promise<number> {
     } catch (err) {
       console.error(
         `openclaw-dispatcher: unexpected error processing assignment ${row.assignment_id}`,
-        err,
+        err
       );
     }
   }
@@ -254,7 +254,7 @@ async function run(): Promise<void> {
   }
 
   console.log(
-    `openclaw-dispatcher: starting (poll every ${POLL_INTERVAL_MS}ms, max ${MAX_ATTEMPTS} attempts, batch ${BATCH_SIZE})`,
+    `openclaw-dispatcher: starting (poll every ${POLL_INTERVAL_MS}ms, max ${MAX_ATTEMPTS} attempts, batch ${BATCH_SIZE})`
   );
 
   while (running) {
@@ -303,5 +303,5 @@ export {
   dispatchToGateway,
   postComment,
   processAssignment,
-  pollDispatches,
+  pollDispatches
 };

@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { query, close } from './lib/db.js';
+import { close, query } from './lib/db.js';
 
-const POLL_INTERVAL_MS = Number(process.env['ASSIGNER_POLL_MS'] ?? 10_000);
-const LEASE_SECONDS = Number(process.env['LEASE_SECONDS'] ?? 30);
+const POLL_INTERVAL_MS = Number(process.env.ASSIGNER_POLL_MS ?? 10_000);
+const LEASE_SECONDS = Number(process.env.LEASE_SECONDS ?? 30);
 
 interface QueuedTask {
   id: string;
@@ -22,7 +22,7 @@ interface OnlineAgent {
  */
 function capabilitiesMatch(
   agentCaps: Record<string, unknown>,
-  requiredCaps: Record<string, unknown>,
+  requiredCaps: Record<string, unknown>
 ): boolean {
   const required = Object.keys(requiredCaps);
   if (required.length === 0) return true;
@@ -36,7 +36,7 @@ async function assignQueuedTasks(): Promise<number> {
      FROM tasks
      WHERE state = 'queued'
      ORDER BY priority DESC, created_at ASC
-     LIMIT 50`,
+     LIMIT 50`
   );
 
   if (tasksResult.rows.length === 0) return 0;
@@ -45,7 +45,7 @@ async function assignQueuedTasks(): Promise<number> {
   const agentsResult = await query<OnlineAgent>(
     `SELECT id, name, capabilities
      FROM agents
-     WHERE status = 'online'`,
+     WHERE status = 'online'`
   );
 
   if (agentsResult.rows.length === 0) return 0;
@@ -64,7 +64,7 @@ async function assignQueuedTasks(): Promise<number> {
         `SELECT 1 FROM assignments
          WHERE agent_id = $1 AND status IN ('offered', 'accepted')
          LIMIT 1`,
-        [agent.id],
+        [agent.id]
       );
 
       if (activeResult.rows.length > 0) continue;
@@ -80,21 +80,17 @@ async function assignQueuedTasks(): Promise<number> {
         await query(
           `INSERT INTO assignments (id, task_id, agent_id, status, lease_expires_at, created_at, updated_at)
            VALUES ($1, $2, $3, 'offered', $4, $5, $5)`,
-          [assignmentId, task.id, agent.id, leaseExpiresAt.toISOString(), now.toISOString()],
+          [assignmentId, task.id, agent.id, leaseExpiresAt.toISOString(), now.toISOString()]
         );
 
-        await query(
-          `UPDATE tasks SET state = 'assigned', updated_at = now() WHERE id = $1`,
-          [task.id],
-        );
+        await query(`UPDATE tasks SET state = 'assigned', updated_at = now() WHERE id = $1`, [
+          task.id
+        ]);
 
         await query(
           `INSERT INTO activities (id, type, actor_id, payload, created_at)
            VALUES ($1, 'assignment.offered', NULL, $2, now())`,
-          [
-            randomUUID(),
-            JSON.stringify({ taskId: task.id, agentId: agent.id, assignmentId }),
-          ],
+          [randomUUID(), JSON.stringify({ taskId: task.id, agentId: agent.id, assignmentId })]
         );
 
         await query('COMMIT');
@@ -124,21 +120,19 @@ async function expireStaleLeases(): Promise<number> {
     `SELECT id, task_id, agent_id FROM assignments
      WHERE status IN ('offered', 'accepted')
        AND lease_expires_at < $1`,
-    [now.toISOString()],
+    [now.toISOString()]
   );
 
   for (const assignment of expired.rows) {
     await query('BEGIN');
 
-    await query(
-      `UPDATE assignments SET status = 'expired', updated_at = now() WHERE id = $1`,
-      [assignment.id],
-    );
+    await query(`UPDATE assignments SET status = 'expired', updated_at = now() WHERE id = $1`, [
+      assignment.id
+    ]);
 
-    await query(
-      `UPDATE tasks SET state = 'queued', updated_at = now() WHERE id = $1`,
-      [assignment.task_id],
-    );
+    await query(`UPDATE tasks SET state = 'queued', updated_at = now() WHERE id = $1`, [
+      assignment.task_id
+    ]);
 
     await query(
       `INSERT INTO activities (id, type, actor_id, payload, created_at)
@@ -148,14 +142,16 @@ async function expireStaleLeases(): Promise<number> {
         JSON.stringify({
           taskId: assignment.task_id,
           agentId: assignment.agent_id,
-          assignmentId: assignment.id,
-        }),
-      ],
+          assignmentId: assignment.id
+        })
+      ]
     );
 
     await query('COMMIT');
 
-    console.log(`assigner: expired lease for assignment ${assignment.id}, requeued task ${assignment.task_id}`);
+    console.log(
+      `assigner: expired lease for assignment ${assignment.id}, requeued task ${assignment.task_id}`
+    );
   }
 
   return expired.rows.length;

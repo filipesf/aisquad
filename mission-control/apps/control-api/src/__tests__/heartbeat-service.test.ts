@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the dependencies before importing the module under test
 vi.mock('../services/redis.js', () => {
@@ -11,24 +11,24 @@ vi.mock('../services/redis.js', () => {
         return 'OK';
       }),
       _store: store,
-      _reset: () => store.clear(),
-    },
+      _reset: () => store.clear()
+    }
   };
 });
 
 vi.mock('../domain/agents.js', () => ({
   getAgent: vi.fn(),
   markOnline: vi.fn(),
-  updateLastSeen: vi.fn(),
+  updateLastSeen: vi.fn()
 }));
 
 vi.mock('../domain/activities.js', () => ({
-  emit: vi.fn(),
+  emit: vi.fn()
 }));
 
-import { recordHeartbeat } from '../services/heartbeat.js';
-import * as agentDomain from '../domain/agents.js';
 import * as activities from '../domain/activities.js';
+import * as agentDomain from '../domain/agents.js';
+import { recordHeartbeat } from '../services/heartbeat.js';
 import { redis } from '../services/redis.js';
 
 const mockAgent = {
@@ -40,7 +40,7 @@ const mockAgent = {
   heartbeat_interval_ms: 10000,
   last_seen_at: null,
   created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
+  updated_at: new Date().toISOString()
 };
 
 describe('heartbeat service', () => {
@@ -68,7 +68,7 @@ describe('heartbeat service', () => {
     expect(agentDomain.markOnline).toHaveBeenCalledWith(mockAgent.id, expect.any(Date));
     expect(activities.emit).toHaveBeenCalledWith('agent.online', {
       agentId: mockAgent.id,
-      name: mockAgent.name,
+      name: mockAgent.name
     });
   });
 

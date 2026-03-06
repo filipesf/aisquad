@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { ActivityFeed } from './ActivityFeed.tsx';
+import { describe, expect, it } from 'vitest';
 import type { Activity } from '../types/domain.ts';
+import { ActivityFeed } from './ActivityFeed.tsx';
 
 const mockActivities: Activity[] = [
   {
@@ -9,22 +9,22 @@ const mockActivities: Activity[] = [
     type: 'task.created',
     actor_id: null,
     payload: { title: 'Fix bug' },
-    created_at: new Date().toISOString(),
+    created_at: new Date().toISOString()
   },
   {
     id: '2',
     type: 'agent.online',
     actor_id: 'agent-1',
     payload: {},
-    created_at: new Date().toISOString(),
+    created_at: new Date().toISOString()
   },
   {
     id: '3',
     type: 'assignment.expired',
     actor_id: null,
     payload: {},
-    created_at: new Date().toISOString(),
-  },
+    created_at: new Date().toISOString()
+  }
 ];
 
 describe('ActivityFeed', () => {
@@ -47,8 +47,8 @@ describe('ActivityFeed', () => {
           text.includes('All quiet') ||
           text.includes('agents work') ||
           text.includes('standing by') ||
-          text.includes('Waiting for something'),
-      ),
+          text.includes('Waiting for something')
+      )
     ).toBeInTheDocument();
   });
 

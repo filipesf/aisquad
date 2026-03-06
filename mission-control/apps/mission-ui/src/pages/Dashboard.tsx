@@ -1,19 +1,19 @@
-import { useMemo, useState, useEffect } from 'react';
-import type { Agent } from '@/types/domain';
-import { listAgents, listTasks } from '@/lib/api';
-import { usePolling } from '@/hooks/usePolling';
-import { useActivityStream } from '@/hooks/useActivityStream';
-import { ApiAuthBanner } from '@/components/ApiAuthBanner';
-import { WelcomeBanner } from '@/components/WelcomeBanner';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityFeed } from '@/components/ActivityFeed';
+import { ApiAuthBanner } from '@/components/ApiAuthBanner';
 import { AgentsTable } from '@/components/agents/AgentsTable';
 import { TasksTable } from '@/components/tasks/TasksTable';
+import { WelcomeBanner } from '@/components/WelcomeBanner';
+import { useActivityStream } from '@/hooks/useActivityStream';
+import { usePolling } from '@/hooks/usePolling';
+import { listAgents, listTasks } from '@/lib/api';
+import type { Agent } from '@/types/domain';
 
 export function Dashboard() {
   const {
     data: agents,
     error: agentsError,
-    refresh: _refreshAgents,
+    refresh: _refreshAgents
   } = usePolling(listAgents, 5000);
   const { data: tasks, error: tasksError, refresh: refreshTasks } = usePolling(listTasks, 5000);
   const { activities, connected } = useActivityStream();
@@ -42,13 +42,13 @@ export function Dashboard() {
   const { onlineCount, totalAgents } = useMemo(
     () => ({
       onlineCount: agents?.filter((a: Agent) => a.status === 'online').length ?? 0,
-      totalAgents: agents?.length ?? 0,
+      totalAgents: agents?.length ?? 0
     }),
-    [agents],
+    [agents]
   );
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="space-y-8 p-6">
       <ApiAuthBanner error={tasksError ?? agentsError} />
 
       {/* First-visit welcome — stagger index 0. Hidden once dismissed. */}
@@ -57,11 +57,11 @@ export function Dashboard() {
       {/* Fleet — stagger index 1 */}
       <section className="animate-fade-up" style={{ '--stagger-i': 1 } as React.CSSProperties}>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+          <h2 className="flex items-center gap-2 font-semibold text-sm tracking-tight">
             <span className="block h-3.5 w-0.5 rounded-full bg-primary" aria-hidden="true" />
             Agents
           </h2>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground text-xs">
             {onlineCount} of {totalAgents} online
           </span>
         </div>
@@ -70,7 +70,7 @@ export function Dashboard() {
 
       {/* Tasks — stagger index 2 */}
       <section className="animate-fade-up" style={{ '--stagger-i': 2 } as React.CSSProperties}>
-        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold tracking-tight">
+        <h2 className="mb-4 flex items-center gap-2 font-semibold text-sm tracking-tight">
           <span className="block h-3.5 w-0.5 rounded-full bg-primary" aria-hidden="true" />
           Tasks
         </h2>

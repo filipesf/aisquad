@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import Fastify from 'fastify';
+import { describe, expect, it } from 'vitest';
 import { registerCorrelationMiddleware } from '../middleware/correlation.js';
 
 describe('correlation ID middleware', () => {
@@ -8,7 +8,7 @@ describe('correlation ID middleware', () => {
     await registerCorrelationMiddleware(app);
 
     app.get('/test', async (req) => ({
-      correlationId: req.correlationId,
+      correlationId: req.correlationId
     }));
 
     const res = await app.inject({ method: 'GET', url: '/test' });
@@ -16,7 +16,7 @@ describe('correlation ID middleware', () => {
 
     // Should have a UUID correlation ID
     expect(body.correlationId).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
     );
 
     // Should be in the response header
@@ -30,14 +30,14 @@ describe('correlation ID middleware', () => {
     await registerCorrelationMiddleware(app);
 
     app.get('/test', async (req) => ({
-      correlationId: req.correlationId,
+      correlationId: req.correlationId
     }));
 
     const existingId = 'my-custom-correlation-id';
     const res = await app.inject({
       method: 'GET',
       url: '/test',
-      headers: { 'x-correlation-id': existingId },
+      headers: { 'x-correlation-id': existingId }
     });
 
     const body = res.json() as { correlationId: string };
@@ -52,7 +52,7 @@ describe('correlation ID middleware', () => {
     await registerCorrelationMiddleware(app);
 
     app.get('/test', async (req) => ({
-      correlationId: req.correlationId,
+      correlationId: req.correlationId
     }));
 
     const res1 = await app.inject({ method: 'GET', url: '/test' });
@@ -71,18 +71,18 @@ describe('correlation ID middleware', () => {
     await registerCorrelationMiddleware(app);
 
     app.get('/test', async (req) => ({
-      correlationId: req.correlationId,
+      correlationId: req.correlationId
     }));
 
     const res = await app.inject({
       method: 'GET',
       url: '/test',
-      headers: { 'x-correlation-id': '' },
+      headers: { 'x-correlation-id': '' }
     });
 
     const body = res.json() as { correlationId: string };
     expect(body.correlationId).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
     );
 
     await app.close();

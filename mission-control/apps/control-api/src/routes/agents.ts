@@ -1,5 +1,5 @@
-import type { FastifyInstance } from 'fastify';
 import { CreateAgentSchema, HeartbeatSchema } from '@mc/shared';
+import type { FastifyInstance } from 'fastify';
 import * as agentDomain from '../domain/agents.js';
 import { recordHeartbeat } from '../services/heartbeat.js';
 

@@ -1,0 +1,122 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.6/schema.json",
+
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true,
+    "root": "."
+  },
+
+  "files": {
+    "includes": ["**/*.ts", "**/*.tsx", "**/*.css", "**/*.json"]
+  },
+
+  "formatter": {
+    "lineWidth": 100,
+    "indentStyle": "space",
+    "lineEnding": "lf"
+  },
+
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "trailingCommas": "none"
+    }
+  },
+
+  "json": {
+    "parser": {
+      "allowComments": true,
+      "allowTrailingCommas": true
+    }
+  },
+
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "complexity": {
+        "noStaticOnlyClass": "off",
+        "noUselessUndefinedInitialization": "off"
+      },
+      "correctness": {
+        "noUnusedVariables": {
+          "level": "error",
+          "options": {
+            "ignoreRestSiblings": true
+          }
+        }
+      },
+      "performance": {
+        "noAccumulatingSpread": "off"
+      },
+      "style": {
+        "noParameterAssign": "off",
+        "noNonNullAssertion": "off"
+      },
+      "suspicious": {
+        "noExplicitAny": "error",
+        "noArrayIndexKey": "off",
+        "noAssignInExpressions": "off",
+        "useIterableCallbackReturn": "warn",
+        "noConsole": "off",
+        "noTsIgnore": "off"
+      }
+    }
+  },
+
+  "overrides": [
+    {
+      "includes": ["apps/mission-ui/**"],
+      "css": {
+        "parser": {
+          "tailwindDirectives": true
+        }
+      },
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noLabelWithoutControl": "off",
+            "useMediaCaption": "off",
+            "noStaticElementInteractions": "warn",
+            "useButtonType": "warn",
+            "useFocusableInteractive": "warn",
+            "useKeyWithClickEvents": "warn",
+            "useSemanticElements": "warn"
+          },
+          "complexity": {
+            "noImportantStyles": "off"
+          },
+          "correctness": {
+            "useExhaustiveDependencies": "off",
+            "noUnknownTypeSelector": "off"
+          },
+          "nursery": {
+            "useSortedClasses": {
+              "fix": "safe",
+              "level": "error",
+              "options": {}
+            }
+          },
+          "suspicious": {
+            "noUnknownAtRules": "off",
+            "noConsole": {
+              "level": "warn",
+              "options": {
+                "allow": ["error"]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -15,7 +15,7 @@ export interface OpenClawConfig {
 }
 
 function loadConfig(): OpenClawConfig {
-  const enabled = process.env['OPENCLAW_ENABLED'] === 'true';
+  const enabled = process.env.OPENCLAW_ENABLED === 'true';
 
   if (!enabled) {
     return {
@@ -23,12 +23,12 @@ function loadConfig(): OpenClawConfig {
       gatewayUrl: '',
       gatewayToken: '',
       controlApiUrl: '',
-      dispatchPollMs: 10_000,
+      dispatchPollMs: 10_000
     };
   }
 
-  const gatewayUrl = process.env['OPENCLAW_GATEWAY_URL'];
-  const gatewayToken = process.env['OPENCLAW_GATEWAY_TOKEN'];
+  const gatewayUrl = process.env.OPENCLAW_GATEWAY_URL;
+  const gatewayToken = process.env.OPENCLAW_GATEWAY_TOKEN;
 
   const missing: string[] = [];
   if (!gatewayUrl) missing.push('OPENCLAW_GATEWAY_URL');
@@ -36,18 +36,18 @@ function loadConfig(): OpenClawConfig {
 
   if (missing.length > 0) {
     console.error(
-      `openclaw-config: OPENCLAW_ENABLED=true but required env vars are missing: ${missing.join(', ')}`,
+      `openclaw-config: OPENCLAW_ENABLED=true but required env vars are missing: ${missing.join(', ')}`
     );
     process.exit(1);
   }
 
-  const controlApiUrl = process.env['CONTROL_API_URL'] || 'http://localhost:3000';
-  const defaultModel = process.env['OPENCLAW_DEFAULT_MODEL'] || undefined;
-  const dispatchPollMs = Number(process.env['OPENCLAW_DISPATCH_POLL_MS'] ?? 10_000);
+  const controlApiUrl = process.env.CONTROL_API_URL || 'http://localhost:3000';
+  const defaultModel = process.env.OPENCLAW_DEFAULT_MODEL || undefined;
+  const dispatchPollMs = Number(process.env.OPENCLAW_DISPATCH_POLL_MS ?? 10_000);
 
   if (!Number.isFinite(dispatchPollMs) || dispatchPollMs < 1000) {
     console.error(
-      `openclaw-config: OPENCLAW_DISPATCH_POLL_MS must be a number >= 1000, got: ${process.env['OPENCLAW_DISPATCH_POLL_MS']}`,
+      `openclaw-config: OPENCLAW_DISPATCH_POLL_MS must be a number >= 1000, got: ${process.env.OPENCLAW_DISPATCH_POLL_MS}`
     );
     process.exit(1);
   }
@@ -58,7 +58,7 @@ function loadConfig(): OpenClawConfig {
     gatewayToken: gatewayToken!,
     controlApiUrl,
     defaultModel,
-    dispatchPollMs,
+    dispatchPollMs
   };
 }
 

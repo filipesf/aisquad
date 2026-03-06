@@ -8,10 +8,11 @@
  * Viewport anchors to bottom-right — out of the way of the dashboard,
  * visible without obscuring the agent or task tables.
  */
-import { Toast as ToastPrimitive } from 'radix-ui';
+
 import { X } from 'lucide-react';
+import { Toast as ToastPrimitive } from 'radix-ui';
+import { type ToastVariant, useToastStore } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
-import { useToastStore, type ToastVariant } from '@/hooks/useToast';
 
 function variantClass(variant: ToastVariant = 'default'): string {
   if (variant === 'success')
@@ -44,15 +45,15 @@ export function Toaster() {
             'data-[swipe=cancel]:translate-x-0 data-[swipe=cancel]:transition-transform data-[swipe=cancel]:duration-200',
             'data-[swipe=end]:animate-toast-out',
             // Variant colours
-            variantClass(t.variant),
+            variantClass(t.variant)
           )}
         >
-          <div className="flex-1 min-w-0">
-            <ToastPrimitive.Title data-title className="text-sm font-medium leading-snug">
+          <div className="min-w-0 flex-1">
+            <ToastPrimitive.Title data-title className="font-medium text-sm leading-snug">
               {t.title}
             </ToastPrimitive.Title>
             {t.description && (
-              <ToastPrimitive.Description className="mt-0.5 text-xs text-muted-foreground">
+              <ToastPrimitive.Description className="mt-0.5 text-muted-foreground text-xs">
                 {t.description}
               </ToastPrimitive.Description>
             )}
@@ -63,7 +64,7 @@ export function Toaster() {
             className={cn(
               'shrink-0 rounded p-0.5 opacity-50 transition-opacity hover:opacity-100',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-              t.variant === 'destructive' ? 'text-white' : 'text-foreground',
+              t.variant === 'destructive' ? 'text-white' : 'text-foreground'
             )}
           >
             <X className="h-3.5 w-3.5" />
@@ -74,11 +75,11 @@ export function Toaster() {
       {/* Viewport — fixed bottom-right, stacks toasts vertically */}
       <ToastPrimitive.Viewport
         className={cn(
-          'fixed bottom-4 right-4 z-[200]',
+          'fixed right-4 bottom-4 z-[200]',
           'flex flex-col gap-2',
           'w-[360px] max-w-[calc(100vw-2rem)]',
           // Focus outline for keyboard users
-          'focus:outline-none',
+          'focus:outline-none'
         )}
       />
     </ToastPrimitive.Provider>

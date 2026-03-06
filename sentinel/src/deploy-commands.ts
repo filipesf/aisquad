@@ -2,26 +2,23 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { REST, Routes } from 'discord.js';
-
+import contentCommand from './commands/agents/content.js';
 // Agent commands
 import corvenCommand from './commands/agents/corven.js';
-import sessionCommand from './commands/agents/session.js';
 import growthCommand from './commands/agents/growth.js';
-import contentCommand from './commands/agents/content.js';
-import opsCommand from './commands/agents/ops.js';
 import leadsCommand from './commands/agents/leads.js';
-
-// Activity commands
-import decisionCommand from './commands/decision.js';
-import standupCommand from './commands/standup.js';
-import reportCommand from './commands/report.js';
-
+import opsCommand from './commands/agents/ops.js';
+import sessionCommand from './commands/agents/session.js';
 // Infrastructure commands
 import assignCommand from './commands/assign/index.js';
 import auditCommand from './commands/audit.js';
 import createCommand from './commands/create/index.js';
+// Activity commands
+import decisionCommand from './commands/decision.js';
 import permissionsCommand from './commands/permissions/index.js';
+import reportCommand from './commands/report.js';
 import setupCommand from './commands/setup/index.js';
+import standupCommand from './commands/standup.js';
 import statusCommand from './commands/status.js';
 
 // Load config
@@ -51,7 +48,7 @@ const commands = [
   createCommand,
   assignCommand,
   permissionsCommand,
-  auditCommand,
+  auditCommand
 ].map((cmd) => cmd.data.toJSON());
 
 const rest = new REST().setToken(config.token);
@@ -60,10 +57,9 @@ const rest = new REST().setToken(config.token);
   try {
     console.log(`[DEPLOY] Registering ${commands.length} slash commands...`);
 
-    const data = (await rest.put(
-      Routes.applicationGuildCommands(config.clientId, config.guildId),
-      { body: commands },
-    )) as unknown[];
+    const data = (await rest.put(Routes.applicationGuildCommands(config.clientId, config.guildId), {
+      body: commands
+    })) as unknown[];
 
     console.log(`[DEPLOY] Successfully registered ${data.length} commands.`);
   } catch (error) {

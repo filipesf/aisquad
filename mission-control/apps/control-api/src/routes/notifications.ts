@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
-import * as notificationDomain from '../domain/notifications.js';
 import * as agentDomain from '../domain/agents.js';
+import * as notificationDomain from '../domain/notifications.js';
 
 export async function notificationRoutes(app: FastifyInstance): Promise<void> {
   // List notifications for an agent (undelivered + recent delivered)

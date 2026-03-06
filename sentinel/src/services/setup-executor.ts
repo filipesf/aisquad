@@ -12,7 +12,7 @@ import {
   type OverwriteResolvable,
   PermissionsBitField,
   type Role,
-  type TextChannel,
+  type TextChannel
 } from 'discord.js';
 import {
   type CategoryConfig,
@@ -20,7 +20,7 @@ import {
   everyonePermissions,
   type PermissionOverwrite,
   roles as roleConfigs,
-  setupBotDemotedPermissions,
+  setupBotDemotedPermissions
 } from '../config/server-architecture.js';
 import { AUTO_ARCHIVE_DURATION } from '../utils/constants.js';
 import { sleep } from '../utils/helpers.js';
@@ -50,10 +50,7 @@ function resolveRole(guild: Guild, roleName: string): Role | undefined {
 /**
  * Build Discord permission overwrites from our config format.
  */
-function buildOverwrites(
-  guild: Guild,
-  overwrites: PermissionOverwrite[],
-): OverwriteResolvable[] {
+function buildOverwrites(guild: Guild, overwrites: PermissionOverwrite[]): OverwriteResolvable[] {
   const result: OverwriteResolvable[] = [];
 
   for (const ow of overwrites) {
@@ -65,7 +62,7 @@ function buildOverwrites(
     result.push({
       id: role.id,
       allow: ow.allow,
-      deny: ow.deny,
+      deny: ow.deny
     });
   }
 
@@ -83,7 +80,7 @@ export interface SetupOptions {
 export async function executeFullSetup(
   guild: Guild,
   invokerId: string,
-  options: SetupOptions = {},
+  options: SetupOptions = {}
 ): Promise<SetupResult> {
   const result: SetupResult = {
     rolesCreated: 0,
@@ -92,7 +89,7 @@ export async function executeFullSetup(
     categoriesSkipped: 0,
     channelsCreated: 0,
     channelsSkipped: 0,
-    errors: [],
+    errors: []
   };
 
   const invoker = await guild.members.fetch(invokerId).catch(() => null);
@@ -101,7 +98,7 @@ export async function executeFullSetup(
   await logAction(
     guild,
     'SETUP',
-    `Full setup initiated by ${invokerName}${options.clean ? ' (with --clean)' : ''}`,
+    `Full setup initiated by ${invokerName}${options.clean ? ' (with --clean)' : ''}`
   );
 
   // ── Step 0: Clean — delete everything not in the architecture ──
@@ -115,51 +112,35 @@ export async function executeFullSetup(
   // then extra categories (which may now be empty).
 
   if (options.clean) {
-    console.log(
-      '[SETUP] Step 0: Cleaning channels/categories not in architecture...',
-    );
+    console.log('[SETUP] Step 0: Cleaning channels/categories not in architecture...');
 
     // Build lookup sets from the config
     const configCategoryNames = new Set(categoryConfigs.map((c) => c.name));
     const configChannelsByCategory = new Map<string, Set<string>>();
     for (const cat of categoryConfigs) {
-      configChannelsByCategory.set(
-        cat.name,
-        new Set(cat.channels.map((ch) => ch.name)),
-      );
+      configChannelsByCategory.set(cat.name, new Set(cat.channels.map((ch) => ch.name)));
     }
 
     // Pass 1: Delete extra channels inside config-defined categories
     for (const catConfig of categoryConfigs) {
       const category = guild.channels.cache.find(
-        (ch) =>
-          ch.name === catConfig.name && ch.type === ChannelType.GuildCategory,
+        (ch) => ch.name === catConfig.name && ch.type === ChannelType.GuildCategory
       );
       if (!category) continue;
 
       const expectedChannels = configChannelsByCategory.get(catConfig.name)!;
-      const children = guild.channels.cache.filter(
-        (ch) => ch.parentId === category.id,
-      );
+      const children = guild.channels.cache.filter((ch) => ch.parentId === category.id);
 
       for (const [, child] of children) {
         if (!expectedChannels.has(child.name)) {
           try {
             const label =
-              child.type === ChannelType.GuildVoice
-                ? `(voice) ${child.name}`
-                : `#${child.name}`;
+              child.type === ChannelType.GuildVoice ? `(voice) ${child.name}` : `#${child.name}`;
             await child.delete(
-              `Setup bot: clean — channel not in architecture (${catConfig.name})`,
+              `Setup bot: clean — channel not in architecture (${catConfig.name})`
             );
-            await logAction(
-              guild,
-              'CLEAN',
-              `Deleted ${label} from ${catConfig.name}`,
-            );
-            console.log(
-              `[SETUP] Deleted extra channel ${label} from ${catConfig.name}`,
-            );
+            await logAction(guild, 'CLEAN', `Deleted ${label} from ${catConfig.name}`);
+            console.log(`[SETUP] Deleted extra channel ${label} from ${catConfig.name}`);
             await sleep(300);
           } catch (err) {
             result.errors.push(`Failed to delete #${child.name}: ${err}`);
@@ -170,21 +151,19 @@ export async function executeFullSetup(
 
     // Pass 2: Delete entire categories (and their children) that aren't in the config
     const serverCategories = guild.channels.cache.filter(
-      (ch) => ch.type === ChannelType.GuildCategory,
+      (ch) => ch.type === ChannelType.GuildCategory
     );
 
     for (const [, category] of serverCategories) {
       if (configCategoryNames.has(category.name)) continue;
 
       // Delete children first
-      const children = guild.channels.cache.filter(
-        (ch) => ch.parentId === category.id,
-      );
+      const children = guild.channels.cache.filter((ch) => ch.parentId === category.id);
       for (const [, child] of children) {
         try {
           await child.delete('Setup bot: clean — category not in architecture');
           console.log(
-            `[SETUP] Deleted #${child.name} (child of extra category "${category.name}")`,
+            `[SETUP] Deleted #${child.name} (child of extra category "${category.name}")`
           );
           await sleep(300);
         } catch (err) {
@@ -194,38 +173,30 @@ export async function executeFullSetup(
 
       // Delete the category
       try {
-        await category.delete(
-          'Setup bot: clean — category not in architecture',
-        );
+        await category.delete('Setup bot: clean — category not in architecture');
         await logAction(
           guild,
           'CLEAN',
-          `Deleted extra category "${category.name}" and its channels`,
+          `Deleted extra category "${category.name}" and its channels`
         );
         console.log(`[SETUP] Deleted extra category "${category.name}"`);
         await sleep(300);
       } catch (err) {
-        result.errors.push(
-          `Failed to delete category "${category.name}": ${err}`,
-        );
+        result.errors.push(`Failed to delete category "${category.name}": ${err}`);
       }
     }
 
     // Pass 3: Delete orphan channels (no parent category)
     await guild.channels.fetch();
     const orphanChannels = guild.channels.cache.filter(
-      (ch) => ch.parentId === null && ch.type !== ChannelType.GuildCategory,
+      (ch) => ch.parentId === null && ch.type !== ChannelType.GuildCategory
     );
 
     for (const [, channel] of orphanChannels) {
       try {
         const label =
-          channel.type === ChannelType.GuildVoice
-            ? `(voice) ${channel.name}`
-            : `#${channel.name}`;
-        await channel.delete(
-          'Setup bot: clean — orphan channel not in any category',
-        );
+          channel.type === ChannelType.GuildVoice ? `(voice) ${channel.name}` : `#${channel.name}`;
+        await channel.delete('Setup bot: clean — orphan channel not in any category');
         await logAction(guild, 'CLEAN', `Deleted orphan channel ${label}`);
         console.log(`[SETUP] Deleted orphan channel ${label}`);
         await sleep(300);
@@ -248,9 +219,7 @@ export async function executeFullSetup(
       // Discord auto-creates the role when the bot joins. We only find
       // and update it — never create it. If the bot hasn't joined yet,
       // the role won't exist and that's fine.
-      const existing = guild.roles.cache.find(
-        (r) => r.name === roleConfig.name,
-      );
+      const existing = guild.roles.cache.find((r) => r.name === roleConfig.name);
 
       if (roleConfig.managed) {
         if (existing) {
@@ -258,18 +227,14 @@ export async function executeFullSetup(
           await existing.edit({
             colors: { primaryColor: roleConfig.color },
             hoist: roleConfig.hoist,
-            reason: 'Setup bot: updating managed bot role to match spec',
+            reason: 'Setup bot: updating managed bot role to match spec'
           });
           console.log(`[SETUP] Role "${roleConfig.name}" (managed) updated`);
           result.rolesSkipped++;
-          await logAction(
-            guild,
-            'ROLE',
-            `Updated managed role @${roleConfig.name}`,
-          );
+          await logAction(guild, 'ROLE', `Updated managed role @${roleConfig.name}`);
         } else {
           console.log(
-            `[SETUP] Role "${roleConfig.name}" (managed) not in server yet — bot hasn't joined`,
+            `[SETUP] Role "${roleConfig.name}" (managed) not in server yet — bot hasn't joined`
           );
           result.rolesSkipped++;
         }
@@ -277,9 +242,7 @@ export async function executeFullSetup(
       }
 
       if (existing) {
-        console.log(
-          `[SETUP] Role "${roleConfig.name}" already exists, skipping`,
-        );
+        console.log(`[SETUP] Role "${roleConfig.name}" already exists, skipping`);
         result.rolesSkipped++;
         continue;
       }
@@ -295,14 +258,14 @@ export async function executeFullSetup(
         hoist: roleConfig.hoist,
         mentionable: roleConfig.mentionable,
         permissions: new PermissionsBitField(permBitfield),
-        reason: `Setup bot: initial server setup`,
+        reason: `Setup bot: initial server setup`
       });
 
       result.rolesCreated++;
       await logAction(
         guild,
         'ROLE',
-        `Created @${roleConfig.name} (${roleConfig.hoist ? 'hoisted' : 'not hoisted'})`,
+        `Created @${roleConfig.name} (${roleConfig.hoist ? 'hoisted' : 'not hoisted'})`
       );
       await sleep(300); // Rate limit breathing room
     } catch (err) {
@@ -317,9 +280,7 @@ export async function executeFullSetup(
   console.log('[SETUP] Step 1b: Positioning roles in hierarchy...');
 
   // Sort role configs by position descending so highest goes first
-  const sortedConfigs = [...roleConfigs].sort(
-    (a, b) => b.position - a.position,
-  );
+  const sortedConfigs = [...roleConfigs].sort((a, b) => b.position - a.position);
 
   for (const roleConfig of sortedConfigs) {
     try {
@@ -332,24 +293,17 @@ export async function executeFullSetup(
 
       // Target position: we want higher config.position = higher Discord position
       // But we can't go above the bot's own role
-      const targetPosition = Math.min(
-        roleConfig.position,
-        botHighestPosition - 1,
-      );
+      const targetPosition = Math.min(roleConfig.position, botHighestPosition - 1);
 
       if (role.position !== targetPosition && targetPosition > 0) {
         await role.setPosition(targetPosition).catch((err) => {
           // Position conflicts are common and usually harmless
-          console.warn(
-            `[SETUP] Could not set position for "${roleConfig.name}": ${err.message}`,
-          );
+          console.warn(`[SETUP] Could not set position for "${roleConfig.name}": ${err.message}`);
         });
         await sleep(300);
       }
     } catch (err) {
-      console.warn(
-        `[SETUP] Error positioning role "${roleConfig.name}": ${err}`,
-      );
+      console.warn(`[SETUP] Error positioning role "${roleConfig.name}": ${err}`);
     }
   }
 
@@ -360,19 +314,15 @@ export async function executeFullSetup(
   try {
     const everyoneRole = guild.roles.everyone;
     const currentPerms = everyoneRole.permissions;
-    const denyBit = everyonePermissions.deny.reduce((acc, p) => acc | p, 0n);
+    const _denyBit = everyonePermissions.deny.reduce((acc, p) => acc | p, 0n);
 
     // Remove ViewChannel from @everyone
     if (currentPerms.has(PermissionsBitField.Flags.ViewChannel)) {
       await everyoneRole.setPermissions(
         currentPerms.remove(PermissionsBitField.Flags.ViewChannel),
-        'Setup bot: lock @everyone — deny ViewChannel server-wide',
+        'Setup bot: lock @everyone — deny ViewChannel server-wide'
       );
-      await logAction(
-        guild,
-        'PERM',
-        '@everyone ViewChannel denied (server-level)',
-      );
+      await logAction(guild, 'PERM', '@everyone ViewChannel denied (server-level)');
     } else {
       console.log('[SETUP] @everyone ViewChannel already denied');
     }
@@ -389,32 +339,25 @@ export async function executeFullSetup(
   for (const catConfig of categoryConfigs) {
     try {
       const existing = guild.channels.cache.find(
-        (ch) =>
-          ch.name === catConfig.name && ch.type === ChannelType.GuildCategory,
+        (ch) => ch.name === catConfig.name && ch.type === ChannelType.GuildCategory
       );
 
       if (existing) {
-        console.log(
-          `[SETUP] Category "${catConfig.name}" already exists, skipping`,
-        );
+        console.log(`[SETUP] Category "${catConfig.name}" already exists, skipping`);
         result.categoriesSkipped++;
         // Still update permission overwrites on existing categories
-        await updateCategoryPermissions(
-          guild,
-          existing as CategoryChannel,
-          catConfig,
-        );
+        await updateCategoryPermissions(guild, existing as CategoryChannel, catConfig);
         continue;
       }
 
       const overwrites = buildOverwrites(guild, catConfig.overwrites);
 
-      const category = await guild.channels.create({
+      const _category = await guild.channels.create({
         name: catConfig.name,
         type: ChannelType.GuildCategory,
         position: catConfig.position,
         permissionOverwrites: overwrites,
-        reason: 'Setup bot: initial server setup',
+        reason: 'Setup bot: initial server setup'
       });
 
       result.categoriesCreated++;
@@ -433,14 +376,11 @@ export async function executeFullSetup(
 
   for (const catConfig of categoryConfigs) {
     const parentCategory = guild.channels.cache.find(
-      (ch) =>
-        ch.name === catConfig.name && ch.type === ChannelType.GuildCategory,
+      (ch) => ch.name === catConfig.name && ch.type === ChannelType.GuildCategory
     ) as CategoryChannel | undefined;
 
     if (!parentCategory && catConfig.channels.length > 0) {
-      result.errors.push(
-        `Category "${catConfig.name}" not found, can't create its channels`,
-      );
+      result.errors.push(`Category "${catConfig.name}" not found, can't create its channels`);
       continue;
     }
 
@@ -450,30 +390,23 @@ export async function executeFullSetup(
           (ch) =>
             ch.name === channelConfig.name &&
             ch.type === channelConfig.type &&
-            ch.parentId === parentCategory?.id,
+            ch.parentId === parentCategory?.id
         );
 
         if (existing) {
           console.log(
-            `[SETUP] Channel "#${channelConfig.name}" already exists in "${catConfig.name}", skipping`,
+            `[SETUP] Channel "#${channelConfig.name}" already exists in "${catConfig.name}", skipping`
           );
           result.channelsSkipped++;
 
           // Update auto-archive if needed
-          if (
-            channelConfig.autoArchive &&
-            existing.type === ChannelType.GuildText
-          ) {
+          if (channelConfig.autoArchive && existing.type === ChannelType.GuildText) {
             const textChannel = existing as TextChannel;
-            if (
-              textChannel.defaultAutoArchiveDuration !== AUTO_ARCHIVE_DURATION
-            ) {
+            if (textChannel.defaultAutoArchiveDuration !== AUTO_ARCHIVE_DURATION) {
               await textChannel.edit({
-                defaultAutoArchiveDuration: AUTO_ARCHIVE_DURATION,
+                defaultAutoArchiveDuration: AUTO_ARCHIVE_DURATION
               });
-              console.log(
-                `[SETUP] Updated auto-archive on #${channelConfig.name}`,
-              );
+              console.log(`[SETUP] Updated auto-archive on #${channelConfig.name}`);
             }
           }
           continue;
@@ -481,34 +414,23 @@ export async function executeFullSetup(
 
         // Build channel-specific overwrites
         // Start with category overwrites, then add channel-level ones
-        const channelOverwrites = buildOverwrites(
-          guild,
-          channelConfig.overwrites,
-        );
+        const channelOverwrites = buildOverwrites(guild, channelConfig.overwrites);
 
         const isText = channelConfig.type === ChannelType.GuildText;
 
-        const channel = await guild.channels.create({
+        const _channel = await guild.channels.create({
           name: channelConfig.name,
           type: channelConfig.type,
-          topic:
-            isText && channelConfig.topic ? channelConfig.topic : undefined,
+          topic: isText && channelConfig.topic ? channelConfig.topic : undefined,
           parent: parentCategory?.id,
-          permissionOverwrites:
-            channelConfig.overwrites.length > 0 ? channelOverwrites : undefined,
+          permissionOverwrites: channelConfig.overwrites.length > 0 ? channelOverwrites : undefined,
           defaultAutoArchiveDuration:
-            isText && channelConfig.autoArchive
-              ? AUTO_ARCHIVE_DURATION
-              : undefined,
-          reason: 'Setup bot: initial server setup',
+            isText && channelConfig.autoArchive ? AUTO_ARCHIVE_DURATION : undefined,
+          reason: 'Setup bot: initial server setup'
         });
 
         result.channelsCreated++;
-        await logAction(
-          guild,
-          'CHANNEL',
-          `Created #${channelConfig.name} in ${catConfig.name}`,
-        );
+        await logAction(guild, 'CHANNEL', `Created #${channelConfig.name} in ${catConfig.name}`);
         await sleep(300);
       } catch (err) {
         const msg = `Failed to create channel "#${channelConfig.name}": ${err}`;
@@ -526,7 +448,7 @@ export async function executeFullSetup(
     const posResult = await enforcePositions(guild);
     if (posResult.categoriesMoved > 0 || posResult.channelsMoved > 0) {
       console.log(
-        `[SETUP] Positions enforced: ${posResult.categoriesMoved} categories, ${posResult.channelsMoved} channels moved`,
+        `[SETUP] Positions enforced: ${posResult.categoriesMoved} categories, ${posResult.channelsMoved} channels moved`
       );
     }
     if (posResult.errors.length > 0) {
@@ -563,23 +485,23 @@ export async function executeFullSetup(
     {
       name: 'Roles',
       value: `${result.rolesCreated} created, ${result.rolesSkipped} already existed`,
-      inline: true,
+      inline: true
     },
     {
       name: 'Categories',
       value: `${result.categoriesCreated} created, ${result.categoriesSkipped} already existed`,
-      inline: true,
+      inline: true
     },
     {
       name: 'Channels',
       value: `${result.channelsCreated} created, ${result.channelsSkipped} already existed`,
-      inline: true,
+      inline: true
     },
     {
       name: 'Errors',
       value: result.errors.length > 0 ? result.errors.join('\n') : 'None',
-      inline: false,
-    },
+      inline: false
+    }
   ]);
 
   // ── Step 7: Demote bot ────────────────────────────────────────
@@ -588,19 +510,12 @@ export async function executeFullSetup(
   try {
     const setupBotRole = guild.roles.cache.find((r) => r.name === 'Setup Bot');
     if (setupBotRole) {
-      const demotedBitfield = setupBotDemotedPermissions.reduce(
-        (acc, p) => acc | p,
-        0n,
-      );
+      const demotedBitfield = setupBotDemotedPermissions.reduce((acc, p) => acc | p, 0n);
       await setupBotRole.setPermissions(
         new PermissionsBitField(demotedBitfield),
-        'Setup bot: self-demotion after setup',
+        'Setup bot: self-demotion after setup'
       );
-      await logAction(
-        guild,
-        'PERM',
-        'Bot demoted from Administrator to minimal permissions',
-      );
+      await logAction(guild, 'PERM', 'Bot demoted from Administrator to minimal permissions');
     }
   } catch (err) {
     const msg = `Failed to demote bot: ${err}`;
@@ -618,7 +533,7 @@ export async function executeFullSetup(
 async function updateCategoryPermissions(
   guild: Guild,
   category: CategoryChannel,
-  config: CategoryConfig,
+  config: CategoryConfig
 ): Promise<void> {
   for (const ow of config.overwrites) {
     const role = resolveRole(guild, ow.role);
@@ -639,11 +554,11 @@ async function updateCategoryPermissions(
 
       await category.permissionOverwrites.edit(role, {
         ...allowObj,
-        ...denyObj,
+        ...denyObj
       });
     } catch (err) {
       console.warn(
-        `[SETUP] Could not update overwrite for "${ow.role}" on "${config.name}": ${err}`,
+        `[SETUP] Could not update overwrite for "${ow.role}" on "${config.name}": ${err}`
       );
     }
   }
@@ -653,10 +568,7 @@ async function updateCategoryPermissions(
  * Get the string name of a permission flag bit for use with permissionOverwrites.edit().
  */
 function getPermissionName(bit: bigint): string | null {
-  const entries = Object.entries(PermissionsBitField.Flags) as [
-    string,
-    bigint,
-  ][];
+  const entries = Object.entries(PermissionsBitField.Flags) as [string, bigint][];
   for (const [name, value] of entries) {
     if (value === bit) return name;
   }

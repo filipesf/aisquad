@@ -2,33 +2,30 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client, Collection, GatewayIntentBits } from 'discord.js';
-import { connect as connectGateway } from './services/openclaw-ws.js';
+import contentCommand from './commands/agents/content.js';
 
 // Agent commands
 import corvenCommand from './commands/agents/corven.js';
-import sessionCommand from './commands/agents/session.js';
 import growthCommand from './commands/agents/growth.js';
-import contentCommand from './commands/agents/content.js';
-import opsCommand from './commands/agents/ops.js';
 import leadsCommand from './commands/agents/leads.js';
-
-// Activity commands
-import decisionCommand from './commands/decision.js';
-import standupCommand from './commands/standup.js';
-import reportCommand from './commands/report.js';
-
+import opsCommand from './commands/agents/ops.js';
+import sessionCommand from './commands/agents/session.js';
 // Infrastructure commands
 import assignCommand from './commands/assign/index.js';
 import auditCommand from './commands/audit.js';
 import createCommand from './commands/create/index.js';
+// Activity commands
+import decisionCommand from './commands/decision.js';
 import permissionsCommand from './commands/permissions/index.js';
+import reportCommand from './commands/report.js';
 import setupCommand from './commands/setup/index.js';
+import standupCommand from './commands/standup.js';
 import statusCommand from './commands/status.js';
-
 // Events
 import * as interactionCreateEvent from './events/interaction-create.js';
 import * as messageCreateEvent from './events/message-create.js';
 import * as readyEvent from './events/ready.js';
+import { connect as connectGateway } from './services/openclaw-ws.js';
 
 import type { Command } from './types.js';
 
@@ -47,8 +44,8 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
+    GatewayIntentBits.MessageContent
+  ]
 });
 
 // Register commands
@@ -71,7 +68,7 @@ const commands: Command[] = [
   createCommand,
   assignCommand,
   permissionsCommand,
-  auditCommand,
+  auditCommand
 ];
 
 for (const command of commands) {

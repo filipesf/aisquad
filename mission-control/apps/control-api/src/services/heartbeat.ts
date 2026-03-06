@@ -1,6 +1,6 @@
-import { redis } from './redis.js';
-import * as agents from '../domain/agents.js';
 import * as activities from '../domain/activities.js';
+import * as agents from '../domain/agents.js';
+import { redis } from './redis.js';
 
 const SEQUENCE_TTL_SECONDS = 60;
 
@@ -12,7 +12,7 @@ const SEQUENCE_TTL_SECONDS = 60;
  */
 export async function recordHeartbeat(
   agentId: string,
-  sequenceId?: string,
+  sequenceId?: string
 ): Promise<{ ok: boolean; duplicate: boolean }> {
   // Idempotency guard: skip if we've already processed this sequence
   if (sequenceId) {

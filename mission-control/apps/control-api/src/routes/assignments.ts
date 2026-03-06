@@ -9,7 +9,7 @@ export async function assignmentRoutes(app: FastifyInstance): Promise<void> {
 
     if (!assignment) {
       return reply.status(404).send({
-        error: 'Assignment not found or not in offered state',
+        error: 'Assignment not found or not in offered state'
       });
     }
 
@@ -23,7 +23,7 @@ export async function assignmentRoutes(app: FastifyInstance): Promise<void> {
 
     if (!assignment) {
       return reply.status(404).send({
-        error: 'Assignment not found or not in accepted state',
+        error: 'Assignment not found or not in accepted state'
       });
     }
 

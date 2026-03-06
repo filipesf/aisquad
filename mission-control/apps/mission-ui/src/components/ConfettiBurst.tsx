@@ -25,7 +25,7 @@ const COLOURS = [
   'oklch(0.488 0.186 252)', // info blue
   'oklch(0.554 0.135 66)', // warning amber
   'oklch(0.62 0.214 27)', // brand red (repeat for density)
-  'oklch(0.527 0.154 150)', // success green (repeat)
+  'oklch(0.527 0.154 150)' // success green (repeat)
 ];
 
 /** Generate particle motion values from its index (0-based). */
@@ -56,7 +56,7 @@ function particleStyle(i: number): CSSProperties {
     '--confetti-rot': `${rot}deg`,
     '--confetti-dur': `${dur}ms`,
     '--confetti-delay': `${delay}ms`,
-    backgroundColor: colour,
+    backgroundColor: colour
   } as CSSProperties;
 }
 
@@ -71,7 +71,7 @@ export function ConfettiBurst() {
       {PARTICLES.map((i) => (
         <span
           key={i}
-          className="absolute h-1.5 w-1.5 rounded-[1px] animate-confetti-burst"
+          className="absolute h-1.5 w-1.5 animate-confetti-burst rounded-[1px]"
           style={particleStyle(i)}
         />
       ))}

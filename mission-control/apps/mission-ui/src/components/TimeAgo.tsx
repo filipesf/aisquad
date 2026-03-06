@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils';
 import { useTickClock } from '@/hooks/useTickClock';
+import { cn } from '@/lib/utils';
 
 interface TimeAgoProps {
   date: string | null;

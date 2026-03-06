@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { query } from '../services/db.js';
 import type { Comment, CreateCommentInput } from '@mc/shared';
-import * as subscriptions from './subscriptions.js';
-import * as notifications from './notifications.js';
+import { query } from '../services/db.js';
 import * as activities from './activities.js';
+import * as notifications from './notifications.js';
+import * as subscriptions from './subscriptions.js';
 
 interface CommentRow {
   id: string;
@@ -19,7 +19,7 @@ function rowToComment(row: CommentRow): Comment {
     task_id: row.task_id,
     author_id: row.author_id,
     body: row.body,
-    created_at: row.created_at,
+    created_at: row.created_at
   };
 }
 
@@ -49,7 +49,7 @@ export async function resolveMentions(names: string[]): Promise<Map<string, stri
   const placeholders = names.map((_, i) => `$${i + 1}`).join(', ');
   const result = await query<{ id: string; name: string }>(
     `SELECT id, name FROM agents WHERE name IN (${placeholders})`,
-    names,
+    names
   );
 
   const map = new Map<string, string>();
@@ -70,7 +70,7 @@ export async function resolveMentions(names: string[]): Promise<Map<string, stri
 export async function createComment(
   taskId: string,
   authorId: string,
-  input: CreateCommentInput,
+  input: CreateCommentInput
 ): Promise<Comment> {
   const id = randomUUID();
 
@@ -78,7 +78,7 @@ export async function createComment(
     `INSERT INTO comments (id, task_id, author_id, body, created_at)
      VALUES ($1, $2, $3, $4, now())
      RETURNING *`,
-    [id, taskId, authorId, input.body],
+    [id, taskId, authorId, input.body]
   );
 
   const comment = rowToComment(result.rows[0]!);
@@ -104,7 +104,7 @@ export async function createComment(
       commentId: comment.id,
       authorId,
       body: input.body,
-      mentionedNames: [...mentionMap.keys()],
+      mentionedNames: [...mentionMap.keys()]
     });
   }
 
@@ -113,7 +113,7 @@ export async function createComment(
     taskId,
     commentId: comment.id,
     authorId,
-    mentionedAgentIds: [...mentionMap.values()],
+    mentionedAgentIds: [...mentionMap.values()]
   });
 
   return comment;
@@ -125,7 +125,7 @@ export async function createComment(
 export async function listComments(taskId: string): Promise<Comment[]> {
   const result = await query<CommentRow>(
     'SELECT * FROM comments WHERE task_id = $1 ORDER BY created_at ASC',
-    [taskId],
+    [taskId]
   );
   return result.rows.map(rowToComment);
 }

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
-    "lint": "pnpm -r lint",
+    "lint": "biome lint apps packages tests",
+    "format": "biome format --write apps packages tests",
+    "check": "biome check apps packages tests",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "test:integration": "pnpm --filter @mc/integration test",
@@ -15,10 +17,7 @@
     "agents:sync-openclaw": "tsx ops/sync-openclaw-agents.ts"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.32.0",
-    "@typescript-eslint/parser": "^8.32.0",
-    "eslint": "^9.27.0",
-    "prettier": "^3.5.3",
+    "@biomejs/biome": "^2.4.6",
     "tsx": "^4.21.0",
     "typescript": "^5.8.3"
   },

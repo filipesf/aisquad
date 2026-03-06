@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import type { Activity } from '../types/domain.ts';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createActivityStream, listActivities } from '../lib/api.ts';
+import type { Activity } from '../types/domain.ts';
 
 const MAX_ACTIVITIES = 200;
 

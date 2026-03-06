@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { assertTransition, getValidTransitions, InvalidTransitionError } from '../domain/tasks.js';
 
 describe('task state machine', () => {
@@ -16,7 +16,7 @@ describe('task state machine', () => {
       ['blocked', 'queued'],
       ['blocked', 'assigned'],
       ['blocked', 'in_progress'],
-      ['blocked', 'review'],
+      ['blocked', 'review']
     ];
 
     for (const [from, to] of validCases) {
@@ -43,7 +43,7 @@ describe('task state machine', () => {
       ['done', 'assigned'],
       ['done', 'in_progress'],
       ['done', 'review'],
-      ['done', 'blocked'],
+      ['done', 'blocked']
     ];
 
     for (const [from, to] of invalidCases) {
@@ -71,7 +71,12 @@ describe('task state machine', () => {
     });
 
     it('returns valid transitions for blocked', () => {
-      expect(getValidTransitions('blocked')).toEqual(['queued', 'assigned', 'in_progress', 'review']);
+      expect(getValidTransitions('blocked')).toEqual([
+        'queued',
+        'assigned',
+        'in_progress',
+        'review'
+      ]);
     });
 
     it('returns empty for done (terminal)', () => {

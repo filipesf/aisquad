@@ -1,21 +1,21 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import pg from 'pg';
 import { Redis } from 'ioredis';
+import pg from 'pg';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-const API_URL = process.env['API_URL'] ?? 'http://localhost:3000';
+const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 
 const pool = new pg.Pool({
-  host: process.env['PGHOST'] ?? 'localhost',
-  port: Number(process.env['PGPORT'] ?? 5432),
-  user: process.env['PGUSER'] ?? 'postgres',
-  password: process.env['PGPASSWORD'] ?? 'postgres',
-  database: process.env['PGDATABASE'] ?? 'mission_control',
+  host: process.env.PGHOST ?? 'localhost',
+  port: Number(process.env.PGPORT ?? 5432),
+  user: process.env.PGUSER ?? 'postgres',
+  password: process.env.PGPASSWORD ?? 'postgres',
+  database: process.env.PGDATABASE ?? 'mission_control'
 });
 
 const redis = new Redis({
-  host: process.env['REDIS_HOST'] ?? 'localhost',
-  port: Number(process.env['REDIS_PORT'] ?? 6379),
-  lazyConnect: true,
+  host: process.env.REDIS_HOST ?? 'localhost',
+  port: Number(process.env.REDIS_PORT ?? 6379),
+  lazyConnect: true
 });
 
 interface AgentResp {
@@ -37,11 +37,14 @@ interface AssignmentResp {
   status: string;
 }
 
-async function post<T>(path: string, body: Record<string, unknown>): Promise<{ status: number; data: T }> {
+async function post<T>(
+  path: string,
+  body: Record<string, unknown>
+): Promise<{ status: number; data: T }> {
   const res = await fetch(`${API_URL}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify(body)
   });
   return { status: res.status, data: (await res.json()) as T };
 }
@@ -70,14 +73,17 @@ async function cleanRedis(): Promise<void> {
   if (dedupKeys.length > 0) await redis.del(...dedupKeys);
 }
 
-async function createAgent(name: string, caps: Record<string, unknown> = { code: true }): Promise<AgentResp> {
+async function createAgent(
+  name: string,
+  caps: Record<string, unknown> = { code: true }
+): Promise<AgentResp> {
   const { data } = await post<AgentResp>('/agents', {
     name,
     session_key: `sk-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     capabilities: caps,
-    heartbeat_interval_ms: 5000,
+    heartbeat_interval_ms: 5000
   });
-  await post('/agents/' + data.id + '/heartbeat', {});
+  await post(`/agents/${data.id}/heartbeat`, {});
   return data;
 }
 
@@ -86,12 +92,12 @@ async function createTask(title: string, caps: Record<string, unknown> = {}): Pr
     title,
     description: '',
     priority: 5,
-    required_capabilities: caps,
+    required_capabilities: caps
   });
   return data;
 }
 
-function sleep(ms: number): Promise<void> {
+function _sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
@@ -133,7 +139,7 @@ describe('reliability: end-to-end scenario', () => {
         `INSERT INTO assignments (id, task_id, agent_id, status, lease_expires_at, created_at, updated_at)
          VALUES (gen_random_uuid(), $1, $2, 'offered', now() + interval '30 seconds', now(), now())
          RETURNING id`,
-        [task.id, agent.id],
+        [task.id, agent.id]
       );
       await pool.query("UPDATE tasks SET state = 'assigned' WHERE id = $1", [task.id]);
       assignmentIds.push(result.rows[0].id);
@@ -149,33 +155,31 @@ describe('reliability: end-to-end scenario', () => {
     expect(inProgressTasks).toHaveLength(20);
 
     // Agent 3 "crashes" mid-task — stop heartbeats and force offline
-    await pool.query(
-      "UPDATE agents SET status = 'offline', updated_at = now() WHERE id = $1",
-      [agent3.id],
-    );
+    await pool.query("UPDATE agents SET status = 'offline', updated_at = now() WHERE id = $1", [
+      agent3.id
+    ]);
 
     // Expire agent3's assignments (simulating lease expiry)
     const agent3Assignments = await pool.query(
       `SELECT id, task_id FROM assignments
        WHERE agent_id = $1 AND status IN ('offered', 'accepted')`,
-      [agent3.id],
+      [agent3.id]
     );
 
     for (const row of agent3Assignments.rows) {
       await pool.query(
         "UPDATE assignments SET status = 'expired', updated_at = now() WHERE id = $1",
-        [row.id],
+        [row.id]
       );
-      await pool.query(
-        "UPDATE tasks SET state = 'queued', updated_at = now() WHERE id = $1",
-        [row.task_id],
-      );
+      await pool.query("UPDATE tasks SET state = 'queued', updated_at = now() WHERE id = $1", [
+        row.task_id
+      ]);
 
       // Emit activity for each expiry
       await pool.query(
         `INSERT INTO activities (id, type, actor_id, payload, created_at)
          VALUES (gen_random_uuid(), 'assignment.expired', NULL, $1, now())`,
-        [JSON.stringify({ taskId: row.task_id, agentId: agent3.id, assignmentId: row.id })],
+        [JSON.stringify({ taskId: row.task_id, agentId: agent3.id, assignmentId: row.id })]
       );
     }
 
@@ -185,7 +189,7 @@ describe('reliability: end-to-end scenario', () => {
       `SELECT a.id FROM assignments a
        JOIN tasks t ON t.id = a.task_id
        WHERE a.status IN ('offered', 'accepted', 'started')
-         AND t.state NOT IN ('assigned', 'in_progress')`,
+         AND t.state NOT IN ('assigned', 'in_progress')`
     );
     expect(orphanedAssignments.rows).toHaveLength(0);
 
@@ -195,7 +199,7 @@ describe('reliability: end-to-end scenario', () => {
        FROM assignments
        WHERE status IN ('offered', 'accepted', 'started')
        GROUP BY task_id
-       HAVING COUNT(*) > 1`,
+       HAVING COUNT(*) > 1`
     );
     expect(doubleActive.rows).toHaveLength(0);
 
@@ -216,7 +220,7 @@ describe('reliability: end-to-end scenario', () => {
         `INSERT INTO assignments (id, task_id, agent_id, status, lease_expires_at, created_at, updated_at)
          VALUES (gen_random_uuid(), $1, $2, 'offered', now() + interval '30 seconds', now(), now())
          RETURNING id`,
-        [task.id, agent.id],
+        [task.id, agent.id]
       );
       await pool.query("UPDATE tasks SET state = 'assigned' WHERE id = $1", [task.id]);
 
@@ -226,7 +230,7 @@ describe('reliability: end-to-end scenario', () => {
 
     // Now complete all in_progress tasks
     const allActiveAssignments = await pool.query<{ id: string; task_id: string }>(
-      `SELECT id, task_id FROM assignments WHERE status = 'accepted'`,
+      `SELECT id, task_id FROM assignments WHERE status = 'accepted'`
     );
 
     for (const assignment of allActiveAssignments.rows) {
@@ -239,7 +243,7 @@ describe('reliability: end-to-end scenario', () => {
 
     // Verify activities were emitted
     const activityResult = await pool.query(
-      `SELECT type, COUNT(*)::text as cnt FROM activities GROUP BY type ORDER BY type`,
+      `SELECT type, COUNT(*)::text as cnt FROM activities GROUP BY type ORDER BY type`
     );
     const activityMap: Record<string, number> = {};
     for (const row of activityResult.rows) {
@@ -260,14 +264,14 @@ describe('reliability: end-to-end scenario', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Idempotency-Key': idempotencyKey,
+        'Idempotency-Key': idempotencyKey
       },
       body: JSON.stringify({
         name: 'idem-agent',
         session_key: `sk-idem-${Date.now()}`,
         capabilities: {},
-        heartbeat_interval_ms: 10000,
-      }),
+        heartbeat_interval_ms: 10000
+      })
     });
 
     const data1 = (await res1.json()) as AgentResp;
@@ -278,14 +282,14 @@ describe('reliability: end-to-end scenario', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Idempotency-Key': idempotencyKey,
+        'Idempotency-Key': idempotencyKey
       },
       body: JSON.stringify({
         name: 'idem-agent-different',
         session_key: `sk-idem-different-${Date.now()}`,
         capabilities: {},
-        heartbeat_interval_ms: 10000,
-      }),
+        heartbeat_interval_ms: 10000
+      })
     });
 
     const data2 = (await res2.json()) as AgentResp;
@@ -299,7 +303,7 @@ describe('reliability: end-to-end scenario', () => {
     const correlationId = 'test-correlation-12345';
 
     const res = await fetch(`${API_URL}/health`, {
-      headers: { 'X-Correlation-ID': correlationId },
+      headers: { 'X-Correlation-ID': correlationId }
     });
 
     expect(res.headers.get('x-correlation-id')).toBe(correlationId);
@@ -311,8 +315,6 @@ describe('reliability: end-to-end scenario', () => {
     const corrId = res.headers.get('x-correlation-id');
     expect(corrId).toBeTruthy();
     // Should be a UUID
-    expect(corrId).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-    );
+    expect(corrId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 });

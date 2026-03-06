@@ -5,6 +5,9 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "rm -rf dist && tsc",
+    "lint": "biome lint src",
+    "format": "biome format --write src",
+    "check": "biome check src",
     "start": "./deploy.sh",
     "stop": "orb run -m aisquad -u root systemctl stop openclaw-sentinel",
     "restart": "orb run -m aisquad -u root systemctl restart openclaw-sentinel",
@@ -19,8 +22,9 @@
     "discord.js": "^14.17.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.6",
+    "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.7.0",
-    "@types/node": "^22.0.0"
+    "typescript": "^5.7.0"
   }
 }

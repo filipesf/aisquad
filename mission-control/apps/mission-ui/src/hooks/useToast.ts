@@ -9,7 +9,7 @@
  *   toast({ title: 'Done.', description: 'Task completed.' });
  *   toast({ title: 'Error.', variant: 'destructive' });
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export type ToastVariant = 'default' | 'success' | 'destructive';
 

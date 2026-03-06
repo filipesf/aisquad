@@ -1,20 +1,20 @@
-import { useState, useCallback, memo } from 'react';
-import type { Agent } from '@/types/domain';
-import { StatusBadge } from '@/components/StatusBadge';
 import { Users } from 'lucide-react';
+import { memo, useCallback, useState } from 'react';
+import { StatusBadge } from '@/components/StatusBadge';
 import { TimeAgo } from '@/components/TimeAgo';
+import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { InlineCode } from '@/components/ui/InlineCode';
+import { TableShell } from '@/components/ui/TableShell';
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { TableShell } from '@/components/ui/TableShell';
-import { EmptyState } from '@/components/ui/EmptyState';
+import type { Agent } from '@/types/domain';
 import { AgentDetailSheet } from './AgentDetailSheet';
 
 interface AgentsTableProps {
@@ -104,37 +104,37 @@ const AgentRow = memo(function AgentRow({ agent, caps, onSelect, staggerIndex }:
         onSelect(agent.id);
       }
     },
-    [agent.id, onSelect],
+    [agent.id, onSelect]
   );
 
   return (
     <TableRow
       role="button"
       tabIndex={0}
-      className="cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:bg-muted/60 transition-colors duration-[--dur-instant] animate-fade-up"
+      className="animate-fade-up cursor-pointer transition-colors duration-[--dur-instant] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:bg-muted/60"
       style={{ '--stagger-i': staggerIndex } as React.CSSProperties}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       aria-label={`View details for ${agent.name}`}
     >
       <TableCell>
-        <span className="font-medium text-sm truncate max-w-[200px]">{agent.name}</span>
+        <span className="max-w-[200px] truncate font-medium text-sm">{agent.name}</span>
       </TableCell>
       <TableCell>
         {/* Offline agents get a brief attention-getting blink on the badge wrapper */}
         <span
-          className={agent.status === 'offline' ? 'animate-agent-blink inline-block' : undefined}
+          className={agent.status === 'offline' ? 'inline-block animate-agent-blink' : undefined}
         >
           <StatusBadge status={agent.status} />
         </span>
       </TableCell>
-      <TableCell className="text-sm text-muted-foreground">
+      <TableCell className="text-muted-foreground text-sm">
         <TimeAgo date={agent.last_seen_at} />
       </TableCell>
       <TableCell>
         <div className="flex flex-wrap gap-1">
           {caps.slice(0, 3).map((cap) => (
-            <Badge key={cap} variant="outline" className="font-mono text-xs truncate max-w-[120px]">
+            <Badge key={cap} variant="outline" className="max-w-[120px] truncate font-mono text-xs">
               {cap}
             </Badge>
           ))}

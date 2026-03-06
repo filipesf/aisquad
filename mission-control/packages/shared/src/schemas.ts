@@ -9,12 +9,12 @@ export const CreateAgentSchema = z.object({
   name: z.string().min(1).max(255),
   session_key: z.string().min(1).max(255),
   capabilities: z.record(z.unknown()).default({}),
-  heartbeat_interval_ms: z.number().int().min(1000).max(300_000).default(10_000),
+  heartbeat_interval_ms: z.number().int().min(1000).max(300_000).default(10_000)
 });
 export type CreateAgentInput = z.infer<typeof CreateAgentSchema>;
 
 export const HeartbeatSchema = z.object({
-  sequence_id: z.string().optional(),
+  sequence_id: z.string().optional()
 });
 export type HeartbeatInput = z.infer<typeof HeartbeatSchema>;
 
@@ -27,7 +27,7 @@ export const AgentSchema = z.object({
   heartbeat_interval_ms: z.number(),
   last_seen_at: z.string().nullable(),
   created_at: z.string(),
-  updated_at: z.string(),
+  updated_at: z.string()
 });
 export type Agent = z.infer<typeof AgentSchema>;
 
@@ -40,7 +40,7 @@ export const CreateTaskSchema = z.object({
   title: z.string().min(1).max(500),
   description: z.string().default(''),
   priority: z.number().int().min(0).max(10).default(5),
-  required_capabilities: z.record(z.unknown()).default({}),
+  required_capabilities: z.record(z.unknown()).default({})
 });
 export type CreateTaskInput = z.infer<typeof CreateTaskSchema>;
 
@@ -52,7 +52,7 @@ export const TaskSchema = z.object({
   priority: z.number(),
   required_capabilities: z.record(z.unknown()),
   created_at: z.string(),
-  updated_at: z.string(),
+  updated_at: z.string()
 });
 export type Task = z.infer<typeof TaskSchema>;
 
@@ -64,7 +64,7 @@ export const AssignmentStatus = z.enum([
   'started',
   'completed',
   'expired',
-  'cancelled',
+  'cancelled'
 ]);
 export type AssignmentStatus = z.infer<typeof AssignmentStatus>;
 
@@ -75,7 +75,7 @@ export const AssignmentSchema = z.object({
   status: AssignmentStatus,
   lease_expires_at: z.string().nullable(),
   created_at: z.string(),
-  updated_at: z.string(),
+  updated_at: z.string()
 });
 export type Assignment = z.infer<typeof AssignmentSchema>;
 
@@ -93,7 +93,7 @@ export const NotificationSchema = z.object({
   status: NotificationStatus,
   delivered_at: z.string().nullable(),
   retry_count: z.number(),
-  created_at: z.string(),
+  created_at: z.string()
 });
 export type Notification = z.infer<typeof NotificationSchema>;
 
@@ -104,14 +104,14 @@ export const ActivitySchema = z.object({
   type: z.string(),
   actor_id: z.string().uuid().nullable(),
   payload: z.record(z.unknown()),
-  created_at: z.string(),
+  created_at: z.string()
 });
 export type Activity = z.infer<typeof ActivitySchema>;
 
 // ── Comment Schemas ────────────────────────────────────────────
 
 export const CreateCommentSchema = z.object({
-  body: z.string().min(1),
+  body: z.string().min(1)
 });
 export type CreateCommentInput = z.infer<typeof CreateCommentSchema>;
 
@@ -120,7 +120,7 @@ export const CommentSchema = z.object({
   task_id: z.string().uuid(),
   author_id: z.string().uuid(),
   body: z.string(),
-  created_at: z.string(),
+  created_at: z.string()
 });
 export type Comment = z.infer<typeof CommentSchema>;
 
@@ -136,7 +136,7 @@ export const OpenClawCapabilitySchema = z.object({
   agentId: z.string(),
   model: z.string().optional(),
   channel: z.string().optional(),
-  to: z.string().optional(),
+  to: z.string().optional()
 });
 export type OpenClawCapability = z.infer<typeof OpenClawCapabilitySchema>;
 
@@ -151,8 +151,8 @@ export const OpenClawHookRequestSchema = z.object({
     assignmentId: z.string().uuid(),
     taskId: z.string().uuid(),
     agentId: z.string().uuid(),
-    correlationId: z.string().optional(),
-  }),
+    correlationId: z.string().optional()
+  })
 });
 export type OpenClawHookRequest = z.infer<typeof OpenClawHookRequestSchema>;
 
@@ -162,7 +162,7 @@ export type OpenClawHookRequest = z.infer<typeof OpenClawHookRequestSchema>;
 export const OpenClawHookResponseSchema = z.object({
   ok: z.boolean(),
   response: z.string().optional(),
-  error: z.string().optional(),
+  error: z.string().optional()
 });
 export type OpenClawHookResponse = z.infer<typeof OpenClawHookResponseSchema>;
 
@@ -183,11 +183,11 @@ export const IngestTelemetryEventSchema = z.object({
   cost_usd: z.number().nonnegative().optional(),
   duration_ms: z.number().int().nonnegative().optional(),
   payload: z.record(z.unknown()).default({}),
-  recorded_at: z.string().datetime().optional(),
+  recorded_at: z.string().datetime().optional()
 });
 export type IngestTelemetryEvent = z.infer<typeof IngestTelemetryEventSchema>;
 
 export const IngestTelemetryBatchSchema = z.object({
-  events: z.array(IngestTelemetryEventSchema).min(1).max(500),
+  events: z.array(IngestTelemetryEventSchema).min(1).max(500)
 });
 export type IngestTelemetryBatch = z.infer<typeof IngestTelemetryBatchSchema>;

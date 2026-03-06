@@ -1,7 +1,7 @@
-import { ApiError } from '@/lib/api';
 import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { InlineCode } from '@/components/ui/InlineCode';
+import { ApiError } from '@/lib/api';
 
 /**
  * Shown when the API returns HTTP 401.
@@ -17,7 +17,7 @@ export function ApiAuthBanner({ error }: { error: unknown }) {
       <AlertTriangle className="h-4 w-4" />
       <AlertTitle>API token required</AlertTitle>
       <AlertDescription>
-        <ol className="mt-1.5 space-y-1 text-sm list-decimal list-inside">
+        <ol className="mt-1.5 list-inside list-decimal space-y-1 text-sm">
           <li>
             Open your browser&apos;s developer console{' '}
             <span className="text-xs opacity-75">(⌥⌘I on Mac, F12 on Windows)</span>

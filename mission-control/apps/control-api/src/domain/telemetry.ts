@@ -1,12 +1,12 @@
-import { query } from '../services/db.js';
 import type { IngestTelemetryEvent } from '@mc/shared';
+import { query } from '../services/db.js';
 
 const GROUP_BY_SQL = {
   provider: "COALESCE(provider, 'unknown')",
   model: "COALESCE(model, 'unknown')",
   agent: "COALESCE(agent_id::text, 'unknown')",
   event_type: 'event_type',
-  channel: "COALESCE(channel, 'unknown')",
+  channel: "COALESCE(channel, 'unknown')"
 } as const;
 
 export type TelemetryGroupBy = keyof typeof GROUP_BY_SQL;
@@ -53,7 +53,7 @@ export async function ingestBatch(events: IngestTelemetryEvent[]): Promise<{ ins
       event.cost_usd ?? null,
       event.duration_ms ?? null,
       JSON.stringify(event.payload ?? {}),
-      event.recorded_at ?? null,
+      event.recorded_at ?? null
     );
 
     return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}, $${base + 9}, $${base + 10}, $${base + 11}, $${base + 12}, $${base + 13}, $${base + 14}::jsonb, COALESCE($${base + 15}::timestamptz, now()))`;
@@ -77,7 +77,7 @@ export async function ingestBatch(events: IngestTelemetryEvent[]): Promise<{ ins
        payload,
        recorded_at
      ) VALUES ${tuples.join(', ')}`,
-    values,
+    values
   );
 
   return { inserted: result.rowCount ?? 0 };
@@ -123,7 +123,7 @@ export async function getSummary(params: {
          COALESCE(MAX(duration_ms), 0)::int AS max_duration_ms
        FROM telemetry_events
        WHERE recorded_at >= $1`,
-      [params.since],
+      [params.since]
     ),
     query<TelemetrySummaryRow>(
       `SELECT
@@ -139,8 +139,8 @@ export async function getSummary(params: {
        GROUP BY 1
        ORDER BY events DESC, group_value ASC
        LIMIT 200`,
-      [params.since],
-    ),
+      [params.since]
+    )
   ]);
 
   const totalsRow = totalsResult.rows[0];
@@ -150,7 +150,7 @@ export async function getSummary(params: {
     cost_usd: Number(totalsRow?.cost_usd ?? 0),
     avg_duration_ms: Number(totalsRow?.avg_duration_ms ?? 0),
     min_duration_ms: Number(totalsRow?.min_duration_ms ?? 0),
-    max_duration_ms: Number(totalsRow?.max_duration_ms ?? 0),
+    max_duration_ms: Number(totalsRow?.max_duration_ms ?? 0)
   };
 
   return {
@@ -166,7 +166,7 @@ export async function getSummary(params: {
       cost_usd: Number(row.cost_usd),
       avg_duration_ms: Number(row.avg_duration_ms),
       min_duration_ms: Number(row.min_duration_ms),
-      max_duration_ms: Number(row.max_duration_ms),
-    })),
+      max_duration_ms: Number(row.max_duration_ms)
+    }))
   };
 }

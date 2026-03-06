@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { Telemetry } from './Telemetry';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TelemetrySummary } from '@/types/domain';
+import { Telemetry } from './Telemetry';
 
 vi.mock('@/lib/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/api')>();
   return {
     ...actual,
-    getTelemetrySummary: vi.fn(),
+    getTelemetrySummary: vi.fn()
   };
 });
 
@@ -24,7 +24,7 @@ const mockSummary: TelemetrySummary = {
     cost_usd: 0.03,
     avg_duration_ms: 850,
     min_duration_ms: 200,
-    max_duration_ms: 3200,
+    max_duration_ms: 3200
   },
   groups: [
     {
@@ -34,7 +34,7 @@ const mockSummary: TelemetrySummary = {
       cost_usd: 0.02,
       avg_duration_ms: 900,
       min_duration_ms: 200,
-      max_duration_ms: 3200,
+      max_duration_ms: 3200
     },
     {
       key: 'openai',
@@ -43,9 +43,9 @@ const mockSummary: TelemetrySummary = {
       cost_usd: 0.01,
       avg_duration_ms: 750,
       min_duration_ms: 300,
-      max_duration_ms: 2100,
-    },
-  ],
+      max_duration_ms: 2100
+    }
+  ]
 };
 
 beforeEach(() => {
@@ -82,7 +82,7 @@ describe('Telemetry', () => {
   it('shows 401 auth banner on unauthorized error', async () => {
     const { ApiError } = await import('@/lib/api');
     vi.mocked(getTelemetrySummary).mockRejectedValue(
-      new ApiError(401, { error: 'Missing bearer token' }),
+      new ApiError(401, { error: 'Missing bearer token' })
     );
     render(<Telemetry />);
     await waitFor(() => {
@@ -93,7 +93,7 @@ describe('Telemetry', () => {
   it('shows 503 banner when server token is unconfigured', async () => {
     const { ApiError } = await import('@/lib/api');
     vi.mocked(getTelemetrySummary).mockRejectedValue(
-      new ApiError(503, { error: 'Telemetry token is not configured' }),
+      new ApiError(503, { error: 'Telemetry token is not configured' })
     );
     render(<Telemetry />);
     await waitFor(() => {

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { query, pool } from '../services/db.js';
 import type { Assignment, AssignmentStatus } from '@mc/shared';
+import { pool, query } from '../services/db.js';
 import * as activities from './activities.js';
 import * as taskDomain from './tasks.js';
 
@@ -22,7 +22,7 @@ function rowToAssignment(row: AssignmentRow): Assignment {
     status: row.status as AssignmentStatus,
     lease_expires_at: row.lease_expires_at,
     created_at: row.created_at,
-    updated_at: row.updated_at,
+    updated_at: row.updated_at
   };
 }
 
@@ -33,7 +33,7 @@ function rowToAssignment(row: AssignmentRow): Assignment {
 export async function offer(
   taskId: string,
   agentId: string,
-  leaseSeconds: number,
+  leaseSeconds: number
 ): Promise<Assignment | null> {
   const id = randomUUID();
   const now = new Date();
@@ -49,14 +49,13 @@ export async function offer(
         `INSERT INTO assignments (id, task_id, agent_id, status, lease_expires_at, created_at, updated_at)
          VALUES ($1, $2, $3, 'offered', $4, $5, $5)
          RETURNING *`,
-        [id, taskId, agentId, leaseExpiresAt.toISOString(), now.toISOString()],
+        [id, taskId, agentId, leaseExpiresAt.toISOString(), now.toISOString()]
       );
 
       // Transition the task to 'assigned'
-      await client.query(
-        `UPDATE tasks SET state = 'assigned', updated_at = now() WHERE id = $1`,
-        [taskId],
-      );
+      await client.query(`UPDATE tasks SET state = 'assigned', updated_at = now() WHERE id = $1`, [
+        taskId
+      ]);
 
       await client.query('COMMIT');
 
@@ -88,7 +87,7 @@ export async function accept(assignmentId: string): Promise<Assignment | null> {
       `UPDATE assignments SET status = 'accepted', updated_at = now()
        WHERE id = $1 AND status = 'offered'
        RETURNING *`,
-      [assignmentId],
+      [assignmentId]
     );
 
     if (!result.rows[0]) {
@@ -99,17 +98,16 @@ export async function accept(assignmentId: string): Promise<Assignment | null> {
     const assignment = result.rows[0];
 
     // Transition task to in_progress
-    await client.query(
-      `UPDATE tasks SET state = 'in_progress', updated_at = now() WHERE id = $1`,
-      [assignment.task_id],
-    );
+    await client.query(`UPDATE tasks SET state = 'in_progress', updated_at = now() WHERE id = $1`, [
+      assignment.task_id
+    ]);
 
     await client.query('COMMIT');
 
     await activities.emit('assignment.accepted', {
       taskId: assignment.task_id,
       agentId: assignment.agent_id,
-      assignmentId,
+      assignmentId
     });
 
     return rowToAssignment(assignment);
@@ -131,7 +129,7 @@ export async function complete(assignmentId: string): Promise<Assignment | null>
       `UPDATE assignments SET status = 'completed', updated_at = now()
        WHERE id = $1 AND status = 'accepted'
        RETURNING *`,
-      [assignmentId],
+      [assignmentId]
     );
 
     if (!result.rows[0]) {
@@ -142,17 +140,16 @@ export async function complete(assignmentId: string): Promise<Assignment | null>
     const assignment = result.rows[0];
 
     // Transition task to review
-    await client.query(
-      `UPDATE tasks SET state = 'review', updated_at = now() WHERE id = $1`,
-      [assignment.task_id],
-    );
+    await client.query(`UPDATE tasks SET state = 'review', updated_at = now() WHERE id = $1`, [
+      assignment.task_id
+    ]);
 
     await client.query('COMMIT');
 
     await activities.emit('assignment.completed', {
       taskId: assignment.task_id,
       agentId: assignment.agent_id,
-      assignmentId,
+      assignmentId
     });
 
     return rowToAssignment(assignment);
@@ -173,7 +170,7 @@ export async function expire(assignmentId: string): Promise<Assignment | null> {
       `UPDATE assignments SET status = 'expired', updated_at = now()
        WHERE id = $1 AND status IN ('offered', 'accepted')
        RETURNING *`,
-      [assignmentId],
+      [assignmentId]
     );
 
     if (!result.rows[0]) {
@@ -184,17 +181,16 @@ export async function expire(assignmentId: string): Promise<Assignment | null> {
     const assignment = result.rows[0];
 
     // Requeue the task
-    await client.query(
-      `UPDATE tasks SET state = 'queued', updated_at = now() WHERE id = $1`,
-      [assignment.task_id],
-    );
+    await client.query(`UPDATE tasks SET state = 'queued', updated_at = now() WHERE id = $1`, [
+      assignment.task_id
+    ]);
 
     await client.query('COMMIT');
 
     await activities.emit('assignment.expired', {
       taskId: assignment.task_id,
       agentId: assignment.agent_id,
-      assignmentId,
+      assignmentId
     });
 
     return rowToAssignment(assignment);
@@ -211,7 +207,7 @@ export async function findExpiredLeases(now: Date): Promise<Assignment[]> {
     `SELECT * FROM assignments
      WHERE status IN ('offered', 'accepted')
        AND lease_expires_at < $1`,
-    [now.toISOString()],
+    [now.toISOString()]
   );
   return result.rows.map(rowToAssignment);
 }
@@ -224,7 +220,7 @@ export async function getActiveForTask(taskId: string): Promise<Assignment | nul
     `SELECT * FROM assignments
      WHERE task_id = $1 AND status IN ('offered', 'accepted', 'started')
      LIMIT 1`,
-    [taskId],
+    [taskId]
   );
   return result.rows[0] ? rowToAssignment(result.rows[0]) : null;
 }
@@ -243,7 +239,7 @@ export async function getAssignment(id: string): Promise<Assignment | null> {
 export async function listForTask(taskId: string): Promise<Assignment[]> {
   const result = await query<AssignmentRow>(
     'SELECT * FROM assignments WHERE task_id = $1 ORDER BY created_at DESC',
-    [taskId],
+    [taskId]
   );
   return result.rows.map(rowToAssignment);
 }
@@ -256,7 +252,7 @@ export async function listActiveForAgent(agentId: string): Promise<Assignment[]>
     `SELECT * FROM assignments
      WHERE agent_id = $1 AND status IN ('offered', 'accepted', 'started')
      ORDER BY created_at DESC`,
-    [agentId],
+    [agentId]
   );
   return result.rows.map(rowToAssignment);
 }

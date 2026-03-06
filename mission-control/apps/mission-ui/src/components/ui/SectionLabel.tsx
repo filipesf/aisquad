@@ -22,8 +22,8 @@ export function SectionLabel({ children, className, id }: SectionLabelProps) {
     <p
       id={id}
       className={cn(
-        'mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground',
-        className,
+        'mb-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider',
+        className
       )}
     >
       {children}

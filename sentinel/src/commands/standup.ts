@@ -19,12 +19,12 @@ import {
   EmbedBuilder,
   MessageFlags,
   SlashCommandBuilder,
-  type TextChannel,
+  type TextChannel
 } from 'discord.js';
 import { activeAgents, agentConfigs } from '../config/server-architecture.js';
-import { formatTimestamp } from '../utils/helpers.js';
 import { logAction } from '../services/audit-logger.js';
 import type { Command } from '../types.js';
+import { formatTimestamp } from '../utils/helpers.js';
 
 const DESTINATION_CHANNEL = 'squad-feed';
 
@@ -42,18 +42,18 @@ function buildStandupEmbed(agentKey: string): EmbedBuilder | null {
       {
         name: '\u2705 Completed',
         value: '_No updates yet — reply in thread to fill in_',
-        inline: false,
+        inline: false
       },
       {
         name: '\u{1f504} In Progress',
         value: '_No updates yet — reply in thread to fill in_',
-        inline: false,
+        inline: false
       },
       {
         name: '\u{1f6ab} Blocked',
         value: 'Nothing blocked',
-        inline: false,
-      },
+        inline: false
+      }
     )
     .setFooter({ text: `Last active: ${formatTimestamp()}` });
 }
@@ -71,8 +71,8 @@ const command: Command = {
           ...STANDUP_AGENTS.filter((key) => agentConfigs[key]).map((key) => {
             const cfg = agentConfigs[key]!;
             return { name: `${cfg.emoji} ${cfg.name}`, value: key };
-          }),
-        ),
+          })
+        )
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -83,12 +83,12 @@ const command: Command = {
 
     // Find #squad-feed
     const feedChannel = guild.channels.cache.find(
-      (ch) => ch.name === DESTINATION_CHANNEL && ch.type === ChannelType.GuildText,
+      (ch) => ch.name === DESTINATION_CHANNEL && ch.type === ChannelType.GuildText
     ) as TextChannel | undefined;
 
     if (!feedChannel) {
       await interaction.editReply({
-        content: `\u274c Channel #${DESTINATION_CHANNEL} not found. Run \`/setup full\` to create it.`,
+        content: `\u274c Channel #${DESTINATION_CHANNEL} not found. Run \`/setup full\` to create it.`
       });
       return;
     }
@@ -104,7 +104,7 @@ const command: Command = {
 
     if (embeds.length === 0) {
       await interaction.editReply({
-        content: '\u274c No valid agents found for standup.',
+        content: '\u274c No valid agents found for standup.'
       });
       return;
     }
@@ -116,23 +116,21 @@ const command: Command = {
     // Post to #squad-feed
     const message = await feedChannel.send({
       content: headerText,
-      embeds,
+      embeds
     });
 
     // Audit log
-    const agentNames = agents
-      .map((k) => agentConfigs[k]?.name ?? k)
-      .join(', ');
+    const agentNames = agents.map((k) => agentConfigs[k]?.name ?? k).join(', ');
     await logAction(
       guild,
       'STANDUP',
-      `\u{1f4e1} Standup posted in #${DESTINATION_CHANNEL} for: ${agentNames}`,
+      `\u{1f4e1} Standup posted in #${DESTINATION_CHANNEL} for: ${agentNames}`
     );
 
     await interaction.editReply({
-      content: `\u{1f4e1} Standup posted \u2192 ${message.url}`,
+      content: `\u{1f4e1} Standup posted \u2192 ${message.url}`
     });
-  },
+  }
 };
 
 export default command;

@@ -9,7 +9,7 @@
  */
 
 import { ChannelType, PermissionFlagsBits } from 'discord.js';
-import { AUTO_ARCHIVE_DURATION, COLORS } from '../utils/constants.js';
+import { COLORS } from '../utils/constants.js';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -70,7 +70,7 @@ export const roles: RoleConfig[] = [
     hoist: true,
     mentionable: false,
     permissions: [PermissionFlagsBits.Administrator],
-    position: 8,
+    position: 8
   },
   {
     name: 'Setup Bot',
@@ -79,7 +79,7 @@ export const roles: RoleConfig[] = [
     mentionable: false,
     permissions: [PermissionFlagsBits.Administrator], // Demoted after setup
     position: 7,
-    managed: true, // Discord creates this when the setup bot joins
+    managed: true // Discord creates this when the setup bot joins
   },
   {
     name: 'Admin',
@@ -97,9 +97,9 @@ export const roles: RoleConfig[] = [
       PermissionFlagsBits.ViewChannel,
       PermissionFlagsBits.SendMessages,
       PermissionFlagsBits.SendMessagesInThreads,
-      PermissionFlagsBits.ReadMessageHistory,
+      PermissionFlagsBits.ReadMessageHistory
     ],
-    position: 6,
+    position: 6
   },
   // Note: Corven's role is managed by Discord (auto-created when the bot
   // joins). It is NOT listed here — Sentinel doesn't create or edit it.
@@ -123,9 +123,9 @@ export const roles: RoleConfig[] = [
       PermissionFlagsBits.AddReactions,
       PermissionFlagsBits.UseExternalEmojis,
       PermissionFlagsBits.Connect,
-      PermissionFlagsBits.Speak,
+      PermissionFlagsBits.Speak
     ],
-    position: 3,
+    position: 3
   },
   {
     name: 'Team',
@@ -138,9 +138,9 @@ export const roles: RoleConfig[] = [
       PermissionFlagsBits.SendMessagesInThreads,
       PermissionFlagsBits.CreatePublicThreads,
       PermissionFlagsBits.ReadMessageHistory,
-      PermissionFlagsBits.AddReactions,
+      PermissionFlagsBits.AddReactions
     ],
-    position: 2,
+    position: 2
   },
   {
     name: 'Guest',
@@ -151,15 +151,15 @@ export const roles: RoleConfig[] = [
       PermissionFlagsBits.ViewChannel,
       PermissionFlagsBits.SendMessages,
       PermissionFlagsBits.ReadMessageHistory,
-      PermissionFlagsBits.AddReactions,
+      PermissionFlagsBits.AddReactions
     ],
-    position: 1,
-  },
+    position: 1
+  }
 ];
 
 /** Permissions to set on @everyone (server-level) — ViewChannel denied */
 export const everyonePermissions = {
-  deny: [PermissionFlagsBits.ViewChannel],
+  deny: [PermissionFlagsBits.ViewChannel]
 };
 
 /** Permissions for the Setup Bot role AFTER initial setup (demoted) */
@@ -172,7 +172,7 @@ export const setupBotDemotedPermissions: bigint[] = [
   PermissionFlagsBits.SendMessages,
   PermissionFlagsBits.SendMessagesInThreads,
   PermissionFlagsBits.EmbedLinks,
-  PermissionFlagsBits.ReadMessageHistory,
+  PermissionFlagsBits.ReadMessageHistory
 ];
 
 // ─── Shorthand permission helpers ───────────────────────────────
@@ -182,7 +182,7 @@ const S = PermissionFlagsBits.SendMessages;
 const T = PermissionFlagsBits.SendMessagesInThreads;
 const R = PermissionFlagsBits.ReadMessageHistory;
 const E = PermissionFlagsBits.EmbedLinks;
-const A = PermissionFlagsBits.AttachFiles;
+const _A = PermissionFlagsBits.AttachFiles;
 const CO = PermissionFlagsBits.Connect;
 const SP = PermissionFlagsBits.Speak;
 
@@ -195,7 +195,7 @@ export const categories: CategoryConfig[] = [
     position: 0,
     overwrites: [
       { role: '@everyone', allow: [], deny: [V] },
-      { role: 'Corven', allow: [V, S, T, R, E], deny: [] },
+      { role: 'Corven', allow: [V, S, T, R, E], deny: [] }
     ],
     channels: [
       {
@@ -204,7 +204,7 @@ export const categories: CategoryConfig[] = [
         topic: 'Freeform threads with Corven \u{1fab6} \u2014 use /corven',
         category: '\u{1f916} AGENTS',
         overwrites: [],
-        autoArchive: true,
+        autoArchive: true
       },
       {
         name: 'Voice \u2014 Corven',
@@ -212,9 +212,9 @@ export const categories: CategoryConfig[] = [
         topic: '',
         category: '\u{1f916} AGENTS',
         overwrites: [{ role: 'Corven', allow: [V, CO, SP], deny: [] }],
-        autoArchive: false,
-      },
-    ],
+        autoArchive: false
+      }
+    ]
   },
 
   // ── 🚀 SQUADS (pos 1) ──
@@ -224,7 +224,7 @@ export const categories: CategoryConfig[] = [
     overwrites: [
       { role: '@everyone', allow: [], deny: [V] },
       { role: 'Corven', allow: [V, S, T, R, E], deny: [] },
-      { role: 'Team', allow: [V, S, T, R], deny: [] },
+      { role: 'Team', allow: [V, S, T, R], deny: [] }
     ],
     channels: [
       {
@@ -233,7 +233,7 @@ export const categories: CategoryConfig[] = [
         topic: 'Campaigns, outbound, ICP, lead lists \u2014 use /growth or /leads',
         category: '\u{1f680} SQUADS',
         overwrites: [],
-        autoArchive: true,
+        autoArchive: true
       },
       {
         name: 'content',
@@ -241,7 +241,7 @@ export const categories: CategoryConfig[] = [
         topic: 'Posts, copy, CTAs, content calendar \u2014 use /content',
         category: '\u{1f680} SQUADS',
         overwrites: [],
-        autoArchive: true,
+        autoArchive: true
       },
       {
         name: 'ops',
@@ -249,7 +249,7 @@ export const categories: CategoryConfig[] = [
         topic: 'Checklists, tracking, weekly reports \u2014 use /ops',
         category: '\u{1f680} SQUADS',
         overwrites: [],
-        autoArchive: true,
+        autoArchive: true
       },
       {
         name: 'research',
@@ -257,7 +257,7 @@ export const categories: CategoryConfig[] = [
         topic: 'Blog-roll style: compact research summaries',
         category: '\u{1f680} SQUADS',
         overwrites: [],
-        autoArchive: true,
+        autoArchive: true
       },
       {
         name: 'squad-feed',
@@ -265,9 +265,9 @@ export const categories: CategoryConfig[] = [
         topic: 'Daily standups, agent status, decisions \u2014 Mission Control visibility',
         category: '\u{1f680} SQUADS',
         overwrites: [],
-        autoArchive: true,
-      },
-    ],
+        autoArchive: true
+      }
+    ]
   },
 
   // ── 🔧 META (pos 2) ──
@@ -277,23 +277,22 @@ export const categories: CategoryConfig[] = [
     overwrites: [
       { role: '@everyone', allow: [], deny: [V] },
       { role: 'Agent', allow: [], deny: [V] },
-      { role: 'Admin', allow: [V, S, T, R], deny: [] },
+      { role: 'Admin', allow: [V, S, T, R], deny: [] }
     ],
     channels: [
       {
         name: 'audit-log',
         type: ChannelType.GuildText,
-        topic:
-          'Immutable record of every server change \u2014 automated by the setup bot',
+        topic: 'Immutable record of every server change \u2014 automated by the setup bot',
         category: '\u{1f527} META',
         overwrites: [
           // Agents can post to audit-log even though they can't see META
-          { role: 'Agent', allow: [S], deny: [] },
+          { role: 'Agent', allow: [S], deny: [] }
         ],
-        autoArchive: false,
-      },
-    ],
-  },
+        autoArchive: false
+      }
+    ]
+  }
 ];
 
 // ─── Agent access map ───────────────────────────────────────────
@@ -319,7 +318,7 @@ export const agentConfigs: Record<string, AgentConfig> = {
     emoji: '\u{1fab6}',
     color: 15247484, // #e8a87c
     accessibleCategories: ['\u{1f916} AGENTS', '\u{1f680} SQUADS'],
-    deniedChannels: [],
+    deniedChannels: []
   },
   'flare-growth': {
     name: 'flare-growth',
@@ -327,7 +326,7 @@ export const agentConfigs: Record<string, AgentConfig> = {
     emoji: '\u{1f3af}',
     color: 3447003, // #3498db
     accessibleCategories: ['\u{1f680} SQUADS'],
-    deniedChannels: [],
+    deniedChannels: []
   },
   'flare-content': {
     name: 'flare-content',
@@ -335,7 +334,7 @@ export const agentConfigs: Record<string, AgentConfig> = {
     emoji: '\u{1f4dd}',
     color: 2067276, // #1f8b4c
     accessibleCategories: ['\u{1f680} SQUADS'],
-    deniedChannels: [],
+    deniedChannels: []
   },
   'flare-ops': {
     name: 'flare-ops',
@@ -343,7 +342,7 @@ export const agentConfigs: Record<string, AgentConfig> = {
     emoji: '\u{1f4cb}',
     color: 15105570, // #e67e22
     accessibleCategories: ['\u{1f680} SQUADS'],
-    deniedChannels: [],
+    deniedChannels: []
   },
   'flare-leads': {
     name: 'flare-leads',
@@ -351,8 +350,8 @@ export const agentConfigs: Record<string, AgentConfig> = {
     emoji: '\u{1f50d}',
     color: 10181046, // #9b59b6
     accessibleCategories: ['\u{1f680} SQUADS'],
-    deniedChannels: [],
-  },
+    deniedChannels: []
+  }
 };
 
 // ─── Command Routing ────────────────────────────────────────────
@@ -373,7 +372,7 @@ export const commandRouting: Record<string, string | null> = {
   // Activity commands (routed to destination)
   decision: 'squad-feed',
   standup: 'squad-feed',
-  report: 'ops',
+  report: 'ops'
 };
 
 // ─── Channel → Agent Defaults ───────────────────────────────────
@@ -389,7 +388,7 @@ export const channelAgentDefaults: Record<string, string> = {
   growth: 'corven',
   content: 'corven',
   ops: 'corven',
-  'squad-feed': 'corven',
+  'squad-feed': 'corven'
 };
 
 // ─── Active Agents ──────────────────────────────────────────────

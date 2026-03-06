@@ -1,24 +1,24 @@
-import { useState, useRef } from 'react';
-import { createTask } from '@/lib/api';
+import { Check, Loader2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogFooter,
+  DialogHeader,
+  DialogTitle
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from '@/components/ui/select';
-import { Loader2, Check } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { createTask } from '@/lib/api';
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -30,7 +30,7 @@ const PRIORITY_OPTIONS = [
   { label: 'Urgent', value: '10' },
   { label: 'High', value: '8' },
   { label: 'Medium', value: '5' },
-  { label: 'Low', value: '2' },
+  { label: 'Low', value: '2' }
 ];
 
 export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDialogProps) {
@@ -52,7 +52,7 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
       await createTask({
         title: title.trim(),
         description: description.trim() || undefined,
-        priority: parseInt(priority, 10),
+        priority: parseInt(priority, 10)
       });
       // Brief success moment before closing — "Task deployed." for 700ms
       setSucceeded(true);
@@ -86,7 +86,7 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
         <DialogHeader>
           <DialogTitle>New task</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="task-title">Title</Label>
             <Input
@@ -126,7 +126,7 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
           {/* Error — animate-fade-up so it doesn't pop in jarringly */}
           {error && (
             <p
-              className="text-sm text-destructive animate-fade-up"
+              className="animate-fade-up text-destructive text-sm"
               style={{ '--stagger-i': 0 } as React.CSSProperties}
             >
               {error}
@@ -137,7 +137,7 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
             <Button
               type="button"
               variant="outline"
-              className="active:scale-[0.97] transition-transform duration-[--dur-instant]"
+              className="transition-transform duration-[--dur-instant] active:scale-[0.97]"
               onClick={() => onOpenChange(false)}
             >
               Cancel
@@ -145,10 +145,10 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
             <Button
               type="submit"
               disabled={submitting || succeeded || !title.trim()}
-              className="active:scale-[0.97] transition-transform duration-[--dur-instant] min-w-[110px]"
+              className="min-w-[110px] transition-transform duration-[--dur-instant] active:scale-[0.97]"
             >
               {succeeded ? (
-                <span className="flex items-center gap-1.5 animate-task-done">
+                <span className="flex animate-task-done items-center gap-1.5">
                   <Check className="h-3.5 w-3.5" aria-hidden="true" />
                   Task deployed.
                 </span>

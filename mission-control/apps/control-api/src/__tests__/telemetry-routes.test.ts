@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Fastify from 'fastify';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerIdempotencyMiddleware } from '../middleware/idempotency.js';
 import { telemetryRoutes } from '../routes/telemetry.js';
 
@@ -13,23 +13,23 @@ vi.mock('../services/redis.js', () => ({
     set: vi.fn(async (key: string, value: string, _ex: string, _ttl: number) => {
       mockRedisStore.set(key, value);
       return 'OK';
-    }),
-  },
+    })
+  }
 }));
 
 vi.mock('../domain/telemetry.js', () => ({
   ingestBatch: (...args: unknown[]) => ingestBatchMock(...args),
-  getSummary: (...args: unknown[]) => getSummaryMock(...args),
+  getSummary: (...args: unknown[]) => getSummaryMock(...args)
 }));
 
 describe('telemetry routes', () => {
-  const previousToken = process.env['CONTROL_API_TELEMETRY_TOKEN'];
+  const previousToken = process.env.CONTROL_API_TELEMETRY_TOKEN;
 
   beforeEach(() => {
     mockRedisStore.clear();
     ingestBatchMock.mockReset();
     getSummaryMock.mockReset();
-    process.env['CONTROL_API_TELEMETRY_TOKEN'] = 'test-telemetry-token';
+    process.env.CONTROL_API_TELEMETRY_TOKEN = 'test-telemetry-token';
 
     ingestBatchMock.mockResolvedValue({ inserted: 1 });
     getSummaryMock.mockResolvedValue({
@@ -43,17 +43,17 @@ describe('telemetry routes', () => {
         cost_usd: 0.12,
         avg_duration_ms: 80,
         min_duration_ms: 80,
-        max_duration_ms: 80,
+        max_duration_ms: 80
       },
-      groups: [],
+      groups: []
     });
   });
 
   afterEach(() => {
     if (previousToken === undefined) {
-      delete process.env['CONTROL_API_TELEMETRY_TOKEN'];
+      delete process.env.CONTROL_API_TELEMETRY_TOKEN;
     } else {
-      process.env['CONTROL_API_TELEMETRY_TOKEN'] = previousToken;
+      process.env.CONTROL_API_TELEMETRY_TOKEN = previousToken;
     }
   });
 
@@ -75,9 +75,9 @@ describe('telemetry routes', () => {
         tokens_input: 100,
         tokens_output: 50,
         tokens_total: 150,
-        payload: { run_id: 'r1' },
-      },
-    ],
+        payload: { run_id: 'r1' }
+      }
+    ]
   };
 
   it('returns 401 when bearer token is missing', async () => {
@@ -86,7 +86,7 @@ describe('telemetry routes', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/telemetry/batch',
-      payload: samplePayload,
+      payload: samplePayload
     });
 
     expect(response.statusCode).toBe(401);
@@ -101,9 +101,9 @@ describe('telemetry routes', () => {
       method: 'POST',
       url: '/telemetry/batch',
       headers: {
-        Authorization: 'Bearer invalid-token',
+        Authorization: 'Bearer invalid-token'
       },
-      payload: samplePayload,
+      payload: samplePayload
     });
 
     expect(response.statusCode).toBe(403);
@@ -112,16 +112,16 @@ describe('telemetry routes', () => {
   });
 
   it('returns 503 when telemetry token config is missing', async () => {
-    delete process.env['CONTROL_API_TELEMETRY_TOKEN'];
+    delete process.env.CONTROL_API_TELEMETRY_TOKEN;
     const app = await buildApp();
 
     const response = await app.inject({
       method: 'POST',
       url: '/telemetry/batch',
       headers: {
-        Authorization: 'Bearer any-token',
+        Authorization: 'Bearer any-token'
       },
-      payload: samplePayload,
+      payload: samplePayload
     });
 
     expect(response.statusCode).toBe(503);
@@ -136,9 +136,9 @@ describe('telemetry routes', () => {
       method: 'POST',
       url: '/telemetry/batch',
       headers: {
-        Authorization: 'Bearer test-telemetry-token',
+        Authorization: 'Bearer test-telemetry-token'
       },
-      payload: samplePayload,
+      payload: samplePayload
     });
 
     expect(response.statusCode).toBe(201);
@@ -155,9 +155,9 @@ describe('telemetry routes', () => {
       url: '/telemetry/batch',
       headers: {
         Authorization: 'Bearer test-telemetry-token',
-        'Idempotency-Key': 'telemetry-key-1',
+        'Idempotency-Key': 'telemetry-key-1'
       },
-      payload: samplePayload,
+      payload: samplePayload
     };
 
     const first = await app.inject(request);
@@ -176,8 +176,8 @@ describe('telemetry routes', () => {
       method: 'GET',
       url: '/telemetry/summary?window=1h&group_by=model',
       headers: {
-        Authorization: 'Bearer test-telemetry-token',
-      },
+        Authorization: 'Bearer test-telemetry-token'
+      }
     });
 
     expect(response.statusCode).toBe(200);

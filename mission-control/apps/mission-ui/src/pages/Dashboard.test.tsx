@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Activity, Agent, Task } from '@/types/domain';
 import { Dashboard } from './Dashboard';
-import type { Agent, Task, Activity } from '@/types/domain';
 
 // Mock the API module
 vi.mock('@/lib/api', async (importOriginal) => {
@@ -11,11 +11,11 @@ vi.mock('@/lib/api', async (importOriginal) => {
     listAgents: vi.fn(),
     listTasks: vi.fn(),
     listActivities: vi.fn(),
-    createActivityStream: vi.fn(),
+    createActivityStream: vi.fn()
   };
 });
 
-import { listAgents, listTasks, listActivities, createActivityStream } from '@/lib/api';
+import { createActivityStream, listActivities, listAgents, listTasks } from '@/lib/api';
 
 const mockAgents: Agent[] = [
   {
@@ -27,7 +27,7 @@ const mockAgents: Agent[] = [
     heartbeat_interval_ms: 10000,
     last_seen_at: new Date().toISOString(),
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 'a2',
@@ -38,8 +38,8 @@ const mockAgents: Agent[] = [
     heartbeat_interval_ms: 10000,
     last_seen_at: null,
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
+    updated_at: new Date().toISOString()
+  }
 ];
 
 const mockTasks: Task[] = [
@@ -51,7 +51,7 @@ const mockTasks: Task[] = [
     priority: 5,
     required_capabilities: {},
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 't2',
@@ -61,8 +61,8 @@ const mockTasks: Task[] = [
     priority: 3,
     required_capabilities: {},
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
+    updated_at: new Date().toISOString()
+  }
 ];
 
 const mockActivities: Activity[] = [];
@@ -71,7 +71,7 @@ function createMockEventSource() {
   return {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    close: vi.fn(),
+    close: vi.fn()
   };
 }
 
@@ -81,7 +81,7 @@ beforeEach(() => {
   vi.mocked(listTasks).mockResolvedValue(mockTasks);
   vi.mocked(listActivities).mockResolvedValue(mockActivities);
   vi.mocked(createActivityStream).mockReturnValue(
-    createMockEventSource() as unknown as EventSource,
+    createMockEventSource() as unknown as EventSource
   );
 });
 
@@ -102,7 +102,7 @@ describe('Dashboard', () => {
     // nodes inside one <span>; match with a flexible function query.
     await waitFor(() => {
       expect(
-        screen.getByText((_, el) => el?.textContent?.trim() === '1 of 2 online'),
+        screen.getByText((_, el) => el?.textContent?.trim() === '1 of 2 online')
       ).toBeInTheDocument();
     });
   });

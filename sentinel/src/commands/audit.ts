@@ -1,14 +1,14 @@
 import {
-  ChatInputCommandInteraction,
   ChannelType,
+  type ChatInputCommandInteraction,
   EmbedBuilder,
   MessageFlags,
   PermissionFlagsBits,
-  SlashCommandBuilder,
+  SlashCommandBuilder
 } from 'discord.js';
-import { EMBED_COLORS } from '../utils/constants.js';
 import { logAction } from '../services/audit-logger.js';
 import type { Command } from '../types.js';
+import { EMBED_COLORS } from '../utils/constants.js';
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -22,7 +22,7 @@ const command: Command = {
     if (!guild) {
       await interaction.reply({
         content: 'This command can only be used in a server.',
-        flags: MessageFlags.Ephemeral,
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
@@ -80,11 +80,13 @@ const command: Command = {
 
     // Try to post to #audit-log
     const auditChannel = guild.channels.cache.find(
-      (ch) => ch.name === 'audit-log' && ch.type === ChannelType.GuildText,
+      (ch) => ch.name === 'audit-log' && ch.type === ChannelType.GuildText
     );
 
     if (auditChannel && auditChannel.type === ChannelType.GuildText) {
-      await (auditChannel as import('discord.js').TextChannel).send({ embeds: [roleEmbed, structureEmbed] });
+      await (auditChannel as import('discord.js').TextChannel).send({
+        embeds: [roleEmbed, structureEmbed]
+      });
     }
 
     // Reply to the user
@@ -96,25 +98,29 @@ const command: Command = {
         { name: 'Categories', value: String(categories.size), inline: true },
         {
           name: 'Channels',
-          value: String(guild.channels.cache.filter((ch) => ch.type !== ChannelType.GuildCategory).size),
-          inline: true,
+          value: String(
+            guild.channels.cache.filter((ch) => ch.type !== ChannelType.GuildCategory).size
+          ),
+          inline: true
         },
-        { name: 'Members', value: String(guild.memberCount), inline: true },
+        { name: 'Members', value: String(guild.memberCount), inline: true }
       )
       .setTimestamp();
 
     if (orphans.length > 0) {
       summaryEmbed.addFields({
         name: 'Orphan Channels',
-        value: orphans.join(', '),
+        value: orphans.join(', ')
       });
     }
 
     await interaction.editReply({
-      content: auditChannel ? 'Full dump posted to #audit-log.' : 'No #audit-log channel found. Run `/setup full` first.',
-      embeds: [summaryEmbed],
+      content: auditChannel
+        ? 'Full dump posted to #audit-log.'
+        : 'No #audit-log channel found. Run `/setup full` first.',
+      embeds: [summaryEmbed]
     });
-  },
+  }
 };
 
 export default command;

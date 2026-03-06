@@ -15,9 +15,8 @@ export async function registerCorrelationMiddleware(app: FastifyInstance): Promi
 
   app.addHook('onRequest', async (request: FastifyRequest, reply: FastifyReply) => {
     const existing = request.headers[CORRELATION_HEADER];
-    const correlationId = typeof existing === 'string' && existing.length > 0
-      ? existing
-      : randomUUID();
+    const correlationId =
+      typeof existing === 'string' && existing.length > 0 ? existing : randomUUID();
 
     (request as FastifyRequest & { correlationId: string }).correlationId = correlationId;
     void reply.header(CORRELATION_HEADER, correlationId);

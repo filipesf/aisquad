@@ -12,14 +12,14 @@ interface ActivityRow {
 export async function emit(
   type: string,
   payload: Record<string, unknown>,
-  actorId?: string,
+  actorId?: string
 ): Promise<ActivityRow> {
   const id = randomUUID();
   const result = await query<ActivityRow>(
     `INSERT INTO activities (id, type, actor_id, payload, created_at)
      VALUES ($1, $2, $3, $4, now())
      RETURNING *`,
-    [id, type, actorId ?? null, JSON.stringify(payload)],
+    [id, type, actorId ?? null, JSON.stringify(payload)]
   );
   return result.rows[0]!;
 }
@@ -27,7 +27,7 @@ export async function emit(
 export async function listRecent(limit = 50): Promise<ActivityRow[]> {
   const result = await query<ActivityRow>(
     'SELECT * FROM activities ORDER BY created_at DESC LIMIT $1',
-    [limit],
+    [limit]
   );
   return result.rows;
 }
@@ -47,7 +47,7 @@ export async function listSince(afterId: string): Promise<ActivityRow[]> {
         OR (a.created_at = (SELECT created_at FROM activities WHERE id = $1) AND a.id > $1)
      ORDER BY a.created_at ASC, a.id ASC
      LIMIT 100`,
-    [afterId],
+    [afterId]
   );
   return result.rows;
 }

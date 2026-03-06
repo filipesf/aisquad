@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { parseMentions } from '../domain/comments.js';
 
 describe('mention parsing', () => {
@@ -19,10 +19,7 @@ describe('mention parsing', () => {
   });
 
   it('handles mentions with hyphens', () => {
-    expect(parseMentions('cc @agent-alpha and @agent-beta')).toEqual([
-      'agent-alpha',
-      'agent-beta',
-    ]);
+    expect(parseMentions('cc @agent-alpha and @agent-beta')).toEqual(['agent-alpha', 'agent-beta']);
   });
 
   it('handles mentions with underscores', () => {

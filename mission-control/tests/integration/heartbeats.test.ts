@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import pg from 'pg';
 import { Redis } from 'ioredis';
+import pg from 'pg';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-const API_URL = process.env['API_URL'] ?? 'http://localhost:3000';
+const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 
 interface AgentResponse {
   id: string;
@@ -26,17 +26,17 @@ interface ErrorResponse {
 }
 
 const pool = new pg.Pool({
-  host: process.env['PGHOST'] ?? 'localhost',
-  port: Number(process.env['PGPORT'] ?? 5432),
-  user: process.env['PGUSER'] ?? 'postgres',
-  password: process.env['PGPASSWORD'] ?? 'postgres',
-  database: process.env['PGDATABASE'] ?? 'mission_control',
+  host: process.env.PGHOST ?? 'localhost',
+  port: Number(process.env.PGPORT ?? 5432),
+  user: process.env.PGUSER ?? 'postgres',
+  password: process.env.PGPASSWORD ?? 'postgres',
+  database: process.env.PGDATABASE ?? 'mission_control'
 });
 
 const redis = new Redis({
-  host: process.env['REDIS_HOST'] ?? 'localhost',
-  port: Number(process.env['REDIS_PORT'] ?? 6379),
-  lazyConnect: true,
+  host: process.env.REDIS_HOST ?? 'localhost',
+  port: Number(process.env.REDIS_PORT ?? 6379),
+  lazyConnect: true
 });
 
 interface ApiResponse<T = Record<string, unknown>> {
@@ -46,12 +46,12 @@ interface ApiResponse<T = Record<string, unknown>> {
 
 async function post<T = Record<string, unknown>>(
   path: string,
-  body: Record<string, unknown>,
+  body: Record<string, unknown>
 ): Promise<ApiResponse<T>> {
   const res = await fetch(`${API_URL}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify(body)
   });
   return { status: res.status, data: (await res.json()) as T };
 }
@@ -98,7 +98,7 @@ describe('heartbeats integration', () => {
       name: 'agent-alpha',
       session_key: 'sk-alpha',
       capabilities: { code: true },
-      heartbeat_interval_ms: 5000,
+      heartbeat_interval_ms: 5000
     });
 
     expect(status).toBe(201);
@@ -118,7 +118,7 @@ describe('heartbeats integration', () => {
   it('transitions offline → online on first heartbeat', async () => {
     const { data: agent } = await post<AgentResponse>('/agents', {
       name: 'agent-hb',
-      session_key: 'sk-hb',
+      session_key: 'sk-hb'
     });
 
     expect(agent.status).toBe('offline');
@@ -136,14 +136,14 @@ describe('heartbeats integration', () => {
   it('emits agent.online activity on transition', async () => {
     const { data: agent } = await post<AgentResponse>('/agents', {
       name: 'agent-act',
-      session_key: 'sk-act',
+      session_key: 'sk-act'
     });
 
     await post<HeartbeatResponse>(`/agents/${agent.id}/heartbeat`, {});
 
     // Check activities table
     const result = await pool.query(
-      "SELECT * FROM activities WHERE type = 'agent.online' ORDER BY created_at DESC LIMIT 1",
+      "SELECT * FROM activities WHERE type = 'agent.online' ORDER BY created_at DESC LIMIT 1"
     );
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0].payload.agentId).toBe(agent.id);
@@ -152,33 +152,44 @@ describe('heartbeats integration', () => {
   it('rejects duplicate heartbeats with same sequence_id', async () => {
     const { data: agent } = await post<AgentResponse>('/agents', {
       name: 'agent-dup',
-      session_key: 'sk-dup',
+      session_key: 'sk-dup'
     });
 
     // First heartbeat with sequence
-    const r1 = await post<HeartbeatResponse>(`/agents/${agent.id}/heartbeat`, { sequence_id: 'seq-001' });
+    const r1 = await post<HeartbeatResponse>(`/agents/${agent.id}/heartbeat`, {
+      sequence_id: 'seq-001'
+    });
     expect(r1.data.duplicate).toBe(false);
 
     // Second heartbeat with same sequence
-    const r2 = await post<HeartbeatResponse>(`/agents/${agent.id}/heartbeat`, { sequence_id: 'seq-001' });
+    const r2 = await post<HeartbeatResponse>(`/agents/${agent.id}/heartbeat`, {
+      sequence_id: 'seq-001'
+    });
     expect(r2.data.duplicate).toBe(true);
   });
 
   it('allows different sequence_ids', async () => {
     const { data: agent } = await post<AgentResponse>('/agents', {
       name: 'agent-seq',
-      session_key: 'sk-seq',
+      session_key: 'sk-seq'
     });
 
-    const r1 = await post<HeartbeatResponse>(`/agents/${agent.id}/heartbeat`, { sequence_id: 'seq-001' });
-    const r2 = await post<HeartbeatResponse>(`/agents/${agent.id}/heartbeat`, { sequence_id: 'seq-002' });
+    const r1 = await post<HeartbeatResponse>(`/agents/${agent.id}/heartbeat`, {
+      sequence_id: 'seq-001'
+    });
+    const r2 = await post<HeartbeatResponse>(`/agents/${agent.id}/heartbeat`, {
+      sequence_id: 'seq-002'
+    });
 
     expect(r1.data.duplicate).toBe(false);
     expect(r2.data.duplicate).toBe(false);
   });
 
   it('returns 404 for heartbeat on non-existent agent', async () => {
-    const { status } = await post<ErrorResponse>('/agents/00000000-0000-0000-0000-000000000099/heartbeat', {});
+    const { status } = await post<ErrorResponse>(
+      '/agents/00000000-0000-0000-0000-000000000099/heartbeat',
+      {}
+    );
     expect(status).toBe(404);
   });
 
@@ -186,7 +197,7 @@ describe('heartbeats integration', () => {
     const { data: agent } = await post<AgentResponse>('/agents', {
       name: 'agent-offline',
       session_key: 'sk-offline',
-      heartbeat_interval_ms: 1000, // 1 second interval
+      heartbeat_interval_ms: 1000 // 1 second interval
     });
 
     // Send heartbeat to go online
@@ -197,7 +208,7 @@ describe('heartbeats integration', () => {
     // Simulate time passing: update last_seen_at to 5 seconds ago
     await pool.query(
       "UPDATE agents SET last_seen_at = now() - interval '5 seconds' WHERE id = $1",
-      [agent.id],
+      [agent.id]
     );
 
     // Run what the offline detector would do
@@ -205,15 +216,14 @@ describe('heartbeats integration', () => {
       `SELECT id FROM agents
        WHERE status = 'online'
          AND last_seen_at IS NOT NULL
-         AND EXTRACT(EPOCH FROM (now() - last_seen_at)) * 1000 > heartbeat_interval_ms * 3`,
+         AND EXTRACT(EPOCH FROM (now() - last_seen_at)) * 1000 > heartbeat_interval_ms * 3`
     );
     expect(stale.rows).toHaveLength(1);
 
     // Mark offline
-    await pool.query(
-      "UPDATE agents SET status = 'offline', updated_at = now() WHERE id = $1",
-      [agent.id],
-    );
+    await pool.query("UPDATE agents SET status = 'offline', updated_at = now() WHERE id = $1", [
+      agent.id
+    ]);
 
     const { data: offlineAgent } = await get<AgentResponse>(`/agents/${agent.id}`);
     expect(offlineAgent.status).toBe('offline');
@@ -222,7 +232,7 @@ describe('heartbeats integration', () => {
   it('agent recovers from offline to online when heartbeats resume', async () => {
     const { data: agent } = await post<AgentResponse>('/agents', {
       name: 'agent-recover',
-      session_key: 'sk-recover',
+      session_key: 'sk-recover'
     });
 
     // Go online
@@ -243,7 +253,7 @@ describe('heartbeats integration', () => {
     // Check agent.online activity was emitted again
     const result = await pool.query(
       "SELECT * FROM activities WHERE type = 'agent.online' AND payload->>'agentId' = $1 ORDER BY created_at DESC",
-      [agent.id],
+      [agent.id]
     );
     expect(result.rows.length).toBeGreaterThanOrEqual(2); // Initial + recovery
   });

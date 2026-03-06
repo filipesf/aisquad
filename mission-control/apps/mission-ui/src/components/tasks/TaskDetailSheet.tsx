@@ -1,40 +1,40 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import type { Task, TaskWithAssignment, Assignment, Comment } from '@/types/domain';
-import { TASK_STATES } from '@/types/domain';
-import {
-  getTask,
-  getTaskAssignments,
-  listComments,
-  createComment,
-  changeTaskState,
-} from '@/lib/api';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
-import { StatusBadge } from '@/components/StatusBadge';
-import { priorityLabel } from './columns';
-import { TimeAgo } from '@/components/TimeAgo';
-import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Loader2, MessageSquareDashed } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ConfettiBurst } from '@/components/ConfettiBurst';
+import { StatusBadge } from '@/components/StatusBadge';
+import { TimeAgo } from '@/components/TimeAgo';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { MonoId } from '@/components/ui/MonoId';
+import { SectionLabel } from '@/components/ui/SectionLabel';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { SectionLabel } from '@/components/ui/SectionLabel';
-import { MonoId } from '@/components/ui/MonoId';
-import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle
+} from '@/components/ui/sheet';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/useToast';
-import { ConfettiBurst } from '@/components/ConfettiBurst';
+import {
+  changeTaskState,
+  createComment,
+  getTask,
+  getTaskAssignments,
+  listComments
+} from '@/lib/api';
+import { cn } from '@/lib/utils';
+import type { Assignment, Comment, Task, TaskWithAssignment } from '@/types/domain';
+import { TASK_STATES } from '@/types/domain';
+import { priorityLabel } from './columns';
 
 interface TaskDetailSheetProps {
   task: Task | null;
@@ -134,7 +134,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
           title: 'Task complete.',
           description: 'Good work. One fewer thing to worry about.',
           variant: 'success',
-          duration: 4000,
+          duration: 4000
         });
       }
     } catch {
@@ -166,25 +166,25 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
         if (!open) onClose();
       }}
     >
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+      <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
         <SheetHeader className="mb-4">
           <SheetTitle>{data?.task.title ?? task?.title ?? 'Task'}</SheetTitle>
           <SheetDescription>{task ? <MonoId>{task.id}</MonoId> : null}</SheetDescription>
         </SheetHeader>
 
-        {loading && !data && <p className="px-4 text-sm text-muted-foreground">Loading task…</p>}
-        {error && <p className="px-4 text-sm text-destructive">{error}</p>}
+        {loading && !data && <p className="px-4 text-muted-foreground text-sm">Loading task…</p>}
+        {error && <p className="px-4 text-destructive text-sm">{error}</p>}
 
         {data && (
           <div className="space-y-5 px-4 pb-6">
             {/* Status + priority row */}
             {/* stateChangePop key forces remount → replays animate-state-change-pop */}
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex flex-wrap items-center gap-3">
               <span
                 key={stateChangePop ? 'pop' : 'idle'}
                 className={cn(
                   'relative inline-flex',
-                  stateChangePop ? 'animate-state-change-pop' : '',
+                  stateChangePop ? 'animate-state-change-pop' : ''
                 )}
               >
                 <StatusBadge status={data.task.state} />
@@ -219,7 +219,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
             {data.task.description && (
               <div>
                 <SectionLabel className="mb-1.5">Description</SectionLabel>
-                <p className="text-sm whitespace-pre-wrap break-words">{data.task.description}</p>
+                <p className="whitespace-pre-wrap break-words text-sm">{data.task.description}</p>
               </div>
             )}
 
@@ -261,15 +261,15 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
             <div>
               <SectionLabel>Comments ({data.comments.length})</SectionLabel>
               {data.comments.length > 0 ? (
-                <ul className="space-y-3 mb-4">
+                <ul className="mb-4 space-y-3">
                   {data.comments.map((c) => (
                     <li
                       key={c.id}
                       className={cn('text-sm', newCommentIds.has(c.id) && 'animate-comment-land')}
                     >
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="mb-1 flex items-center gap-2">
                         <span className="font-medium text-xs">{c.author_id}</span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-muted-foreground text-xs">
                           <TimeAgo date={c.created_at} />
                         </span>
                       </div>
@@ -278,7 +278,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
                   ))}
                 </ul>
               ) : (
-                <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+                <div className="mb-4 flex items-center gap-2 text-muted-foreground text-sm">
                   <MessageSquareDashed className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   <span>Quiet so far. Agents are working silently.</span>
                 </div>
@@ -299,7 +299,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
                   size="sm"
                   disabled={!commentBody.trim() || submitting}
                   onClick={handleSubmitComment}
-                  className="active:scale-[0.97] transition-transform duration-[--dur-instant] min-w-[100px]"
+                  className="min-w-[100px] transition-transform duration-[--dur-instant] active:scale-[0.97]"
                 >
                   {submitting ? (
                     <>
@@ -316,7 +316,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
             <Separator />
 
             {/* Meta */}
-            <div className="text-xs text-muted-foreground space-y-1">
+            <div className="space-y-1 text-muted-foreground text-xs">
               <div>
                 Created: <TimeAgo date={data.task.created_at} />
               </div>

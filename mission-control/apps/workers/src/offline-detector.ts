@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { query, close } from './lib/db.js';
+import { close, query } from './lib/db.js';
 
-const POLL_INTERVAL_MS = Number(process.env['OFFLINE_POLL_MS'] ?? 10_000);
+const POLL_INTERVAL_MS = Number(process.env.OFFLINE_POLL_MS ?? 10_000);
 
 interface StaleAgent {
   id: string;
@@ -19,20 +19,20 @@ async function findAndMarkStaleAgents(): Promise<number> {
      WHERE status = 'online'
        AND last_seen_at IS NOT NULL
        AND EXTRACT(EPOCH FROM ($1::timestamptz - last_seen_at)) * 1000 > heartbeat_interval_ms * 3`,
-    [now.toISOString()],
+    [now.toISOString()]
   );
 
   for (const agent of stale.rows) {
     await query(
       `UPDATE agents SET status = 'offline', updated_at = now()
        WHERE id = $1 AND status = 'online'`,
-      [agent.id],
+      [agent.id]
     );
 
     await query(
       `INSERT INTO activities (id, type, actor_id, payload, created_at)
        VALUES ($1, 'agent.offline', NULL, $2, now())`,
-      [randomUUID(), JSON.stringify({ agentId: agent.id, name: agent.name })],
+      [randomUUID(), JSON.stringify({ agentId: agent.id, name: agent.name })]
     );
 
     console.log(`offline-detector: marked agent ${agent.name} (${agent.id}) as offline`);

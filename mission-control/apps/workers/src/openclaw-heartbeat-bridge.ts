@@ -11,9 +11,9 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { query, close } from './lib/db.js';
-import { openclawConfig } from './lib/openclaw-config.js';
 import { OpenClawCapabilitySchema } from '@mc/shared';
+import { close, query } from './lib/db.js';
+import { openclawConfig } from './lib/openclaw-config.js';
 
 const POLL_INTERVAL_MS = openclawConfig.dispatchPollMs;
 
@@ -32,7 +32,7 @@ async function findOpenClawAgents(): Promise<AgentRow[]> {
   const result = await query<AgentRow>(
     `SELECT id, name, status, capabilities, last_seen_at::text
      FROM agents
-     WHERE capabilities->'openclaw'->>'enabled' = 'true'`,
+     WHERE capabilities->'openclaw'->>'enabled' = 'true'`
   );
   return result.rows;
 }
@@ -42,7 +42,7 @@ async function findOpenClawAgents(): Promise<AgentRow[]> {
  * Returns null if parsing fails.
  */
 function parseOpenClawCapability(capabilities: Record<string, unknown>) {
-  const raw = capabilities['openclaw'];
+  const raw = capabilities.openclaw;
   if (!raw || typeof raw !== 'object') return null;
   const result = OpenClawCapabilitySchema.safeParse(raw);
   return result.success ? result.data : null;
@@ -58,7 +58,7 @@ async function sendHeartbeat(agentId: string): Promise<void> {
 
   // Check current agent status
   const agentResult = await query<{ status: string }>('SELECT status FROM agents WHERE id = $1', [
-    agentId,
+    agentId
   ]);
 
   const agent = agentResult.rows[0];
@@ -71,13 +71,13 @@ async function sendHeartbeat(agentId: string): Promise<void> {
     await query(
       `UPDATE agents SET status = 'online', last_seen_at = $2, updated_at = $2
        WHERE id = $1`,
-      [agentId, now.toISOString()],
+      [agentId, now.toISOString()]
     );
 
     await query(
       `INSERT INTO activities (id, type, actor_id, payload, created_at)
        VALUES ($1, 'agent.online', NULL, $2, now())`,
-      [randomUUID(), JSON.stringify({ agentId, source: 'openclaw-bridge' })],
+      [randomUUID(), JSON.stringify({ agentId, source: 'openclaw-bridge' })]
     );
 
     console.log(`openclaw-heartbeat-bridge: agent ${agentId} transitioned to online`);
@@ -85,7 +85,7 @@ async function sendHeartbeat(agentId: string): Promise<void> {
     // Update last_seen_at
     await query(`UPDATE agents SET last_seen_at = $2, updated_at = $2 WHERE id = $1`, [
       agentId,
-      now.toISOString(),
+      now.toISOString()
     ]);
   }
 
@@ -112,7 +112,7 @@ async function pollHeartbeats(): Promise<number> {
     } catch (err) {
       console.error(
         `openclaw-heartbeat-bridge: failed heartbeat for agent ${agent.name} (${agent.id})`,
-        err,
+        err
       );
     }
   }

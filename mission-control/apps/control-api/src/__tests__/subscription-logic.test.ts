@@ -1,16 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock dependencies
 vi.mock('../services/db.js', () => {
-  const subscriptions = new Map<string, { id: string; task_id: string; agent_id: string; created_at: string }>();
+  const subscriptions = new Map<
+    string,
+    { id: string; task_id: string; agent_id: string; created_at: string }
+  >();
   return {
     query: vi.fn(async (text: string, params?: unknown[]) => {
       const sql = text.trim();
 
       if (sql.startsWith('INSERT INTO subscriptions')) {
-        const id = params![0] as string;
-        const taskId = params![1] as string;
-        const agentId = params![2] as string;
+        const id = params?.[0] as string;
+        const taskId = params?.[1] as string;
+        const agentId = params?.[2] as string;
         const key = `${taskId}:${agentId}`;
 
         if (subscriptions.has(key)) {
@@ -18,21 +21,26 @@ vi.mock('../services/db.js', () => {
           return { rows: [], rowCount: 0 };
         }
 
-        const row = { id, task_id: taskId, agent_id: agentId, created_at: new Date().toISOString() };
+        const row = {
+          id,
+          task_id: taskId,
+          agent_id: agentId,
+          created_at: new Date().toISOString()
+        };
         subscriptions.set(key, row);
         return { rows: [row], rowCount: 1 };
       }
 
       if (sql.startsWith('SELECT * FROM subscriptions WHERE task_id')) {
-        const taskId = params![0] as string;
-        const agentId = params![1] as string;
+        const taskId = params?.[0] as string;
+        const agentId = params?.[1] as string;
         const key = `${taskId}:${agentId}`;
         const row = subscriptions.get(key);
         return { rows: row ? [row] : [], rowCount: row ? 1 : 0 };
       }
 
       if (sql.startsWith('SELECT agent_id FROM subscriptions')) {
-        const taskId = params![0] as string;
+        const taskId = params?.[0] as string;
         const result: { agent_id: string }[] = [];
         for (const [key, row] of subscriptions) {
           if (key.startsWith(`${taskId}:`)) {
@@ -43,8 +51,8 @@ vi.mock('../services/db.js', () => {
       }
 
       if (sql.startsWith('SELECT id FROM subscriptions')) {
-        const taskId = params![0] as string;
-        const agentId = params![1] as string;
+        const taskId = params?.[0] as string;
+        const agentId = params?.[1] as string;
         const key = `${taskId}:${agentId}`;
         const row = subscriptions.get(key);
         return { rows: row ? [{ id: row.id }] : [], rowCount: row ? 1 : 0 };
@@ -55,14 +63,14 @@ vi.mock('../services/db.js', () => {
     _subscriptions: subscriptions,
     _reset: () => {
       subscriptions.clear();
-    },
+    }
   };
 });
 
 import * as subscriptionDomain from '../domain/subscriptions.js';
 
 // Access mock internals
-const dbModule = await import('../services/db.js') as unknown as {
+const dbModule = (await import('../services/db.js')) as unknown as {
   _subscriptions: Map<string, unknown>;
   _reset: () => void;
 };

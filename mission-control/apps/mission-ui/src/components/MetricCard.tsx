@@ -14,15 +14,15 @@ export const MetricCard = memo(function MetricCard({
   label,
   value,
   staggerIndex = 0,
-  className,
+  className
 }: MetricCardProps) {
   return (
     <div
-      className={cn('rounded-md border px-4 py-3 animate-metric-reveal', className)}
+      className={cn('animate-metric-reveal rounded-md border px-4 py-3', className)}
       style={{ '--stagger-i': staggerIndex } as React.CSSProperties}
     >
-      <p className="text-xs text-muted-foreground mb-1">{String(label).replace(/_/g, ' ')}</p>
-      <p className="text-2xl font-bold tabular-nums">{value}</p>
+      <p className="mb-1 text-muted-foreground text-xs">{String(label).replace(/_/g, ' ')}</p>
+      <p className="font-bold text-2xl tabular-nums">{value}</p>
     </div>
   );
 });

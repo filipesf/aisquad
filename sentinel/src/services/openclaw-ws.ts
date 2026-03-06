@@ -35,7 +35,7 @@ type ConnectionState = 'disconnected' | 'connecting' | 'challenged' | 'ready';
 
 let ws: WebSocket | null = null;
 let state: ConnectionState = 'disconnected';
-let pendingRequests = new Map<string, RequestResolver>();
+const pendingRequests = new Map<string, RequestResolver>();
 let connectResolve: ((ok: boolean) => void) | null = null;
 let connectTimer: ReturnType<typeof setTimeout> | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -105,8 +105,7 @@ function handleMessage(data: string) {
       connectResolve?.(true);
       connectResolve = null;
     } else {
-      const errMsg =
-        (msg.error as { message?: string })?.message ?? 'connect rejected';
+      const errMsg = (msg.error as { message?: string })?.message ?? 'connect rejected';
       logError(`Connect failed: ${errMsg}`);
       connectResolve?.(false);
       connectResolve = null;
@@ -124,8 +123,7 @@ function handleMessage(data: string) {
       if (msg.ok) {
         pending.resolve(msg.payload);
       } else {
-        const errMsg =
-          (msg.error as { message?: string })?.message ?? 'RPC error';
+        const errMsg = (msg.error as { message?: string })?.message ?? 'RPC error';
         pending.reject(new Error(errMsg));
       }
     }
@@ -154,14 +152,14 @@ function sendConnect() {
         id: 'gateway-client' as const,
         version: '1.0.0',
         platform: 'linux',
-        mode: 'backend' as const,
+        mode: 'backend' as const
       },
       role: 'operator',
       scopes: ['operator.write'],
       auth: {
-        token: GATEWAY_TOKEN,
-      },
-    },
+        token: GATEWAY_TOKEN
+      }
+    }
   };
 
   ws.send(JSON.stringify(frame));
@@ -173,10 +171,7 @@ function sendConnect() {
 function scheduleReconnect() {
   if (intentionalClose || reconnectTimer) return;
 
-  const delay = Math.min(
-    RECONNECT_BASE_MS * Math.pow(2, reconnectAttempt),
-    RECONNECT_MAX_MS,
-  );
+  const delay = Math.min(RECONNECT_BASE_MS * 2 ** reconnectAttempt, RECONNECT_MAX_MS);
   reconnectAttempt++;
 
   log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempt})`);
@@ -318,7 +313,7 @@ export function request(method: string, params: Record<string, unknown>): Promis
       type: 'req',
       id,
       method,
-      params,
+      params
     };
 
     ws.send(JSON.stringify(frame));

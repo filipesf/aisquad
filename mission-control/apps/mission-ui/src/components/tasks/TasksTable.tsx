@@ -1,30 +1,17 @@
-import { useState, useMemo } from 'react';
 import {
-  useReactTable,
+  type ColumnFiltersState,
+  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  getSortedRowModel,
   getPaginationRowModel,
-  flexRender,
+  getSortedRowModel,
   type SortingState,
-  type ColumnFiltersState,
+  useReactTable
 } from '@tanstack/react-table';
-import type { Task } from '@/types/domain';
-import { TASK_STATES } from '@/types/domain';
-import { getTaskColumns } from './columns';
-import { TaskDetailSheet } from './TaskDetailSheet';
-import { CreateTaskDialog } from './CreateTaskDialog';
+import { Check, ClipboardList, PlusCircle, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
   CommandEmpty,
@@ -32,14 +19,27 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
+  CommandSeparator
 } from '@/components/ui/command';
-import { Badge } from '@/components/ui/badge';
-import { Check, PlusCircle, X, ClipboardList } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { TableShell } from '@/components/ui/TableShell';
-import { EmptyState } from '@/components/ui/EmptyState';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
+import { cn } from '@/lib/utils';
+import type { Task } from '@/types/domain';
+import { TASK_STATES } from '@/types/domain';
+import { CreateTaskDialog } from './CreateTaskDialog';
+import { getTaskColumns } from './columns';
+import { TaskDetailSheet } from './TaskDetailSheet';
 
 const PRIORITY_OPTIONS = ['Urgent', 'High', 'Medium', 'Low'];
 
@@ -55,7 +55,7 @@ export function TasksTable({
   tasks,
   onRefresh,
   createOpen: externalCreateOpen,
-  onCreateOpenChange,
+  onCreateOpenChange
 }: TasksTableProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [internalCreateOpen, setInternalCreateOpen] = useState(false);
@@ -78,7 +78,7 @@ export function TasksTable({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 20 } },
+    initialState: { pagination: { pageSize: 20 } }
   });
 
   const statusFilter = (table.getColumn('state')?.getFilterValue() as string[]) ?? [];
@@ -96,7 +96,7 @@ export function TasksTable({
   return (
     <>
       {/* Toolbar */}
-      <div className="flex items-center gap-2 flex-wrap mb-3">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <Input
           placeholder="Search by title…"
           value={(table.getColumn('title')?.getFilterValue() as string) ?? ''}
@@ -122,7 +122,7 @@ export function TasksTable({
                   <Badge
                     key={statusFilter.length}
                     variant="secondary"
-                    className="rounded px-1 text-xs font-normal animate-badge-pop"
+                    className="animate-badge-pop rounded px-1 font-normal text-xs"
                   >
                     {statusFilter.length}
                   </Badge>
@@ -145,7 +145,7 @@ export function TasksTable({
                       <Check
                         className={cn(
                           'mr-2 h-4 w-4',
-                          statusFilter.includes(state) ? 'opacity-100' : 'opacity-0',
+                          statusFilter.includes(state) ? 'opacity-100' : 'opacity-0'
                         )}
                       />
                       <span className="capitalize">{state.replace(/_/g, ' ')}</span>
@@ -186,7 +186,7 @@ export function TasksTable({
                   <Badge
                     key={priorityFilter.length}
                     variant="secondary"
-                    className="rounded px-1 text-xs font-normal animate-badge-pop"
+                    className="animate-badge-pop rounded px-1 font-normal text-xs"
                   >
                     {priorityFilter.length}
                   </Badge>
@@ -203,7 +203,7 @@ export function TasksTable({
                       <Check
                         className={cn(
                           'mr-2 h-4 w-4',
-                          priorityFilter.includes(p) ? 'opacity-100' : 'opacity-0',
+                          priorityFilter.includes(p) ? 'opacity-100' : 'opacity-0'
                         )}
                       />
                       {p}
@@ -233,7 +233,7 @@ export function TasksTable({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 px-2 text-xs animate-badge-pop"
+            className="h-8 animate-badge-pop px-2 text-xs"
             onClick={() => {
               table.getColumn('state')?.setFilterValue(undefined);
               table.getColumn('priority')?.setFilterValue(undefined);
@@ -246,7 +246,7 @@ export function TasksTable({
         {/* New task — keyboard shortcut N */}
         <div className="ml-auto flex items-center gap-1.5">
           <kbd
-            className="hidden sm:inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground select-none"
+            className="hidden select-none items-center rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline-flex"
             title="Keyboard shortcut"
             aria-label="Keyboard shortcut: N"
           >
@@ -254,7 +254,7 @@ export function TasksTable({
           </kbd>
           <Button
             size="sm"
-            className="h-8 text-xs active:scale-[0.97] transition-transform duration-[--dur-instant]"
+            className="h-8 text-xs transition-transform duration-[--dur-instant] active:scale-[0.97]"
             onClick={() => setCreateOpen(true)}
           >
             <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
@@ -286,7 +286,7 @@ export function TasksTable({
                   key={row.id}
                   role="button"
                   tabIndex={0}
-                  className="cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:bg-muted/60 transition-colors duration-[--dur-instant]"
+                  className="cursor-pointer transition-colors duration-[--dur-instant] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:bg-muted/60"
                   onClick={() => setSelectedTask(row.original)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -346,7 +346,7 @@ export function TasksTable({
       </TableShell>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+      <div className="mt-3 flex items-center justify-between text-muted-foreground text-xs">
         <span aria-live="polite" aria-atomic="true">
           {table.getFilteredRowModel().rows.length} task
           {table.getFilteredRowModel().rows.length !== 1 ? 's' : ''}

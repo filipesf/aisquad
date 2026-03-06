@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import type { Notification, NotificationStatus } from '@mc/shared';
 import { query } from '../services/db.js';
 import { redis } from '../services/redis.js';
-import type { Notification, NotificationStatus } from '@mc/shared';
 
 interface NotificationRow {
   id: string;
@@ -25,7 +25,7 @@ function rowToNotification(row: NotificationRow): Notification {
     status: row.status as NotificationStatus,
     delivered_at: row.delivered_at,
     retry_count: row.retry_count,
-    created_at: row.created_at,
+    created_at: row.created_at
   };
 }
 
@@ -40,7 +40,7 @@ export async function enqueue(
   targetAgentId: string,
   sourceType: string,
   sourceId: string,
-  payload: Record<string, unknown>,
+  payload: Record<string, unknown>
 ): Promise<Notification | null> {
   // Dedup key: prevent same notification within window
   const dedupKey = `notif:dedup:${targetAgentId}:${sourceType}:${sourceId}`;
@@ -56,7 +56,7 @@ export async function enqueue(
     `INSERT INTO notifications (id, target_agent_id, source_type, source_id, payload, status, retry_count, created_at)
      VALUES ($1, $2, $3, $4, $5, 'queued', 0, now())
      RETURNING *`,
-    [id, targetAgentId, sourceType, sourceId, JSON.stringify(payload)],
+    [id, targetAgentId, sourceType, sourceId, JSON.stringify(payload)]
   );
 
   return rowToNotification(result.rows[0]!);
@@ -71,7 +71,7 @@ export async function listForAgent(agentId: string): Promise<Notification[]> {
      WHERE target_agent_id = $1
        AND (status != 'delivered' OR delivered_at > now() - interval '24 hours')
      ORDER BY created_at DESC`,
-    [agentId],
+    [agentId]
   );
   return result.rows.map(rowToNotification);
 }
@@ -85,7 +85,7 @@ export async function acknowledge(notificationId: string): Promise<Notification 
      SET status = 'delivered', delivered_at = now()
      WHERE id = $1
      RETURNING *`,
-    [notificationId],
+    [notificationId]
   );
   return result.rows[0] ? rowToNotification(result.rows[0]) : null;
 }
@@ -103,7 +103,7 @@ export async function getQueuedForDispatch(limit: number): Promise<Notification[
        AND created_at + (power(2, retry_count) || ' seconds')::interval <= now()
      ORDER BY created_at ASC
      LIMIT $1`,
-    [limit],
+    [limit]
   );
   return result.rows.map(rowToNotification);
 }
@@ -116,7 +116,7 @@ export async function markDelivered(notificationId: string): Promise<void> {
     `UPDATE notifications
      SET status = 'delivered', delivered_at = now()
      WHERE id = $1`,
-    [notificationId],
+    [notificationId]
   );
 }
 
@@ -130,7 +130,7 @@ export async function incrementRetry(notificationId: string): Promise<void> {
      SET retry_count = retry_count + 1,
          status = CASE WHEN retry_count + 1 >= 5 THEN 'failed' ELSE 'queued' END
      WHERE id = $1`,
-    [notificationId],
+    [notificationId]
   );
 }
 
@@ -138,9 +138,6 @@ export async function incrementRetry(notificationId: string): Promise<void> {
  * Get a single notification by ID.
  */
 export async function getNotification(id: string): Promise<Notification | null> {
-  const result = await query<NotificationRow>(
-    'SELECT * FROM notifications WHERE id = $1',
-    [id],
-  );
+  const result = await query<NotificationRow>('SELECT * FROM notifications WHERE id = $1', [id]);
   return result.rows[0] ? rowToNotification(result.rows[0]) : null;
 }

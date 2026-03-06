@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { query } from '../services/db.js';
 import type { CreateTaskInput, Task, TaskState } from '@mc/shared';
+import { query } from '../services/db.js';
 import * as activities from './activities.js';
 
 interface TaskRow {
@@ -23,7 +23,7 @@ function rowToTask(row: TaskRow): Task {
     priority: row.priority,
     required_capabilities: row.required_capabilities,
     created_at: row.created_at,
-    updated_at: row.updated_at,
+    updated_at: row.updated_at
   };
 }
 
@@ -43,7 +43,7 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   assigned: ['in_progress', 'blocked', 'queued'],
   in_progress: ['review', 'blocked'],
   review: ['done', 'blocked', 'in_progress'],
-  blocked: ['queued', 'assigned', 'in_progress', 'review'],
+  blocked: ['queued', 'assigned', 'in_progress', 'review']
 };
 
 export class InvalidTransitionError extends Error {
@@ -74,7 +74,14 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     `INSERT INTO tasks (id, title, description, state, priority, required_capabilities, created_at, updated_at)
      VALUES ($1, $2, $3, 'queued', $4, $5, $6, $6)
      RETURNING *`,
-    [id, input.title, input.description, input.priority, JSON.stringify(input.required_capabilities), now],
+    [
+      id,
+      input.title,
+      input.description,
+      input.priority,
+      JSON.stringify(input.required_capabilities),
+      now
+    ]
   );
 
   await activities.emit('task.created', { taskId: id, title: input.title });
@@ -90,7 +97,7 @@ export async function listTasks(state?: string): Promise<Task[]> {
   if (state) {
     const result = await query<TaskRow>(
       'SELECT * FROM tasks WHERE state = $1 ORDER BY priority DESC, created_at ASC',
-      [state],
+      [state]
     );
     return result.rows.map(rowToTask);
   }
@@ -110,13 +117,13 @@ export async function transitionState(id: string, newState: TaskState): Promise<
     `UPDATE tasks SET state = $2, updated_at = now()
      WHERE id = $1
      RETURNING *`,
-    [id, newState],
+    [id, newState]
   );
 
   await activities.emit('task.state_changed', {
     taskId: id,
     from: task.state,
-    to: newState,
+    to: newState
   });
 
   return rowToTask(result.rows[0]!);
@@ -135,7 +142,7 @@ export async function requeue(id: string): Promise<Task> {
     `UPDATE tasks SET state = 'queued', updated_at = now()
      WHERE id = $1
      RETURNING *`,
-    [id],
+    [id]
   );
 
   if (!result.rows[0]) {

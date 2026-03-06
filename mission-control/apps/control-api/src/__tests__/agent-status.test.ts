@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import { AgentStatus } from '@mc/shared';
+import { describe, expect, it } from 'vitest';
 
 describe('agent status', () => {
   it('defines valid statuses', () => {
@@ -27,7 +27,7 @@ describe('agent status', () => {
     const validTransitions: Record<string, string[]> = {
       offline: ['online'],
       online: ['offline', 'draining'],
-      draining: ['offline'],
+      draining: ['offline']
     };
 
     function isValidTransition(from: string, to: string): boolean {

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "echo 'Use individual worker scripts'",
     "build": "tsc --build",
-    "lint": "eslint src/",
+    "lint": "biome lint src",
+    "format": "biome format --write src",
+    "check": "biome check src",
     "typecheck": "tsc --noEmit",
     "test": "echo 'no tests yet'",
     "offline-detector": "tsx src/offline-detector.ts",

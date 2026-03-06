@@ -49,7 +49,7 @@ export async function execute(message: Message): Promise<void> {
     try {
       await message.delete();
       console.log(
-        `[DEDUPE] Deleted duplicate Corven message ${message.id} in #${message.channelId}`,
+        `[DEDUPE] Deleted duplicate Corven message ${message.id} in #${message.channelId}`
       );
     } catch (error) {
       console.error(`[DEDUPE] Failed to delete duplicate message ${message.id}:`, error);
@@ -59,7 +59,7 @@ export async function execute(message: Message): Promise<void> {
 
   recentMessages.set(key, { id: message.id, ts: now });
   console.log(
-    `[DEDUPE] Tracked Corven message ${message.id} author=${message.author.id} in #${message.channelId}`,
+    `[DEDUPE] Tracked Corven message ${message.id} author=${message.author.id} in #${message.channelId}`
   );
   pruneOldEntries(now);
 }

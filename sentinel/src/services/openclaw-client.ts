@@ -57,12 +57,12 @@ async function triggerViaRpc(options: TriggerAgentOptions): Promise<boolean> {
       to: `channel:${threadId}`,
       threadId,
       deliver: true,
-      idempotencyKey,
+      idempotencyKey
     });
 
     const status = (result as { status?: string })?.status;
     console.log(
-      `[OPENCLAW] RPC agent accepted: ${agentId} → thread ${threadId} (status: ${status})`,
+      `[OPENCLAW] RPC agent accepted: ${agentId} → thread ${threadId} (status: ${status})`
     );
     return true;
   } catch (err) {
@@ -92,27 +92,27 @@ async function triggerViaHooks(options: TriggerAgentOptions): Promise<boolean> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENCLAW_HOOKS_TOKEN}`,
+        Authorization: `Bearer ${OPENCLAW_HOOKS_TOKEN}`
       },
       body: JSON.stringify({
         message: normalizedMessage,
         agentId,
         channel: 'discord',
         to: `channel:${threadId}`,
-        deliver: true,
-      }),
+        deliver: true
+      })
     });
 
     if (!response.ok) {
       const body = await response.text().catch(() => '(no body)');
       console.error(
-        `[OPENCLAW] POST /hooks/agent failed: ${response.status} ${response.statusText} — ${body}`,
+        `[OPENCLAW] POST /hooks/agent failed: ${response.status} ${response.statusText} — ${body}`
       );
       return false;
     }
 
     console.log(
-      `[OPENCLAW] HTTP hook triggered ${agentId} in thread ${threadId} (${response.status})`,
+      `[OPENCLAW] HTTP hook triggered ${agentId} in thread ${threadId} (${response.status})`
     );
     return true;
   } catch (err) {

@@ -12,9 +12,9 @@ function equalsConstantTime(left: string, right: string): boolean {
 
 export async function requireTelemetryAuth(
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ): Promise<void> {
-  const expected = process.env['CONTROL_API_TELEMETRY_TOKEN'];
+  const expected = process.env.CONTROL_API_TELEMETRY_TOKEN;
   if (!expected) {
     return reply.status(503).send({ error: 'Telemetry token is not configured' });
   }

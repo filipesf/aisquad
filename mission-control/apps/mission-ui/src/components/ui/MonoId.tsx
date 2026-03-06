@@ -27,7 +27,7 @@ export function MonoId({ children, slice, className }: MonoIdProps) {
 
   return (
     <span
-      className={cn('font-mono text-xs text-muted-foreground truncate', className)}
+      className={cn('truncate font-mono text-muted-foreground text-xs', className)}
       title={children}
     >
       {display}

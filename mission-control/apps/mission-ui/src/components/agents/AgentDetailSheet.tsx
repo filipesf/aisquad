@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
-import type { Agent, Assignment, Notification } from '@/types/domain';
-import { getAgent, getAgentAssignments, getAgentNotifications } from '@/lib/api';
+import { StatusBadge } from '@/components/StatusBadge';
+import { TimeAgo } from '@/components/TimeAgo';
+import { Badge } from '@/components/ui/badge';
+import { MonoId } from '@/components/ui/MonoId';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { Separator } from '@/components/ui/separator';
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetDescription,
+  SheetHeader,
+  SheetTitle
 } from '@/components/ui/sheet';
-import { Badge } from '@/components/ui/badge';
-import { StatusBadge } from '@/components/StatusBadge';
-import { TimeAgo } from '@/components/TimeAgo';
-import { Separator } from '@/components/ui/separator';
-import { SectionLabel } from '@/components/ui/SectionLabel';
-import { MonoId } from '@/components/ui/MonoId';
+import { getAgent, getAgentAssignments, getAgentNotifications } from '@/lib/api';
+import type { Agent, Assignment, Notification } from '@/types/domain';
 
 interface AgentDetailSheetProps {
   agentId: string | null;
@@ -73,7 +73,7 @@ export function AgentDetailSheet({ agentId, onClose }: AgentDetailSheetProps) {
         if (!open) onClose();
       }}
     >
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+      <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
         <SheetHeader className="mb-4">
           <SheetTitle>{data?.agent.name ?? 'Agent'}</SheetTitle>
           <SheetDescription>
@@ -85,15 +85,15 @@ export function AgentDetailSheet({ agentId, onClose }: AgentDetailSheetProps) {
           </SheetDescription>
         </SheetHeader>
 
-        {loading && !data && <p className="px-4 text-sm text-muted-foreground">Loading agent…</p>}
-        {error && <p className="px-4 text-sm text-destructive">{error}</p>}
+        {loading && !data && <p className="px-4 text-muted-foreground text-sm">Loading agent…</p>}
+        {error && <p className="px-4 text-destructive text-sm">{error}</p>}
 
         {data && (
           <div className="space-y-6 px-4 pb-6">
             {/* Status */}
             <div className="flex items-center gap-3">
               <StatusBadge status={data.agent.status} />
-              <span className="text-xs text-muted-foreground">
+              <span className="text-muted-foreground text-xs">
                 Last seen: <TimeAgo date={data.agent.last_seen_at} />
               </span>
             </div>
@@ -118,7 +118,7 @@ export function AgentDetailSheet({ agentId, onClose }: AgentDetailSheetProps) {
             <div>
               <SectionLabel>Assignments ({data.assignments.length})</SectionLabel>
               {data.assignments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No assignments yet</p>
+                <p className="text-muted-foreground text-sm">No assignments yet</p>
               ) : (
                 <ul className="space-y-2">
                   {data.assignments.slice(0, 10).map((a) => (
@@ -137,12 +137,12 @@ export function AgentDetailSheet({ agentId, onClose }: AgentDetailSheetProps) {
             <div>
               <SectionLabel>Notifications ({data.notifications.length})</SectionLabel>
               {data.notifications.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No notifications yet</p>
+                <p className="text-muted-foreground text-sm">No notifications yet</p>
               ) : (
                 <ul className="space-y-2">
                   {data.notifications.slice(0, 10).map((n) => (
                     <li key={n.id} className="flex items-center justify-between text-sm">
-                      <span className="text-xs text-muted-foreground">{n.source_type}</span>
+                      <span className="text-muted-foreground text-xs">{n.source_type}</span>
                       <StatusBadge status={n.status} />
                     </li>
                   ))}
@@ -153,7 +153,7 @@ export function AgentDetailSheet({ agentId, onClose }: AgentDetailSheetProps) {
             <Separator />
 
             {/* Meta */}
-            <div className="text-xs text-muted-foreground space-y-1">
+            <div className="space-y-1 text-muted-foreground text-xs">
               <div>
                 Registered: <TimeAgo date={data.agent.created_at} />
               </div>

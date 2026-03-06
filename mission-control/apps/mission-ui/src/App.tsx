@@ -1,12 +1,11 @@
-import { lazy, Suspense, useState, useEffect } from 'react';
-import { ThemeProvider } from 'next-themes';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ModeToggle } from '@/components/ModeToggle';
 import { Crosshair } from 'lucide-react';
-import { Dashboard } from './pages/Dashboard';
+import { ThemeProvider } from 'next-themes';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { ModeToggle } from '@/components/ModeToggle';
 import { Toaster } from '@/components/ui/Toaster';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dashboard } from './pages/Dashboard';
 
 /** Format a duration in seconds into a human-readable uptime string. */
 function formatUptime(seconds: number): string {
@@ -33,11 +32,11 @@ export default function App() {
   useEffect(() => {
     const startTime = Date.now();
     // Print a console easter egg on mount
-    // eslint-disable-next-line no-console
+    // biome-ignore lint/suspicious/noConsole: intentional easter egg
     console.log(
       '%c Mission Control %c online. Fleet standing by.',
       'background:#e83535;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px',
-      'color:#888',
+      'color:#888'
     );
     const ticker = setInterval(() => {
       setUptimeSeconds(Math.floor((Date.now() - startTime) / 1000));
@@ -52,7 +51,7 @@ export default function App() {
           {/* Skip link for keyboard navigation - WCAG 2.4.1 */}
           <a
             href="#main-content"
-            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:font-medium focus:text-primary-foreground focus:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             Skip to main content
           </a>
@@ -60,7 +59,7 @@ export default function App() {
           <Tabs
             defaultValue="dashboard"
             onValueChange={setActiveTab}
-            className="flex flex-col min-h-screen"
+            className="flex min-h-screen flex-col"
           >
             {/* Top bar */}
             <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -72,11 +71,11 @@ export default function App() {
                     <TooltipTrigger asChild>
                       <button
                         type="button"
-                        className="flex items-center rounded focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 outline-none"
+                        className="flex items-center rounded outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         aria-label={`Mission Control — uptime ${formatUptime(uptimeSeconds)}`}
                       >
                         <Crosshair
-                          className="h-4 w-4 text-primary animate-crosshair-init"
+                          className="h-4 w-4 animate-crosshair-init text-primary"
                           aria-hidden="true"
                         />
                       </button>
@@ -86,7 +85,7 @@ export default function App() {
                       <span className="font-mono">{formatUptime(uptimeSeconds)}</span>
                     </TooltipContent>
                   </Tooltip>
-                  <h1 className="text-sm font-semibold tracking-tight animate-fade-up">
+                  <h1 className="animate-fade-up font-semibold text-sm tracking-tight">
                     Mission Control
                   </h1>
                 </div>
@@ -108,7 +107,7 @@ export default function App() {
                 The `key` on each inner wrapper forces a remount when the tab is
                 activated, replaying the animate-tab-in entrance animation.       */}
             <main id="main-content">
-              <TabsContent value="dashboard" className="flex-1 mt-0">
+              <TabsContent value="dashboard" className="mt-0 flex-1">
                 <div
                   key={activeTab === 'dashboard' ? 'dashboard-active' : 'dashboard'}
                   className="animate-tab-in"
@@ -116,14 +115,14 @@ export default function App() {
                   <Dashboard />
                 </div>
               </TabsContent>
-              <TabsContent value="telemetry" className="flex-1 mt-0">
+              <TabsContent value="telemetry" className="mt-0 flex-1">
                 <div
                   key={activeTab === 'telemetry' ? 'telemetry-active' : 'telemetry'}
                   className="animate-tab-in"
                 >
                   <Suspense
                     fallback={
-                      <div className="p-6 text-sm text-muted-foreground">Loading Telemetry…</div>
+                      <div className="p-6 text-muted-foreground text-sm">Loading Telemetry…</div>
                     }
                   >
                     <Telemetry />

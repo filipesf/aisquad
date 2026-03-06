@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Fastify from 'fastify';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerIdempotencyMiddleware } from '../middleware/idempotency.js';
 
 // Mock Redis
@@ -11,8 +11,8 @@ vi.mock('../services/redis.js', () => ({
     set: vi.fn(async (key: string, value: string, _ex: string, _ttl: number) => {
       mockRedisStore.set(key, value);
       return 'OK';
-    }),
-  },
+    })
+  }
 }));
 
 describe('idempotency middleware', () => {
@@ -47,7 +47,7 @@ describe('idempotency middleware', () => {
     const res1 = await app.inject({
       method: 'POST',
       url: '/test',
-      payload: { data: 'test' },
+      payload: { data: 'test' }
     });
     expect(res1.statusCode).toBe(200);
     expect(callCount).toBe(1);
@@ -55,7 +55,7 @@ describe('idempotency middleware', () => {
     const res2 = await app.inject({
       method: 'POST',
       url: '/test',
-      payload: { data: 'test' },
+      payload: { data: 'test' }
     });
     expect(res2.statusCode).toBe(200);
     expect(callCount).toBe(2); // Handler called twice (no idempotency key)
@@ -78,7 +78,7 @@ describe('idempotency middleware', () => {
       method: 'POST',
       url: '/test',
       headers: { 'Idempotency-Key': 'key-1' },
-      payload: { data: 'test' },
+      payload: { data: 'test' }
     });
     expect(res1.statusCode).toBe(200);
     expect(res1.json()).toEqual({ count: 1 });
@@ -89,7 +89,7 @@ describe('idempotency middleware', () => {
       method: 'POST',
       url: '/test',
       headers: { 'Idempotency-Key': 'key-1' },
-      payload: { data: 'different' },
+      payload: { data: 'different' }
     });
     expect(res2.statusCode).toBe(200);
     expect(res2.json()).toEqual({ count: 1 }); // Same response
@@ -111,14 +111,14 @@ describe('idempotency middleware', () => {
     const res1 = await app.inject({
       method: 'POST',
       url: '/test',
-      headers: { 'Idempotency-Key': 'key-1' },
+      headers: { 'Idempotency-Key': 'key-1' }
     });
     expect(res1.json()).toEqual({ count: 1 });
 
     const res2 = await app.inject({
       method: 'POST',
       url: '/test',
-      headers: { 'Idempotency-Key': 'key-2' },
+      headers: { 'Idempotency-Key': 'key-2' }
     });
     expect(res2.json()).toEqual({ count: 2 });
     expect(callCount).toBe(2);
@@ -143,7 +143,7 @@ describe('idempotency middleware', () => {
     const res1 = await app.inject({
       method: 'POST',
       url: '/test',
-      headers: { 'Idempotency-Key': 'error-key' },
+      headers: { 'Idempotency-Key': 'error-key' }
     });
     expect(res1.statusCode).toBe(500);
 
@@ -151,7 +151,7 @@ describe('idempotency middleware', () => {
     const res2 = await app.inject({
       method: 'POST',
       url: '/test',
-      headers: { 'Idempotency-Key': 'error-key' },
+      headers: { 'Idempotency-Key': 'error-key' }
     });
     expect(res2.statusCode).toBe(200);
     expect(res2.json()).toEqual({ success: true });
@@ -173,14 +173,14 @@ describe('idempotency middleware', () => {
     const res1 = await app.inject({
       method: 'PATCH',
       url: '/test',
-      headers: { 'Idempotency-Key': 'patch-key' },
+      headers: { 'Idempotency-Key': 'patch-key' }
     });
     expect(res1.json()).toEqual({ patched: 1 });
 
     const res2 = await app.inject({
       method: 'PATCH',
       url: '/test',
-      headers: { 'Idempotency-Key': 'patch-key' },
+      headers: { 'Idempotency-Key': 'patch-key' }
     });
     expect(res2.json()).toEqual({ patched: 1 }); // Cached
     expect(callCount).toBe(1);

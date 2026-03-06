@@ -18,7 +18,7 @@ export interface QueuePort {
     stream: string,
     group: string,
     consumer: string,
-    handler: (msg: QueueMessage) => Promise<void>,
+    handler: (msg: QueueMessage) => Promise<void>
   ): Promise<void>;
 
   /** Acknowledge a message as processed */

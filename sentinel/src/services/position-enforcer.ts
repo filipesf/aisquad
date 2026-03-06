@@ -14,7 +14,7 @@ import {
   type CategoryChannel,
   ChannelType,
   type Guild,
-  type NonThreadGuildBasedChannel,
+  type NonThreadGuildBasedChannel
 } from 'discord.js';
 import { categories as categoryConfigs } from '../config/server-architecture.js';
 import { sleep } from '../utils/helpers.js';
@@ -34,7 +34,7 @@ export async function enforcePositions(guild: Guild): Promise<PositionResult> {
   const result: PositionResult = {
     categoriesMoved: 0,
     channelsMoved: 0,
-    errors: [],
+    errors: []
   };
 
   // Refresh cache
@@ -49,8 +49,7 @@ export async function enforcePositions(guild: Guild): Promise<PositionResult> {
   for (let i = 0; i < categoryConfigs.length; i++) {
     const catConfig = categoryConfigs[i];
     const serverCat = guild.channels.cache.find(
-      (ch) =>
-        ch.name === catConfig.name && ch.type === ChannelType.GuildCategory,
+      (ch) => ch.name === catConfig.name && ch.type === ChannelType.GuildCategory
     ) as CategoryChannel | undefined;
 
     if (!serverCat) continue;
@@ -61,7 +60,7 @@ export async function enforcePositions(guild: Guild): Promise<PositionResult> {
     if (serverCat.position !== targetPosition) {
       categoryPositions.push({
         channel: serverCat.id,
-        position: targetPosition,
+        position: targetPosition
       });
     }
   }
@@ -78,7 +77,7 @@ export async function enforcePositions(guild: Guild): Promise<PositionResult> {
         await logAction(
           guild,
           'POSITION',
-          `Category ${ch?.name ?? cp.channel} -> position ${cp.position}`,
+          `Category ${ch?.name ?? cp.channel} -> position ${cp.position}`
         );
       }
     } catch (err) {
@@ -96,8 +95,7 @@ export async function enforcePositions(guild: Guild): Promise<PositionResult> {
     if (catConfig.channels.length === 0) continue;
 
     const parentCategory = guild.channels.cache.find(
-      (ch) =>
-        ch.name === catConfig.name && ch.type === ChannelType.GuildCategory,
+      (ch) => ch.name === catConfig.name && ch.type === ChannelType.GuildCategory
     ) as CategoryChannel | undefined;
 
     if (!parentCategory) continue;
@@ -107,8 +105,7 @@ export async function enforcePositions(guild: Guild): Promise<PositionResult> {
     for (let i = 0; i < catConfig.channels.length; i++) {
       const channelConfig = catConfig.channels[i];
       const serverChannel = guild.channels.cache.find(
-        (ch) =>
-          ch.name === channelConfig.name && ch.parentId === parentCategory.id,
+        (ch) => ch.name === channelConfig.name && ch.parentId === parentCategory.id
       ) as NonThreadGuildBasedChannel | undefined;
 
       if (!serverChannel || !('position' in serverChannel)) continue;
@@ -129,13 +126,11 @@ export async function enforcePositions(guild: Guild): Promise<PositionResult> {
           await logAction(
             guild,
             'POSITION',
-            `#${ch?.name ?? cp.channel} in ${catConfig.name} -> position ${cp.position}`,
+            `#${ch?.name ?? cp.channel} in ${catConfig.name} -> position ${cp.position}`
           );
         }
       } catch (err) {
-        result.errors.push(
-          `Failed to reorder channels in ${catConfig.name}: ${err}`,
-        );
+        result.errors.push(`Failed to reorder channels in ${catConfig.name}: ${err}`);
       }
 
       await sleep(300);

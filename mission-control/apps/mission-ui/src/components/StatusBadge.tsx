@@ -38,7 +38,7 @@ const STATUS_STYLES: Record<string, string> = {
   // Increased background opacity and darker text for better contrast
   blocked: 'border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-400',
   expired: 'border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-400',
-  failed: 'border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-400',
+  failed: 'border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-400'
 };
 
 const FALLBACK = 'border-border text-foreground';
@@ -59,16 +59,16 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
       variant="outline"
       className={cn(
         // Base: smooth color transition when status changes (e.g. online → offline on poll)
-        'capitalize border font-medium truncate max-w-[140px]',
+        'max-w-[140px] truncate border font-medium capitalize',
         'transition-[color,background-color,border-color] duration-[200ms]',
         style,
-        className,
+        className
       )}
     >
       {/* Pulsing dot for live/active statuses — communicates "this is happening now" */}
       {isLive && (
         <span
-          className="mr-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-current animate-live-pulse"
+          className="mr-1.5 inline-block h-1.5 w-1.5 shrink-0 animate-live-pulse rounded-full bg-current"
           aria-hidden="true"
         />
       )}

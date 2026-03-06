@@ -18,7 +18,7 @@ interface InlineCodeProps {
  */
 export function InlineCode({ children, className }: InlineCodeProps) {
   return (
-    <code className={cn('rounded bg-muted px-1.5 py-0.5 text-xs font-mono', className)}>
+    <code className={cn('rounded bg-muted px-1.5 py-0.5 font-mono text-xs', className)}>
       {children}
     </code>
   );

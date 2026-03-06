@@ -1,14 +1,14 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import path from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
-import path from 'path';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
+      '@': path.resolve(__dirname, './src')
+    }
   },
   build: {
     rollupOptions: {
@@ -58,9 +58,9 @@ export default defineConfig({
           if (id.includes('/node_modules/')) {
             return 'vendor';
           }
-        },
-      },
-    },
+        }
+      }
+    }
   },
   server: {
     port: 5173,
@@ -68,8 +68,8 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-    },
-  },
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  }
 });

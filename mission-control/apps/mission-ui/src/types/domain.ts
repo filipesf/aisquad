@@ -16,7 +16,14 @@ export interface Agent {
 
 export type TaskState = 'queued' | 'assigned' | 'in_progress' | 'review' | 'done' | 'blocked';
 
-export const TASK_STATES: TaskState[] = ['queued', 'assigned', 'in_progress', 'review', 'done', 'blocked'];
+export const TASK_STATES: TaskState[] = [
+  'queued',
+  'assigned',
+  'in_progress',
+  'review',
+  'done',
+  'blocked'
+];
 
 export interface Task {
   id: string;
@@ -33,7 +40,13 @@ export interface TaskWithAssignment extends Task {
   current_assignment: Assignment | null;
 }
 
-export type AssignmentStatus = 'offered' | 'accepted' | 'started' | 'completed' | 'expired' | 'cancelled';
+export type AssignmentStatus =
+  | 'offered'
+  | 'accepted'
+  | 'started'
+  | 'completed'
+  | 'expired'
+  | 'cancelled';
 
 export interface Assignment {
   id: string;
@@ -82,7 +95,11 @@ export type TelemetryGroupBy = 'provider' | 'model' | 'agent' | 'event_type' | '
 
 export const TELEMETRY_WINDOWS: TelemetryWindow[] = ['1h', '6h', '24h', '7d'];
 export const TELEMETRY_GROUP_BY_OPTIONS: TelemetryGroupBy[] = [
-  'provider', 'model', 'agent', 'event_type', 'channel',
+  'provider',
+  'model',
+  'agent',
+  'event_type',
+  'channel'
 ];
 
 export interface TelemetryTotals {

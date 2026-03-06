@@ -59,10 +59,10 @@ export async function registerIdempotencyMiddleware(app: FastifyInstance): Promi
         req.idempotencyRedisKey,
         JSON.stringify(cached),
         'EX',
-        IDEMPOTENCY_TTL_SECONDS,
+        IDEMPOTENCY_TTL_SECONDS
       );
 
       return payload;
-    },
+    }
   );
 }

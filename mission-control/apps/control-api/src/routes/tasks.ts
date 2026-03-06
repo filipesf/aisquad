@@ -1,8 +1,8 @@
-import type { FastifyInstance } from 'fastify';
 import { CreateTaskSchema, TaskState } from '@mc/shared';
+import type { FastifyInstance } from 'fastify';
+import * as assignmentDomain from '../domain/assignments.js';
 import * as taskDomain from '../domain/tasks.js';
 import { InvalidTransitionError } from '../domain/tasks.js';
-import * as assignmentDomain from '../domain/assignments.js';
 
 export async function taskRoutes(app: FastifyInstance): Promise<void> {
   // Create a task

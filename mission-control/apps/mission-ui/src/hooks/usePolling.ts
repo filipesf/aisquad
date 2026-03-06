@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * Hook that polls a function at regular intervals.
@@ -12,7 +12,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
  */
 export function usePolling<T>(
   fetcher: () => Promise<T>,
-  intervalMs: number,
+  intervalMs: number
 ): { data: T | null; error: Error | null; loading: boolean; refresh: () => void } {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);

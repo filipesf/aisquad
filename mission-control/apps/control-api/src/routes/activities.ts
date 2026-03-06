@@ -18,17 +18,17 @@ export async function activityRoutes(app: FastifyInstance): Promise<void> {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': '*'
     });
 
     // Send initial ping
-    reply.raw.write('event: ping\ndata: {"time":"' + new Date().toISOString() + '"}\n\n');
+    reply.raw.write(`event: ping\ndata: {"time":"${new Date().toISOString()}"}\n\n`);
 
     // Poll for new activities every 2 seconds
     let lastId = '';
     const recent = await activityDomain.listRecent(1);
     if (recent.length > 0) {
-      lastId = recent[0]!.id;
+      lastId = recent[0]?.id;
     }
 
     const interval = setInterval(async () => {
@@ -36,9 +36,7 @@ export async function activityRoutes(app: FastifyInstance): Promise<void> {
       try {
         const activities = await activityDomain.listSince(lastId);
         for (const activity of activities) {
-          reply.raw.write(
-            `event: activity\ndata: ${JSON.stringify(activity)}\n\n`,
-          );
+          reply.raw.write(`event: activity\ndata: ${JSON.stringify(activity)}\n\n`);
           lastId = activity.id;
         }
       } catch {

@@ -9,7 +9,7 @@
  * Output goes to stdout. In the future, can be configured to send to a webhook.
  */
 
-import { query, close } from './lib/db.js';
+import { close, query } from './lib/db.js';
 
 // ── Interfaces ──────────────────────────────────────────────────
 
@@ -58,7 +58,7 @@ export async function generateDigest(periodHours = 24): Promise<StandupDigest> {
      WHERE created_at >= $1
      GROUP BY type
      ORDER BY count DESC`,
-    [since],
+    [since]
   );
 
   const activityBreakdown: Record<string, number> = {};
@@ -72,7 +72,7 @@ export async function generateDigest(periodHours = 24): Promise<StandupDigest> {
      FROM activities
      WHERE type = 'assignment.completed'
        AND created_at >= $1`,
-    [since],
+    [since]
   );
   const tasksCompleted = Number(tasksCompletedResult.rows[0]?.count ?? 0);
 
@@ -83,7 +83,7 @@ export async function generateDigest(periodHours = 24): Promise<StandupDigest> {
      WHERE type = 'task.state_changed'
        AND payload->>'to' = 'blocked'
        AND created_at >= $1`,
-    [since],
+    [since]
   );
   const tasksBlocked = Number(tasksBlockedResult.rows[0]?.count ?? 0);
 
@@ -93,7 +93,7 @@ export async function generateDigest(periodHours = 24): Promise<StandupDigest> {
      FROM activities
      WHERE type = 'task.created'
        AND created_at >= $1`,
-    [since],
+    [since]
   );
   const tasksCreated = Number(tasksCreatedResult.rows[0]?.count ?? 0);
 
@@ -103,7 +103,7 @@ export async function generateDigest(periodHours = 24): Promise<StandupDigest> {
      FROM activities
      WHERE type = 'comment.created'
        AND created_at >= $1`,
-    [since],
+    [since]
   );
   const commentsPosted = Number(commentsResult.rows[0]?.count ?? 0);
 
@@ -115,7 +115,7 @@ export async function generateDigest(periodHours = 24): Promise<StandupDigest> {
      FROM activities
      WHERE type = 'agent.offline'
        AND created_at >= $1`,
-    [since],
+    [since]
   );
 
   // Assignment churn stats
@@ -125,7 +125,7 @@ export async function generateDigest(periodHours = 24): Promise<StandupDigest> {
      WHERE updated_at >= $1
      GROUP BY status
      ORDER BY count DESC`,
-    [since],
+    [since]
   );
 
   const assignmentChurn: Record<string, number> = {};
@@ -138,7 +138,7 @@ export async function generateDigest(periodHours = 24): Promise<StandupDigest> {
     `SELECT state, COUNT(*)::text as count
      FROM tasks
      GROUP BY state
-     ORDER BY count DESC`,
+     ORDER BY count DESC`
   );
 
   const currentTaskSummary: Record<string, number> = {};
@@ -156,7 +156,7 @@ export async function generateDigest(periodHours = 24): Promise<StandupDigest> {
     agents_went_offline: offlineResult.rows,
     assignment_churn: assignmentChurn,
     current_task_summary: currentTaskSummary,
-    activity_breakdown: activityBreakdown,
+    activity_breakdown: activityBreakdown
   };
 }
 

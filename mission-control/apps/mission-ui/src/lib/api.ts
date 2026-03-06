@@ -1,12 +1,12 @@
 import type {
-  Agent,
-  Task,
-  TaskWithAssignment,
-  Assignment,
-  Notification,
   Activity,
+  Agent,
+  Assignment,
   Comment,
+  Notification,
+  Task,
   TaskState,
+  TaskWithAssignment
 } from '../types/domain.ts';
 
 const DEFAULT_BASE_URL =
@@ -38,7 +38,7 @@ function getTelemetryToken(): string | null {
 class ApiError extends Error {
   constructor(
     public status: number,
-    public body: unknown,
+    public body: unknown
   ) {
     super(`API error ${status}: ${JSON.stringify(body)}`);
     this.name = 'ApiError';
@@ -53,8 +53,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
+      ...options?.headers
+    }
   });
 
   const text = await res.text();
@@ -84,7 +84,7 @@ function normalizeTaskState(task: TaskLike): TaskState {
     review: 'review',
     done: 'done',
     completed: 'done',
-    blocked: 'blocked',
+    blocked: 'blocked'
   };
   return mapped[value] ?? 'queued';
 }
@@ -95,7 +95,7 @@ function normalizePriority(priority: TaskLike['priority']): number {
     low: 2,
     medium: 5,
     high: 8,
-    urgent: 10,
+    urgent: 10
   };
   return mapped[String(priority ?? '').toLowerCase()] ?? 5;
 }
@@ -109,7 +109,7 @@ function normalizeTask(raw: TaskLike): Task {
     priority: normalizePriority(raw.priority),
     required_capabilities: raw.required_capabilities ?? {},
     created_at: String(raw.created_at ?? new Date().toISOString()),
-    updated_at: String(raw.updated_at ?? new Date().toISOString()),
+    updated_at: String(raw.updated_at ?? new Date().toISOString())
   };
 }
 
@@ -165,7 +165,7 @@ export async function getTask(id: string): Promise<TaskWithAssignment> {
 
   return {
     ...normalizeTask(raw),
-    current_assignment,
+    current_assignment
   };
 }
 
@@ -177,7 +177,7 @@ export async function createTask(input: {
 }): Promise<Task> {
   return request<Task>('/tasks', {
     method: 'POST',
-    body: JSON.stringify(input),
+    body: JSON.stringify(input)
   });
 }
 
@@ -185,7 +185,7 @@ export async function changeTaskState(id: string, state: TaskState): Promise<Tas
   try {
     const task = await request<TaskLike>(`/tasks/${id}/state`, {
       method: 'PATCH',
-      body: JSON.stringify({ state }),
+      body: JSON.stringify({ state })
     });
     return normalizeTask(task);
   } catch (err) {
@@ -199,12 +199,12 @@ export async function changeTaskState(id: string, state: TaskState): Promise<Tas
       in_progress: 'in_progress',
       review: 'review',
       done: 'done',
-      blocked: 'blocked',
+      blocked: 'blocked'
     };
 
     const task = await request<TaskLike>(`/tasks/${id}/transition`, {
       method: 'POST',
-      body: JSON.stringify({ to_state: statusMap[state] }),
+      body: JSON.stringify({ to_state: statusMap[state] })
     });
     return normalizeTask(task);
   }
@@ -225,11 +225,11 @@ export async function listComments(taskId: string): Promise<Comment[]> {
 export async function createComment(
   taskId: string,
   authorId: string,
-  body: string,
+  body: string
 ): Promise<Comment> {
   return request<Comment>(`/tasks/${taskId}/comments?author_id=${encodeURIComponent(authorId)}`, {
     method: 'POST',
-    body: JSON.stringify({ body }),
+    body: JSON.stringify({ body })
   });
 }
 
@@ -243,7 +243,7 @@ export async function listActivities(limit = 50): Promise<Activity[]> {
 
 export async function acknowledgeNotification(id: string): Promise<Notification> {
   return request<Notification>(`/notifications/${id}/ack`, {
-    method: 'POST',
+    method: 'POST'
   });
 }
 
@@ -270,8 +270,8 @@ async function telemetryRequest<T>(path: string, options?: RequestInit): Promise
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
+      ...options?.headers
+    }
   });
 
   const text = await res.text();
@@ -289,7 +289,7 @@ export async function getTelemetrySummary(params: {
   group_by: import('../types/domain.ts').TelemetryGroupBy;
 }): Promise<import('../types/domain.ts').TelemetrySummary> {
   return telemetryRequest<import('../types/domain.ts').TelemetrySummary>(
-    `/telemetry/summary?window=${params.window}&group_by=${params.group_by}`,
+    `/telemetry/summary?window=${params.window}&group_by=${params.group_by}`
   );
 }
 
