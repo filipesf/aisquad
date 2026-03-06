@@ -122,7 +122,10 @@ export const ActivityFeed = memo(function ActivityFeed({
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold tracking-tight">Activity</h2>
+        <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+          <span className="block h-3.5 w-0.5 rounded-full bg-primary" aria-hidden="true" />
+          Activity
+        </h2>
         <div className="flex items-center gap-2">
           {/* Live dot: pulses when connected, stays static red when disconnected */}
           <div

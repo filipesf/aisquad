@@ -33,7 +33,10 @@ export function Dashboard() {
       {/* Fleet — stagger index 0 */}
       <section className="animate-fade-up" style={{ '--stagger-i': 0 } as React.CSSProperties}>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold tracking-tight">Agents</h2>
+          <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+            <span className="block h-3.5 w-0.5 rounded-full bg-primary" aria-hidden="true" />
+            Agents
+          </h2>
           <span className="text-xs text-muted-foreground">
             {onlineCount} of {totalAgents} online
           </span>
@@ -43,7 +46,10 @@ export function Dashboard() {
 
       {/* Tasks — stagger index 1 */}
       <section className="animate-fade-up" style={{ '--stagger-i': 1 } as React.CSSProperties}>
-        <h2 className="mb-4 text-sm font-semibold tracking-tight">Tasks</h2>
+        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold tracking-tight">
+          <span className="block h-3.5 w-0.5 rounded-full bg-primary" aria-hidden="true" />
+          Tasks
+        </h2>
         <TasksTable tasks={tasks ?? []} onRefresh={refreshTasks} />
       </section>
 

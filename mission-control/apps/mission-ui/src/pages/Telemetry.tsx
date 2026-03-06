@@ -70,7 +70,10 @@ export function Telemetry() {
     <div className="p-6 space-y-6">
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-4">
-        <h2 className="text-sm font-semibold tracking-tight">Telemetry</h2>
+        <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+          <span className="block h-3.5 w-0.5 rounded-full bg-primary" aria-hidden="true" />
+          Telemetry
+        </h2>
         <div className="flex items-center gap-3 ml-auto flex-wrap">
           <span className="text-xs text-muted-foreground" id="window-label">
             Period

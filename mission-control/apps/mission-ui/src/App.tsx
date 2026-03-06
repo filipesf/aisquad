@@ -15,7 +15,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <TooltipProvider>
         <div className="min-h-screen bg-background text-foreground">
           {/* Skip link for keyboard navigation - WCAG 2.4.1 */}
@@ -37,7 +37,7 @@ export default function App() {
                 <div className="flex items-center gap-2">
                   {/* Single rotation on mount — signals the system is initialising */}
                   <Crosshair
-                    className="h-4 w-4 text-muted-foreground animate-crosshair-init"
+                    className="h-4 w-4 text-primary animate-crosshair-init"
                     aria-hidden="true"
                   />
                   <h1 className="text-sm font-semibold tracking-tight animate-fade-up">
