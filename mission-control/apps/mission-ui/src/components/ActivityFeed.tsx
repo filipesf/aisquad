@@ -2,6 +2,7 @@ import { useRef, memo } from 'react';
 import type { Activity } from '@/types/domain';
 import { TimeAgo } from './TimeAgo';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { TableShell } from '@/components/ui/TableShell';
 import { cn } from '@/lib/utils';
 import {
   CircleDot,
@@ -104,7 +105,7 @@ export const ActivityFeed = memo(function ActivityFeed({
         </div>
       </div>
 
-      <div className="rounded-md border">
+      <TableShell>
         <ScrollArea style={{ height: maxHeight }} ref={scrollRef}>
           {activities.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
@@ -135,7 +136,7 @@ export const ActivityFeed = memo(function ActivityFeed({
             </ul>
           )}
         </ScrollArea>
-      </div>
+      </TableShell>
     </div>
   );
 });

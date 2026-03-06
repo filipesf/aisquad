@@ -73,8 +73,8 @@ describe('Telemetry', () => {
   it('shows loading state before data', () => {
     vi.mocked(getTelemetrySummary).mockReturnValue(new Promise(() => {}));
     render(<Telemetry />);
-    // The component renders "Loading…" while the first fetch is in-flight
-    expect(screen.getByText(/loading…/i)).toBeInTheDocument();
+    // Component renders "Loading telemetry…" while the first fetch is in-flight
+    expect(screen.getByText(/loading telemetry/i)).toBeInTheDocument();
   });
 
   it('shows 401 auth banner on unauthorized error', async () => {
@@ -84,7 +84,7 @@ describe('Telemetry', () => {
     );
     render(<Telemetry />);
     await waitFor(() => {
-      expect(screen.getByText(/Telemetry API authorization required/i)).toBeInTheDocument();
+      expect(screen.getByText(/Telemetry access token required/i)).toBeInTheDocument();
     });
   });
 
@@ -95,7 +95,7 @@ describe('Telemetry', () => {
     );
     render(<Telemetry />);
     await waitFor(() => {
-      expect(screen.getByText(/Telemetry service unavailable/i)).toBeInTheDocument();
+      expect(screen.getByText(/Telemetry not configured on the server/i)).toBeInTheDocument();
     });
   });
 });

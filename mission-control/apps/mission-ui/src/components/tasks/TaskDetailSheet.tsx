@@ -29,6 +29,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { MonoId } from '@/components/ui/MonoId';
 
 interface TaskDetailSheetProps {
   task: Task | null;
@@ -115,9 +117,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader className="mb-4">
           <SheetTitle>{data?.task.title ?? task?.title ?? 'Task'}</SheetTitle>
-          <SheetDescription>
-            {task ? <span className="font-mono text-xs">{task.id}</span> : null}
-          </SheetDescription>
+          <SheetDescription>{task ? <MonoId>{task.id}</MonoId> : null}</SheetDescription>
         </SheetHeader>
 
         {loading && !data && <p className="px-4 text-sm text-muted-foreground">Loading task…</p>}
@@ -135,12 +135,9 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
 
             {/* State change */}
             <div>
-              <p
-                className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-                id="state-label"
-              >
+              <SectionLabel id="state-label" className="mb-1.5">
                 Change Status
-              </p>
+              </SectionLabel>
               <Select defaultValue={data.task.state} onValueChange={handleStateChange}>
                 <SelectTrigger className="w-[180px]" aria-labelledby="state-label">
                   <SelectValue />
@@ -158,9 +155,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
             {/* Description */}
             {data.task.description && (
               <div>
-                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Description
-                </p>
+                <SectionLabel className="mb-1.5">Description</SectionLabel>
                 <p className="text-sm whitespace-pre-wrap break-words">{data.task.description}</p>
               </div>
             )}
@@ -170,16 +165,9 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
               <>
                 <Separator />
                 <div>
-                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Current Assignment
-                  </p>
+                  <SectionLabel className="mb-1.5">Current Assignment</SectionLabel>
                   <div className="flex items-center justify-between text-sm">
-                    <span
-                      className="font-mono text-xs text-muted-foreground truncate"
-                      title={data.task.current_assignment.agent_id}
-                    >
-                      {data.task.current_assignment.agent_id.slice(0, 8)}…
-                    </span>
+                    <MonoId slice={8}>{data.task.current_assignment.agent_id}</MonoId>
                     <StatusBadge status={data.task.current_assignment.status} />
                   </div>
                 </div>
@@ -191,18 +179,11 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
               <>
                 <Separator />
                 <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Assignment History ({data.assignments.length})
-                  </p>
+                  <SectionLabel>Assignment History ({data.assignments.length})</SectionLabel>
                   <ul className="space-y-2">
                     {data.assignments.map((a) => (
                       <li key={a.id} className="flex items-center justify-between text-sm">
-                        <span
-                          className="font-mono text-xs text-muted-foreground truncate"
-                          title={a.agent_id}
-                        >
-                          {a.agent_id.slice(0, 8)}…
-                        </span>
+                        <MonoId slice={8}>{a.agent_id}</MonoId>
                         <StatusBadge status={a.status} />
                       </li>
                     ))}
@@ -215,9 +196,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
 
             {/* Comments */}
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Comments ({data.comments.length})
-              </p>
+              <SectionLabel>Comments ({data.comments.length})</SectionLabel>
               {data.comments.length > 0 ? (
                 <ul className="space-y-3 mb-4">
                   {data.comments.map((c) => (

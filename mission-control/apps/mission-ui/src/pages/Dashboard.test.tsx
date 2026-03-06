@@ -98,8 +98,12 @@ describe('Dashboard', () => {
   it('shows online count', async () => {
     render(<Dashboard />);
 
+    // The count is rendered as "{n} of {total} online" split across three text
+    // nodes inside one <span>; match with a flexible function query.
     await waitFor(() => {
-      expect(screen.getByText('1/2 online')).toBeInTheDocument();
+      expect(
+        screen.getByText((_, el) => el?.textContent?.trim() === '1 of 2 online'),
+      ).toBeInTheDocument();
     });
   });
 

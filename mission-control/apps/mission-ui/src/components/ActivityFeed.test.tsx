@@ -30,14 +30,17 @@ const mockActivities: Activity[] = [
 describe('ActivityFeed', () => {
   it('renders activity items', () => {
     render(<ActivityFeed activities={mockActivities} connected={true} />);
-    expect(screen.getByText(/Task created: Fix bug/)).toBeInTheDocument();
-    expect(screen.getByText(/Agent came online/)).toBeInTheDocument();
-    expect(screen.getByText(/Assignment expired/)).toBeInTheDocument();
+    // getActivityDescription produces these strings for the mock events
+    expect(screen.getByText('New task: Fix bug')).toBeInTheDocument();
+    expect(screen.getByText('Agent came online')).toBeInTheDocument();
+    expect(screen.getByText('Assignment timed out')).toBeInTheDocument();
   });
 
-  it('shows "No activities yet" when empty', () => {
+  it('shows empty state message when there are no activities', () => {
     render(<ActivityFeed activities={[]} connected={true} />);
-    expect(screen.getByText('No activities yet')).toBeInTheDocument();
+    expect(
+      screen.getByText('No activity yet. Events will appear here as agents work.'),
+    ).toBeInTheDocument();
   });
 
   it('shows connected status', () => {
@@ -47,6 +50,7 @@ describe('ActivityFeed', () => {
 
   it('shows disconnected status', () => {
     render(<ActivityFeed activities={[]} connected={false} />);
-    expect(screen.getByText('Reconnecting...')).toBeInTheDocument();
+    // Component uses the Unicode ellipsis character (…), not three dots (...)
+    expect(screen.getByText('Reconnecting…')).toBeInTheDocument();
   });
 });

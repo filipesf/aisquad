@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/StatusBadge';
 import { TimeAgo } from '@/components/TimeAgo';
 import { Separator } from '@/components/ui/separator';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { MonoId } from '@/components/ui/MonoId';
 
 interface AgentDetailSheetProps {
   agentId: string | null;
@@ -76,7 +78,7 @@ export function AgentDetailSheet({ agentId, onClose }: AgentDetailSheetProps) {
           <SheetTitle>{data?.agent.name ?? 'Agent'}</SheetTitle>
           <SheetDescription>
             {data?.agent.id ? (
-              <span className="font-mono text-xs">{data.agent.id}</span>
+              <MonoId>{data.agent.id}</MonoId>
             ) : (
               <span className="font-mono text-xs">—</span>
             )}
@@ -99,9 +101,7 @@ export function AgentDetailSheet({ agentId, onClose }: AgentDetailSheetProps) {
             {/* Capabilities */}
             {Object.keys(data.agent.capabilities).length > 0 && (
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Capabilities
-                </p>
+                <SectionLabel>Capabilities</SectionLabel>
                 <div className="flex flex-wrap gap-1">
                   {Object.keys(data.agent.capabilities).map((cap) => (
                     <Badge key={cap} variant="secondary" className="font-mono text-xs">
@@ -116,21 +116,14 @@ export function AgentDetailSheet({ agentId, onClose }: AgentDetailSheetProps) {
 
             {/* Recent assignments */}
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Assignments ({data.assignments.length})
-              </p>
+              <SectionLabel>Assignments ({data.assignments.length})</SectionLabel>
               {data.assignments.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No assignments yet</p>
               ) : (
                 <ul className="space-y-2">
                   {data.assignments.slice(0, 10).map((a) => (
                     <li key={a.id} className="flex items-center justify-between gap-3 text-sm">
-                      <span
-                        className="font-mono text-xs text-muted-foreground truncate"
-                        title={a.task_id}
-                      >
-                        {a.task_id.slice(0, 8)}…
-                      </span>
+                      <MonoId slice={8}>{a.task_id}</MonoId>
                       <StatusBadge status={a.status} />
                     </li>
                   ))}
@@ -142,9 +135,7 @@ export function AgentDetailSheet({ agentId, onClose }: AgentDetailSheetProps) {
 
             {/* Recent notifications */}
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Notifications ({data.notifications.length})
-              </p>
+              <SectionLabel>Notifications ({data.notifications.length})</SectionLabel>
               {data.notifications.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No notifications yet</p>
               ) : (

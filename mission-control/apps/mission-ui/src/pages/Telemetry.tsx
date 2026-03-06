@@ -6,6 +6,8 @@ import { ApiError } from '@/lib/api';
 import { usePolling } from '@/hooks/usePolling';
 import { MetricCard } from '@/components/MetricCard';
 import { ErrorBanner } from '@/components/ErrorBanner';
+import { TableShell } from '@/components/ui/TableShell';
+import { InlineCode } from '@/components/ui/InlineCode';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   Table,
@@ -29,9 +31,7 @@ function TelemetryAuthBanner({ error }: { error: unknown }) {
         description={
           <>
             Paste your telemetry token in the browser console, then reload the page:{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
-              localStorage.setItem('MC_TELEMETRY_TOKEN', '&lt;token&gt;')
-            </code>
+            <InlineCode>localStorage.setItem('MC_TELEMETRY_TOKEN', '&lt;token&gt;')</InlineCode>
           </>
         }
       />
@@ -45,10 +45,7 @@ function TelemetryAuthBanner({ error }: { error: unknown }) {
         description={
           <>
             The server is missing its telemetry token. Set{' '}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
-              CONTROL_API_TELEMETRY_TOKEN
-            </code>{' '}
-            and restart the API.
+            <InlineCode>CONTROL_API_TELEMETRY_TOKEN</InlineCode> and restart the API.
           </>
         }
       />
@@ -131,7 +128,7 @@ export function Telemetry() {
 
           {/* Groups table */}
           {data.groups.length > 0 ? (
-            <div className="rounded-md border">
+            <TableShell>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -163,7 +160,7 @@ export function Telemetry() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
+            </TableShell>
           ) : (
             <p className="text-sm text-muted-foreground">No data for this time period.</p>
           )}

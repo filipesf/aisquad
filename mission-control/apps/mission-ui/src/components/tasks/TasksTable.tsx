@@ -38,6 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, PlusCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { TableShell } from '@/components/ui/TableShell';
 
 const PRIORITY_OPTIONS = ['Urgent', 'High', 'Medium', 'Low'];
 
@@ -228,7 +229,7 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
+      <TableShell>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -279,7 +280,7 @@ export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
             )}
           </TableBody>
         </Table>
-      </div>
+      </TableShell>
 
       {/* Pagination */}
       <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
