@@ -430,25 +430,51 @@ docker compose up -d redis
 
 ### Orphaned assignments (task stuck in `assigned` or `in_progress`)
 
-The assigner worker expires stale leases automatically. To check or force-expire:
+Lease expiry semantics:
+- `offered` assignments expire automatically via the assigner worker's lease timer.
+- `accepted` assignments are recovered by the offline-detector when the agent goes offline.
+  If both workers are running, tasks should self-recover. Use the commands below to diagnose or force-recover manually.
 
 ```bash
-# Check for orphaned assignments
+# Check for stuck offered assignments (past lease, not yet expired by assigner)
 docker exec mctl-postgres psql -U postgres -d mission_control -c "
   SELECT a.id, t.title, a.status, a.lease_expires_at
   FROM assignments a
   JOIN tasks t ON t.id = a.task_id
-  WHERE a.status IN ('offered', 'accepted')
+  WHERE a.status = 'offered'
     AND a.lease_expires_at < now();
 "
 
-# Force-expire if needed
+# Check for accepted assignments whose agent is offline (should be recovered by offline-detector)
+docker exec mctl-postgres psql -U postgres -d mission_control -c "
+  SELECT a.id, t.title, ag.name AS agent, a.status
+  FROM assignments a
+  JOIN tasks t ON t.id = a.task_id
+  JOIN agents ag ON ag.id = a.agent_id
+  WHERE a.status = 'accepted'
+    AND ag.status = 'offline';
+"
+
+# Force-expire stale offered assignments (lease expired)
 docker exec mctl-postgres psql -U postgres -d mission_control -c "
   UPDATE assignments SET status = 'expired', updated_at = now()
-  WHERE status IN ('offered', 'accepted') AND lease_expires_at < now();
+  WHERE status = 'offered' AND lease_expires_at < now();
 
   UPDATE tasks SET state = 'queued', updated_at = now()
-  WHERE state IN ('assigned', 'in_progress')
+  WHERE state = 'assigned'
+    AND id NOT IN (
+      SELECT task_id FROM assignments WHERE status IN ('offered', 'accepted')
+    );
+"
+
+# Force-expire accepted assignments for offline agents
+docker exec mctl-postgres psql -U postgres -d mission_control -c "
+  UPDATE assignments SET status = 'expired', updated_at = now()
+  WHERE status = 'accepted'
+    AND agent_id IN (SELECT id FROM agents WHERE status = 'offline');
+
+  UPDATE tasks SET state = 'queued', updated_at = now()
+  WHERE state = 'in_progress'
     AND id NOT IN (
       SELECT task_id FROM assignments WHERE status IN ('offered', 'accepted')
     );

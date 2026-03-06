@@ -211,19 +211,6 @@ export async function expire(assignmentId: string): Promise<Assignment | null> {
 }
 
 /**
- * Find assignments with expired leases.
- */
-export async function findExpiredLeases(now: Date): Promise<Assignment[]> {
-  const result = await query<AssignmentRow>(
-    `SELECT * FROM assignments
-     WHERE status IN ('offered', 'accepted')
-       AND lease_expires_at < $1`,
-    [now.toISOString()]
-  );
-  return result.rows.map(rowToAssignment);
-}
-
-/**
  * Get the current active assignment for a task.
  */
 export async function getActiveForTask(taskId: string): Promise<Assignment | null> {

@@ -119,9 +119,12 @@ async function assignQueuedTasks(): Promise<number> {
 async function expireStaleLeases(): Promise<number> {
   const now = new Date();
 
+  // Only expire 'offered' assignments — the offer window is the handshake timeout.
+  // Once 'accepted', the agent is actively working; liveness is tracked via heartbeats
+  // and the offline-detector, not a lease timer.
   const expired = await query<{ id: string; task_id: string; agent_id: string }>(
     `SELECT id, task_id, agent_id FROM assignments
-     WHERE status IN ('offered', 'accepted')
+     WHERE status = 'offered'
        AND lease_expires_at < $1`,
     [now.toISOString()]
   );
@@ -135,9 +138,21 @@ async function expireStaleLeases(): Promise<number> {
 
     await query('BEGIN');
 
-    await query(`UPDATE assignments SET status = 'expired', updated_at = now() WHERE id = $1`, [
-      assignment.id
-    ]);
+    // Guard on status to close the race between SELECT and UPDATE
+    // (agent could accept between the two queries; if so, skip this assignment)
+    const expireResult = await query(
+      `UPDATE assignments SET status = 'expired', updated_at = now()
+       WHERE id = $1 AND status = 'offered'
+       RETURNING id`,
+      [assignment.id]
+    );
+
+    if (expireResult.rows.length === 0) {
+      // Assignment was accepted in the race window — leave it alone
+      await query('ROLLBACK');
+      console.log(`assigner: assignment ${assignment.id} was accepted before expiry, skipping`);
+      continue;
+    }
 
     await query(`UPDATE tasks SET state = 'queued', updated_at = now() WHERE id = $1`, [
       assignment.task_id

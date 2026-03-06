@@ -10,6 +10,11 @@ interface StaleAgent {
   last_seen_at: string;
 }
 
+interface ActiveAssignment {
+  id: string;
+  task_id: string;
+}
+
 async function findAndMarkStaleAgents(): Promise<number> {
   const now = new Date();
 
@@ -36,6 +41,57 @@ async function findAndMarkStaleAgents(): Promise<number> {
     );
 
     console.log(`offline-detector: marked agent ${agent.name} (${agent.id}) as offline`);
+
+    // Expire any accepted assignments for this agent and requeue their tasks.
+    // Offered assignments are handled by the assigner's lease expiry; we only
+    // need to recover work that was actively in progress.
+    const activeAssignments = await query<ActiveAssignment>(
+      `SELECT id, task_id FROM assignments
+       WHERE agent_id = $1 AND status = 'accepted'`,
+      [agent.id]
+    );
+
+    for (const assignment of activeAssignments.rows) {
+      // Guard on status — another process could have transitioned this assignment
+      // (e.g. agent completed just before being marked offline). Only proceed if
+      // the UPDATE actually matched.
+      const expireResult = await query(
+        `UPDATE assignments SET status = 'expired', updated_at = now()
+         WHERE id = $1 AND status = 'accepted'
+         RETURNING id`,
+        [assignment.id]
+      );
+
+      if (expireResult.rows.length === 0) {
+        // Assignment was already transitioned — nothing to recover
+        continue;
+      }
+
+      await query(
+        `UPDATE tasks SET state = 'queued', updated_at = now()
+         WHERE id = $1`,
+        [assignment.task_id]
+      );
+
+      await query(
+        `INSERT INTO activities (id, type, actor_id, payload, created_at)
+         VALUES ($1, 'assignment.expired', NULL, $2, now())`,
+        [
+          randomUUID(),
+          JSON.stringify({
+            taskId: assignment.task_id,
+            agentId: agent.id,
+            assignmentId: assignment.id,
+            agentName: agent.name,
+            reason: 'agent_offline'
+          })
+        ]
+      );
+
+      console.log(
+        `offline-detector: expired accepted assignment ${assignment.id}, requeued task ${assignment.task_id}`
+      );
+    }
   }
 
   return stale.rows.length;

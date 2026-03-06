@@ -218,9 +218,11 @@ describe('assignment integration', () => {
     );
     await pool.query("UPDATE tasks SET state = 'assigned' WHERE id = $1", [task.id]);
 
+    // Only 'offered' assignments are subject to lease expiry;
+    // 'accepted' assignments are recovered via the offline-detector path.
     const expired = await pool.query(
       `SELECT id, task_id FROM assignments
-       WHERE task_id = $1 AND status IN ('offered', 'accepted') AND lease_expires_at < now()`,
+       WHERE task_id = $1 AND status = 'offered' AND lease_expires_at < now()`,
       [task.id]
     );
     expect(expired.rows).toHaveLength(1);
@@ -242,16 +244,18 @@ describe('assignment integration', () => {
     const agent2 = await createAgent('backup-agent', { code: true });
     const task = await createTask('Critical task', { code: true });
 
+    // Simulate agent1 accepting the task (in_progress)
     const a1Result = await pool.query(
       `INSERT INTO assignments (id, task_id, agent_id, status, lease_expires_at, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, 'offered', now() - interval '1 second', now(), now())
+       VALUES (gen_random_uuid(), $1, $2, 'accepted', now() + interval '30 seconds', now(), now())
        RETURNING id`,
       [task.id, agent1.id]
     );
-    await pool.query("UPDATE tasks SET state = 'assigned' WHERE id = $1", [task.id]);
+    await pool.query("UPDATE tasks SET state = 'in_progress' WHERE id = $1", [task.id]);
 
+    // Simulate offline-detector recovering the accepted assignment when agent1 disappears
     await pool.query(
-      "UPDATE assignments SET status = 'expired', updated_at = now() WHERE id = $1",
+      "UPDATE assignments SET status = 'expired', updated_at = now() WHERE id = $1 AND status = 'accepted'",
       [a1Result.rows[0].id]
     );
     await pool.query("UPDATE tasks SET state = 'queued', updated_at = now() WHERE id = $1", [
