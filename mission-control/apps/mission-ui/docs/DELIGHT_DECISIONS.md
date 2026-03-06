@@ -415,6 +415,8 @@ This tests the intent (an empty state message is shown) without coupling to a sp
 
 ## Files Changed
 
+### Pass 1
+
 | File                                        | Change                                                                                                                                                                               |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `src/index.css`                             | 7 new `@keyframes`, 7 new `.animate-*` utility classes                                                                                                                               |
@@ -425,6 +427,97 @@ This tests the intent (an empty state message is shown) without coupling to a sp
 | `src/App.tsx`                               | `uptimeSeconds` state + 1s ticker, `formatUptime` helper, crosshair Tooltip with uptime, console easter egg, `Tooltip`/`TooltipContent`/`TooltipTrigger` imports, `useEffect` import |
 | `src/components/ActivityFeed.test.tsx`      | Updated empty state test to use function matcher for rotating messages                                                                                                               |
 
+### Pass 2
+
+| File                                       | Change                                                                                                                      |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `src/index.css`                            | 3 new `@keyframes` (`toast-in`, `toast-out`, `confetti-burst`), 3 new `.animate-*` classes                                  |
+| `src/hooks/useToast.ts`                    | New file — module-level toast store + `useToast` hook + `useToastStore` subscriber hook                                     |
+| `src/components/ui/Toaster.tsx`            | New file — Radix Toast primitives + styled variants, mounts in App.tsx                                                      |
+| `src/components/ConfettiBurst.tsx`         | New file — 12-particle deterministic CSS confetti burst                                                                     |
+| `src/App.tsx`                              | `Toaster` import + render inside `TooltipProvider`                                                                          |
+| `src/pages/Dashboard.tsx`                  | `createOpen` state + keyboard shortcut `N` handler; passes controlled props to `TasksTable`                                 |
+| `src/components/tasks/TasksTable.tsx`      | Optional `createOpen` / `onCreateOpenChange` props for controlled usage; internal fallback preserved                        |
+| `src/components/tasks/TaskDetailSheet.tsx` | `useToast` import, `ConfettiBurst` import, `showConfetti` state + timer, done-state confetti + toast in `handleStateChange` |
+
+---
+
+---
+
+## Pass 2 (2026-03-06) — Toast, Keyboard Shortcut, Confetti
+
+### Toast Infrastructure
+
+**Files:** `src/hooks/useToast.ts`, `src/components/ui/Toaster.tsx`, `src/App.tsx`, `src/index.css`
+
+**Approach:** Module-level event emitter store — no Context, no prop-drilling. Any component calls `useToast()` and fires a toast; `Toaster` subscribes at the app root and renders the current queue.
+
+**Why not Sonner / react-hot-toast?** Zero new runtime dependencies was a hard constraint from pass 1. `@radix-ui/react-toast` is already a transitive dependency of the `radix-ui` umbrella package — it ships for free. The implementation is ~100 lines including the store, hook, and styled component.
+
+**Anatomy:**
+
+- `useToast.ts` — module-level `toasts[]` array + `Set<Listener>`. `addToast()` appends and schedules its own `setTimeout` removal. `removeToast()` fires when the toast is dismissed or the duration elapses.
+- `Toaster.tsx` — mounts once in `App.tsx`, inside `TooltipProvider`. Uses `Toast.Provider` + `Toast.Viewport` from Radix. Viewport anchors bottom-right at z-200.
+- Variants: `default` (bordered card), `success` (bordered card with green title), `destructive` (red background, white text).
+- Animations: `animate-toast-in` (slide from right + scale) and `animate-toast-out` (reverse). Both use existing motion tokens (`--ease-out-expo`, `--ease-in-quart`, `--dur-normal`).
+
+**Why bottom-right?** Out of the way of the agents table (top-left), tasks table (centre), and activity feed (bottom-left). The operator's eye naturally rests centre-left; bottom-right is peripheral but still in the reading zone.
+
+---
+
+### Keyboard Shortcut `N`
+
+**Files:** `src/pages/Dashboard.tsx`, `src/components/tasks/TasksTable.tsx`
+
+**Approach:** `createOpen` state lifted from `TasksTable` to `Dashboard`. `Dashboard` registers a `keydown` listener on `document`; presses `N`/`n` with no modifier and no active input set `createOpen(true)`.
+
+**Guard conditions:**
+
+- `e.target.tagName === 'INPUT' | 'TEXTAREA'` — prevents triggering while typing in the filter search or comment box
+- `e.target.isContentEditable` — covers rich-text editors
+- `e.metaKey || e.ctrlKey || e.altKey` — avoids colliding with browser/OS shortcuts
+
+**`TasksTable` backward compatibility:** The component accepts optional `createOpen` + `onCreateOpenChange` props. When not provided, it falls back to its own internal `useState`. This means the component works correctly if ever rendered outside `Dashboard`.
+
+**Why `N`?** Linear uses `C` for compose. `N` was chosen because: (1) no existing browser shortcut uses unmodified `N`, (2) "New task" → `N` is mnemonic, (3) it's the furthest from focus-trap-sensitive keys like `Enter`, `Space`, `Escape`.
+
+---
+
+### Confetti on Task `done` + Done Toast
+
+**Files:** `src/components/ConfettiBurst.tsx`, `src/components/tasks/TaskDetailSheet.tsx`, `src/index.css`
+
+**What happens when a task is set to `done`:**
+
+1. `handleStateChange('done')` fires.
+2. `setShowConfetti(true)` — mounts `<ConfettiBurst />` inside the status badge wrapper.
+3. `toast({ title: 'Task complete.', description: 'Good work…', variant: 'success' })` — fires a 4s bottom-right toast.
+4. After 900ms, `setShowConfetti(false)` — confetti unmounts cleanly.
+
+**`ConfettiBurst` design:**
+
+- 12 `<span>` particles, each ~6×6px with `rounded-[1px]` (slightly square — more mechanical than circular).
+- Positions are **deterministic from index** — no `Math.random()` on render. Angle = `(i/12) × 360° + 15°`. Radius alternates 52px / 72px. This produces an even radial burst without randomness that would cause re-render visual jitter.
+- CSS custom properties per-particle: `--confetti-x`, `--confetti-y`, `--confetti-rot`, `--confetti-dur`, `--confetti-delay`. All consumed by `.animate-confetti-burst`.
+- Colours: 6-colour palette cycling — brand red, status-success green, status-info blue, status-warning amber. Same palette as status badges, so confetti reads as "UI chrome" not random noise.
+- Duration staggers: 500 / 575 / 650 / 725ms cycling. Delay: 0 / 30 / 60ms cycling. Creates a slightly organic burst without full randomness.
+
+**`@keyframes confetti-burst`:**
+
+```css
+0%   → opacity: 1, transform: translate(0, 0) scale(1) rotate(0deg)
+80%  → opacity: 0.8
+100% → opacity: 0, transform: translate(var(--confetti-x), var(--confetti-y)) scale(0.4) rotate(var(--confetti-rot))
+```
+
+Only `transform` + `opacity`. GPU composited. No layout reflow.
+
+**Toast copy:** _"Task complete. / Good work. One fewer thing to worry about."_ The tone stays in the dry-wit register — acknowledges the milestone without being effusive. "One fewer thing to worry about" is an operator's thought, not a cheerleader's line.
+
+**Why only `done` and not other terminal states?** `done` is the positive milestone. `blocked` and `in_progress` are process states. Confetti on `done` is earned; confetti on `blocked` would be absurd.
+
+**`ConfettiBurst` mounting:** `absolute inset-0` inside a `relative inline-flex` wrapper on the status badge span. The confetti overlaps the badge but the badge remains visible beneath — it reads as "the badge is celebrating itself."
+
 ---
 
 ## Deferred Items
@@ -433,11 +526,8 @@ This tests the intent (an empty state message is shown) without coupling to a sp
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Agent identity colours               | Tracked in `DESIGN_CONTEXT.md` and `HARDENING_SUMMARY.md`. Requires hue generation on agent registration and threading through multiple surfaces. Separate feature work. |
 | Activity-driven saturation intensity | Also tracked in `DESIGN_CONTEXT.md`. Requires tracking active task count and mapping to a CSS variable multiplier. Future pass.                                          |
-| Toast notification infrastructure    | Noted in `HARDENING_SUMMARY.md`. Needed before any success/error toast moments can be added across the app.                                                              |
-| Confetti on "done" task milestone    | Waiting for toast infrastructure; a task reaching `done` state should feel like a genuine milestone. Currently the state change just updates the badge.                  |
-| Keyboard shortcut `N` for new task   | Would be a natural next step — `N` to open CreateTaskDialog from anywhere on the Dashboard. Requires global keydown handler with focus-trap awareness.                   |
 
 ---
 
-**Last Updated:** 2026-03-06
+**Last Updated:** 2026-03-06 (Pass 2)
 **Related:** `ANIMATION_DECISIONS.md`, `COPY_DECISIONS.md`, `DESIGN_CONTEXT.md`, `HARDENING_SUMMARY.md`

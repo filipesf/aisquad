@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ModeToggle } from '@/components/ModeToggle';
 import { Crosshair } from 'lucide-react';
 import { Dashboard } from './pages/Dashboard';
+import { Toaster } from '@/components/ui/Toaster';
 
 /** Format a duration in seconds into a human-readable uptime string. */
 function formatUptime(seconds: number): string {
@@ -132,6 +133,7 @@ export default function App() {
             </main>
           </Tabs>
         </div>
+        <Toaster />
       </TooltipProvider>
     </ThemeProvider>
   );

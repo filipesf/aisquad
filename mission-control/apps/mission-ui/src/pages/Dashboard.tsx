@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { Agent } from '@/types/domain';
 import { listAgents, listTasks } from '@/lib/api';
 import { usePolling } from '@/hooks/usePolling';
@@ -16,6 +16,26 @@ export function Dashboard() {
   } = usePolling(listAgents, 5000);
   const { data: tasks, error: tasksError, refresh: refreshTasks } = usePolling(listTasks, 5000);
   const { activities, connected } = useActivityStream();
+
+  // Controlled create-task dialog — lifted here so keyboard shortcut N can open it
+  const [createOpen, setCreateOpen] = useState(false);
+
+  // Keyboard shortcut: press N to open new-task dialog (when no input/textarea is focused)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Ignore if focus is inside a form field or the dialog is already open
+      const tag = (e.target as HTMLElement).tagName;
+      const isEditable =
+        tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable;
+      if (isEditable || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        setCreateOpen(true);
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Memoize agent count calculations
   const { onlineCount, totalAgents } = useMemo(
@@ -50,7 +70,12 @@ export function Dashboard() {
           <span className="block h-3.5 w-0.5 rounded-full bg-primary" aria-hidden="true" />
           Tasks
         </h2>
-        <TasksTable tasks={tasks ?? []} onRefresh={refreshTasks} />
+        <TasksTable
+          tasks={tasks ?? []}
+          onRefresh={refreshTasks}
+          createOpen={createOpen}
+          onCreateOpenChange={setCreateOpen}
+        />
       </section>
 
       {/* Activity feed — stagger index 2 */}

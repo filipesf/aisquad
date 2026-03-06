@@ -45,11 +45,23 @@ const PRIORITY_OPTIONS = ['Urgent', 'High', 'Medium', 'Low'];
 interface TasksTableProps {
   tasks: Task[];
   onRefresh: () => void;
+  /** Controlled create-dialog state — set from Dashboard for keyboard shortcut N */
+  createOpen?: boolean;
+  onCreateOpenChange?: (open: boolean) => void;
 }
 
-export function TasksTable({ tasks, onRefresh }: TasksTableProps) {
+export function TasksTable({
+  tasks,
+  onRefresh,
+  createOpen: externalCreateOpen,
+  onCreateOpenChange,
+}: TasksTableProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
+  const [internalCreateOpen, setInternalCreateOpen] = useState(false);
+
+  // Support both controlled (keyboard shortcut from parent) and uncontrolled usage
+  const createOpen = externalCreateOpen ?? internalCreateOpen;
+  const setCreateOpen = onCreateOpenChange ?? setInternalCreateOpen;
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 

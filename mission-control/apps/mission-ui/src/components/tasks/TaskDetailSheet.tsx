@@ -33,6 +33,8 @@ import { Badge } from '@/components/ui/badge';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { MonoId } from '@/components/ui/MonoId';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/useToast';
+import { ConfettiBurst } from '@/components/ConfettiBurst';
 
 interface TaskDetailSheetProps {
   task: Task | null;
@@ -60,6 +62,11 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
   // Tracks state change micro-pop
   const [stateChangePop, setStateChangePop] = useState(false);
   const statePopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tracks confetti burst when a task reaches "done"
+  const [showConfetti, setShowConfetti] = useState(false);
+  const confettiTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { toast } = useToast();
 
   // Must be declared before the useEffect that calls it
   const trackNewComments = useCallback((comments: Comment[]) => {
@@ -118,6 +125,18 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
     statePopTimer.current = setTimeout(() => setStateChangePop(false), 300);
     try {
       await changeTaskState(data.task.id, newState as Task['state']);
+      // Milestone: task reached "done" — confetti burst + toast
+      if (newState === 'done') {
+        setShowConfetti(true);
+        if (confettiTimer.current) clearTimeout(confettiTimer.current);
+        confettiTimer.current = setTimeout(() => setShowConfetti(false), 900);
+        toast({
+          title: 'Task complete.',
+          description: 'Good work. One fewer thing to worry about.',
+          variant: 'success',
+          duration: 4000,
+        });
+      }
     } catch {
       // state will refresh on next poll
     }
@@ -163,9 +182,14 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
             <div className="flex items-center gap-3 flex-wrap">
               <span
                 key={stateChangePop ? 'pop' : 'idle'}
-                className={stateChangePop ? 'animate-state-change-pop' : ''}
+                className={cn(
+                  'relative inline-flex',
+                  stateChangePop ? 'animate-state-change-pop' : '',
+                )}
               >
                 <StatusBadge status={data.task.state} />
+                {/* Confetti burst — mounts for 900ms when task reaches "done" */}
+                {showConfetti && <ConfettiBurst />}
               </span>
               <Badge variant="outline" className="text-xs capitalize">
                 {priorityLabel(data.task.priority)}
