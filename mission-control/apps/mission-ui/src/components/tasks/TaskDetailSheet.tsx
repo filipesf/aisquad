@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import type { Task, TaskWithAssignment, Assignment, Comment } from '@/types/domain';
 import { TASK_STATES } from '@/types/domain';
 import {
@@ -21,7 +21,7 @@ import { TimeAgo } from '@/components/TimeAgo';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MessageSquareDashed } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -32,6 +32,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { MonoId } from '@/components/ui/MonoId';
+import { cn } from '@/lib/utils';
 
 interface TaskDetailSheetProps {
   task: Task | null;
@@ -53,6 +54,25 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
   // Tracks whether a success flash should be shown on the textarea
   const [commentPosted, setCommentPosted] = useState(false);
   const commentFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tracks newly-arrived comments for landing animation
+  const [newCommentIds, setNewCommentIds] = useState<Set<string>>(new Set());
+  const prevCommentIdsRef = useRef<Set<string>>(new Set());
+  // Tracks state change micro-pop
+  const [stateChangePop, setStateChangePop] = useState(false);
+  const statePopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Must be declared before the useEffect that calls it
+  const trackNewComments = useCallback((comments: Comment[]) => {
+    const currentIds = new Set(comments.map((c) => c.id));
+    const added = comments
+      .filter((c) => !prevCommentIdsRef.current.has(c.id) && prevCommentIdsRef.current.size > 0)
+      .map((c) => c.id);
+    if (added.length > 0) {
+      setNewCommentIds(new Set(added));
+      setTimeout(() => setNewCommentIds(new Set()), 500);
+    }
+    prevCommentIdsRef.current = currentIds;
+  }, []);
 
   useEffect(() => {
     if (!task) {
@@ -69,6 +89,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
       Promise.all([getTask(task.id), getTaskAssignments(task.id), listComments(task.id)])
         .then(([fullTask, assignments, comments]) => {
           if (!cancelled) {
+            trackNewComments(comments);
             setData({ task: fullTask, assignments, comments });
             setLoading(false);
           }
@@ -87,10 +108,14 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [task]);
+  }, [task, trackNewComments]);
 
   async function handleStateChange(newState: string) {
     if (!data) return;
+    // Micro-pop on the status badge to confirm the switch landed
+    setStateChangePop(true);
+    if (statePopTimer.current) clearTimeout(statePopTimer.current);
+    statePopTimer.current = setTimeout(() => setStateChangePop(false), 300);
     try {
       await changeTaskState(data.task.id, newState as Task['state']);
     } catch {
@@ -134,8 +159,14 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
         {data && (
           <div className="space-y-5 px-4 pb-6">
             {/* Status + priority row */}
+            {/* stateChangePop key forces remount → replays animate-state-change-pop */}
             <div className="flex items-center gap-3 flex-wrap">
-              <StatusBadge status={data.task.state} />
+              <span
+                key={stateChangePop ? 'pop' : 'idle'}
+                className={stateChangePop ? 'animate-state-change-pop' : ''}
+              >
+                <StatusBadge status={data.task.state} />
+              </span>
               <Badge variant="outline" className="text-xs capitalize">
                 {priorityLabel(data.task.priority)}
               </Badge>
@@ -208,7 +239,10 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
               {data.comments.length > 0 ? (
                 <ul className="space-y-3 mb-4">
                   {data.comments.map((c) => (
-                    <li key={c.id} className="text-sm">
+                    <li
+                      key={c.id}
+                      className={cn('text-sm', newCommentIds.has(c.id) && 'animate-comment-land')}
+                    >
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-medium text-xs">{c.author_id}</span>
                         <span className="text-xs text-muted-foreground">
@@ -220,7 +254,10 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground mb-4">No comments yet</p>
+                <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+                  <MessageSquareDashed className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span>Quiet so far. Agents are working silently.</span>
+                </div>
               )}
 
               {/* Comment composer */}

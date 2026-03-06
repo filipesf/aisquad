@@ -317,6 +317,88 @@
   }
 }
 
+/* Task created: a brief triumphant scale-up + settle */
+@keyframes task-done {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(6px);
+  }
+  60% {
+    transform: scale(1.04) translateY(-1px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* State change: a quick horizontal nudge — like flipping a switch */
+@keyframes state-change-pop {
+  0% {
+    transform: translateX(0) scale(1);
+  }
+  20% {
+    transform: translateX(-3px) scale(0.97);
+  }
+  60% {
+    transform: translateX(2px) scale(1.02);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* Comment landing: slides in from below with a gentle settle */
+@keyframes comment-land {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Agent offline blink — deliberate, not panicked. One measured pulse. */
+@keyframes agent-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.3;
+  }
+  70% {
+    opacity: 0.8;
+  }
+}
+
+/* Row nudge: a subtle vertical jolt to confirm row was pressed */
+@keyframes row-nudge {
+  0% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* Spinner entrance: button submit area expands smoothly */
+@keyframes spinner-in {
+  from {
+    opacity: 0;
+    transform: scale(0.5) rotate(-90deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
 /* ── Animation Utility Classes ───────────────────────────────────────────────
  * Consume motion tokens. Apply directly to elements that need animation.
  */
@@ -356,6 +438,36 @@
 /* Header crosshair — single spin on first paint */
 .animate-crosshair-init {
   animation: crosshair-init var(--dur-slow) var(--ease-out-expo) both;
+}
+
+/* Task created celebration */
+.animate-task-done {
+  animation: task-done var(--dur-normal) var(--ease-out-expo) both;
+}
+
+/* Status badge change pop */
+.animate-state-change-pop {
+  animation: state-change-pop var(--dur-fast) var(--ease-out-quart) both;
+}
+
+/* Comment landing entrance */
+.animate-comment-land {
+  animation: comment-land var(--dur-normal) var(--ease-out-expo) both;
+}
+
+/* Agent offline blink */
+.animate-agent-blink {
+  animation: agent-blink 600ms var(--ease-inout) both;
+}
+
+/* Row nudge on press */
+.animate-row-nudge {
+  animation: row-nudge var(--dur-fast) var(--ease-out-quart) both;
+}
+
+/* Spinner reveal */
+.animate-spinner-in {
+  animation: spinner-in var(--dur-fast) var(--ease-out-expo) both;
 }
 
 /* Shimmer skeleton */

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, memo } from 'react';
+import { useRef, useEffect, useState, memo, useMemo } from 'react';
 import type { Activity } from '@/types/domain';
 import { TimeAgo } from './TimeAgo';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -45,6 +45,16 @@ const ACTIVITY_META: Record<string, ActivityMeta> = {
 };
 
 const FALLBACK_META: ActivityMeta = { icon: Pin, colour: 'text-muted-foreground' };
+
+// Dry-wit empty state messages. Rotate based on minute-of-hour so they
+// feel stable during a session but different across sessions.
+const EMPTY_STATE_LINES = [
+  'No activity yet. Agents are thinking, presumably.',
+  'All quiet. Either nothing is happening, or everything is fine.',
+  'Events will appear here as agents work. Or as agents procrastinate.',
+  'No activity yet. The agents are standing by.',
+  'Waiting for something to happen. This could take a while.',
+] as const;
 
 function getActivityMeta(type: string): ActivityMeta {
   return ACTIVITY_META[type] ?? FALLBACK_META;
@@ -100,6 +110,12 @@ export const ActivityFeed = memo(function ActivityFeed({
   const prevIdsRef = useRef<Set<string>>(new Set());
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
 
+  // Rotate empty state message — stable within a session, varies across sessions
+  const emptyMessage = useMemo(
+    () => EMPTY_STATE_LINES[new Date().getMinutes() % EMPTY_STATE_LINES.length],
+    [],
+  );
+
   useEffect(() => {
     const currentIds = new Set(activities.map((a) => a.id));
     const added = activities.filter((a) => !prevIdsRef.current.has(a.id)).map((a) => a.id);
@@ -146,15 +162,16 @@ export const ActivityFeed = memo(function ActivityFeed({
           {activities.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center animate-fade-up">
               <Bell className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
-              <p className="text-sm text-muted-foreground">
-                No activity yet. Events will appear here as agents work.
-              </p>
+              <p className="text-sm text-muted-foreground">{emptyMessage}</p>
             </div>
           ) : (
             <ul className="divide-y" aria-live="polite" aria-atomic="false">
               {activities.map((activity) => {
                 const { icon: Icon, colour } = getActivityMeta(activity.type);
                 const isNew = newIds.has(activity.id);
+                // Agent status events get a brief icon blink when they first appear
+                const isAgentStatusEvent =
+                  isNew && (activity.type === 'agent.online' || activity.type === 'agent.offline');
                 return (
                   <li
                     key={activity.id}
@@ -164,7 +181,14 @@ export const ActivityFeed = memo(function ActivityFeed({
                       isNew && 'animate-activity-enter',
                     )}
                   >
-                    <Icon className={cn('mt-0.5 h-4 w-4 shrink-0', colour)} aria-hidden="true" />
+                    <Icon
+                      className={cn(
+                        'mt-0.5 h-4 w-4 shrink-0',
+                        colour,
+                        isAgentStatusEvent && 'animate-agent-blink',
+                      )}
+                      aria-hidden="true"
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm break-words">{getActivityDescription(activity)}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">

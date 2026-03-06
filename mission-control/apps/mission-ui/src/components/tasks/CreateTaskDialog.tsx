@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createTask } from '@/lib/api';
 import {
   Dialog,
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -38,7 +38,9 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('5');
   const [submitting, setSubmitting] = useState(false);
+  const [succeeded, setSucceeded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,11 +54,16 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
         description: description.trim() || undefined,
         priority: parseInt(priority, 10),
       });
-      setTitle('');
-      setDescription('');
-      setPriority('5');
-      onOpenChange(false);
+      // Brief success moment before closing — "Task deployed." for 700ms
+      setSucceeded(true);
       onCreated();
+      closeTimer.current = setTimeout(() => {
+        setTitle('');
+        setDescription('');
+        setPriority('5');
+        setSucceeded(false);
+        onOpenChange(false);
+      }, 700);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't create task. Please try again.");
     } finally {
@@ -64,8 +71,17 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
     }
   }
 
+  // Clean up timer if dialog is dismissed manually mid-success
+  function handleOpenChange(open: boolean) {
+    if (!open && closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      setSucceeded(false);
+    }
+    onOpenChange(open);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>New task</DialogTitle>
@@ -128,10 +144,15 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
             </Button>
             <Button
               type="submit"
-              disabled={submitting || !title.trim()}
-              className="active:scale-[0.97] transition-transform duration-[--dur-instant] min-w-[100px]"
+              disabled={submitting || succeeded || !title.trim()}
+              className="active:scale-[0.97] transition-transform duration-[--dur-instant] min-w-[110px]"
             >
-              {submitting ? (
+              {succeeded ? (
+                <span className="flex items-center gap-1.5 animate-task-done">
+                  <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                  Task deployed.
+                </span>
+              ) : submitting ? (
                 <>
                   <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                   Creating…

@@ -50,10 +50,16 @@ export const AgentsTable = memo(function AgentsTable({ agents }: AgentsTableProp
             </TableRow>
           </TableHeader>
           <TableBody>
-            {agents.map((agent) => {
+            {agents.map((agent, i) => {
               const caps = Object.keys(agent.capabilities);
               return (
-                <AgentRow key={agent.id} agent={agent} caps={caps} onSelect={setSelectedAgentId} />
+                <AgentRow
+                  key={agent.id}
+                  agent={agent}
+                  caps={caps}
+                  onSelect={setSelectedAgentId}
+                  staggerIndex={i}
+                />
               );
             })}
           </TableBody>
@@ -69,13 +75,17 @@ interface AgentRowProps {
   agent: Agent;
   caps: string[];
   onSelect: (id: string) => void;
+  staggerIndex: number;
 }
 
 /**
  * Each row is memoized independently — only rows whose agent data changed
  * will re-render on the next poll cycle.
+ *
+ * Staggered entrance: rows cascade in with 40ms delays on mount.
+ * Offline agents get a measured blink on their status badge.
  */
-const AgentRow = memo(function AgentRow({ agent, caps, onSelect }: AgentRowProps) {
+const AgentRow = memo(function AgentRow({ agent, caps, onSelect, staggerIndex }: AgentRowProps) {
   const handleClick = useCallback(() => onSelect(agent.id), [agent.id, onSelect]);
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -91,7 +101,8 @@ const AgentRow = memo(function AgentRow({ agent, caps, onSelect }: AgentRowProps
     <TableRow
       role="button"
       tabIndex={0}
-      className="cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:bg-muted/60 transition-colors duration-[--dur-instant]"
+      className="cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:bg-muted/60 transition-colors duration-[--dur-instant] animate-fade-up"
+      style={{ '--stagger-i': staggerIndex } as React.CSSProperties}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       aria-label={`View details for ${agent.name}`}
@@ -100,7 +111,12 @@ const AgentRow = memo(function AgentRow({ agent, caps, onSelect }: AgentRowProps
         <span className="font-medium text-sm truncate max-w-[200px]">{agent.name}</span>
       </TableCell>
       <TableCell>
-        <StatusBadge status={agent.status} />
+        {/* Offline agents get a brief attention-getting blink on the badge wrapper */}
+        <span
+          className={agent.status === 'offline' ? 'animate-agent-blink inline-block' : undefined}
+        >
+          <StatusBadge status={agent.status} />
+        </span>
       </TableCell>
       <TableCell className="text-sm text-muted-foreground">
         <TimeAgo date={agent.last_seen_at} />

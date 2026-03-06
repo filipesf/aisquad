@@ -1,10 +1,22 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ModeToggle } from '@/components/ModeToggle';
 import { Crosshair } from 'lucide-react';
 import { Dashboard } from './pages/Dashboard';
+
+/** Format a duration in seconds into a human-readable uptime string. */
+function formatUptime(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m < 60) return `${m}m ${s}s`;
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return `${h}h ${rem}m`;
+}
 
 // Telemetry is not needed on initial load — split it into its own chunk.
 // It only loads when the user clicks the Telemetry tab.
@@ -13,6 +25,24 @@ const Telemetry = lazy(() => import('./pages/Telemetry').then((m) => ({ default:
 export default function App() {
   // Track the active tab so we can key the content and trigger the entrance animation
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  // Uptime counter — tracks how long this session has been running.
+  // Displayed in the crosshair tooltip. A small easter egg for curious operators.
+  const [uptimeSeconds, setUptimeSeconds] = useState(0);
+  useEffect(() => {
+    const startTime = Date.now();
+    // Print a console easter egg on mount
+    // eslint-disable-next-line no-console
+    console.log(
+      '%c Mission Control %c online. Fleet standing by.',
+      'background:#e83535;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px',
+      'color:#888',
+    );
+    const ticker = setInterval(() => {
+      setUptimeSeconds(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
+    return () => clearInterval(ticker);
+  }, []);
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
@@ -35,11 +65,26 @@ export default function App() {
             <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               <div className="flex h-14 items-center gap-4 px-6">
                 <div className="flex items-center gap-2">
-                  {/* Single rotation on mount — signals the system is initialising */}
-                  <Crosshair
-                    className="h-4 w-4 text-primary animate-crosshair-init"
-                    aria-hidden="true"
-                  />
+                  {/* Crosshair: single rotation on mount. Tooltip reveals session uptime
+                      as a quiet easter egg for operators who hover the logo. */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center rounded focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 outline-none"
+                        aria-label={`Mission Control — uptime ${formatUptime(uptimeSeconds)}`}
+                      >
+                        <Crosshair
+                          className="h-4 w-4 text-primary animate-crosshair-init"
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      <span className="text-muted-foreground">Uptime</span>{' '}
+                      <span className="font-mono">{formatUptime(uptimeSeconds)}</span>
+                    </TooltipContent>
+                  </Tooltip>
                   <h1 className="text-sm font-semibold tracking-tight animate-fade-up">
                     Mission Control
                   </h1>

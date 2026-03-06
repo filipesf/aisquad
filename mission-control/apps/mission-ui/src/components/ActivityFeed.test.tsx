@@ -38,8 +38,17 @@ describe('ActivityFeed', () => {
 
   it('shows empty state message when there are no activities', () => {
     render(<ActivityFeed activities={[]} connected={true} />);
+    // The empty state rotates through several dry-wit messages based on the
+    // current minute — match any one of them with a partial regex.
     expect(
-      screen.getByText('No activity yet. Events will appear here as agents work.'),
+      screen.getByText(
+        (text) =>
+          text.includes('No activity yet') ||
+          text.includes('All quiet') ||
+          text.includes('agents work') ||
+          text.includes('standing by') ||
+          text.includes('Waiting for something'),
+      ),
     ).toBeInTheDocument();
   });
 
