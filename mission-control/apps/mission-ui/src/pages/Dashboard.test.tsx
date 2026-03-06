@@ -1,12 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import { Dashboard } from './Dashboard.tsx';
-import type { Agent, Task, Activity } from '../types/domain.ts';
+import { Dashboard } from './Dashboard';
+import type { Agent, Task, Activity } from '@/types/domain';
 
 // Mock the API module
-vi.mock('../lib/api.ts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../lib/api.ts')>();
+vi.mock('@/lib/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/api')>();
   return {
     ...actual,
     listAgents: vi.fn(),
@@ -16,8 +15,7 @@ vi.mock('../lib/api.ts', async (importOriginal) => {
   };
 });
 
-// Import the mocked functions
-import { listAgents, listTasks, listActivities, createActivityStream } from '../lib/api.ts';
+import { listAgents, listTasks, listActivities, createActivityStream } from '@/lib/api';
 
 const mockAgents: Agent[] = [
   {
@@ -88,12 +86,8 @@ beforeEach(() => {
 });
 
 describe('Dashboard', () => {
-  it('renders fleet status with agents', async () => {
-    render(
-      <BrowserRouter>
-        <Dashboard />
-      </BrowserRouter>,
-    );
+  it('renders fleet table with agents', async () => {
+    render(<Dashboard />);
 
     await waitFor(() => {
       expect(screen.getByText('Agent Alpha')).toBeInTheDocument();
@@ -102,11 +96,7 @@ describe('Dashboard', () => {
   });
 
   it('shows online count', async () => {
-    render(
-      <BrowserRouter>
-        <Dashboard />
-      </BrowserRouter>,
-    );
+    render(<Dashboard />);
 
     await waitFor(() => {
       expect(screen.getByText('1/2 online')).toBeInTheDocument();
@@ -114,18 +104,21 @@ describe('Dashboard', () => {
   });
 
   it('shows task state counters', async () => {
-    render(
-      <BrowserRouter>
-        <Dashboard />
-      </BrowserRouter>,
-    );
+    render(<Dashboard />);
 
     await waitFor(() => {
-      // Should show 1 for 'queued' and 1 for 'done'
-      const queuedCounter = screen.getByText('queued');
-      expect(queuedCounter).toBeInTheDocument();
-      const doneCounter = screen.getByText('done');
-      expect(doneCounter).toBeInTheDocument();
+      // StatCards show state labels as card titles
+      expect(screen.getByText('queued')).toBeInTheDocument();
+      expect(screen.getByText('done')).toBeInTheDocument();
+    });
+  });
+
+  it('renders tasks table with tasks', async () => {
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Task One')).toBeInTheDocument();
+      expect(screen.getByText('Task Two')).toBeInTheDocument();
     });
   });
 });

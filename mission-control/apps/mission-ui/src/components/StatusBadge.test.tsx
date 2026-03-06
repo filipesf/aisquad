@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { StatusBadge } from './StatusBadge.tsx';
+import { StatusBadge } from './StatusBadge';
 
 describe('StatusBadge', () => {
   it('renders the status text', () => {
@@ -13,16 +13,18 @@ describe('StatusBadge', () => {
     expect(screen.getByText('in progress')).toBeInTheDocument();
   });
 
-  it('applies the correct styles for online status', () => {
+  it('renders online status with default badge variant', () => {
     render(<StatusBadge status="online" />);
     const badge = screen.getByText('online');
-    expect(badge.className).toContain('text-emerald-400');
+    // shadcn default variant uses bg-primary
+    expect(badge.className).toContain('bg-primary');
   });
 
-  it('applies default styles for unknown status', () => {
+  it('renders unknown status with outline badge variant', () => {
     render(<StatusBadge status="unknown_status" />);
     const badge = screen.getByText('unknown status');
-    expect(badge.className).toContain('text-gray-400');
+    // outline variant uses border-border
+    expect(badge.className).toContain('border-border');
   });
 
   it('applies custom className', () => {

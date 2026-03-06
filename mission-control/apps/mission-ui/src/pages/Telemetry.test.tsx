@@ -1,18 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import { Telemetry } from './Telemetry.tsx';
-import type { TelemetrySummary } from '../types/domain.ts';
+import { Telemetry } from './Telemetry';
+import type { TelemetrySummary } from '@/types/domain';
 
-vi.mock('../lib/api.ts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../lib/api.ts')>();
+vi.mock('@/lib/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/api')>();
   return {
     ...actual,
     getTelemetrySummary: vi.fn(),
   };
 });
 
-import { getTelemetrySummary } from '../lib/api.ts';
+import { getTelemetrySummary } from '@/lib/api';
 
 const mockSummary: TelemetrySummary = {
   window: '24h',
@@ -56,7 +55,7 @@ beforeEach(() => {
 
 describe('Telemetry', () => {
   it('renders totals after data loads', async () => {
-    render(<BrowserRouter><Telemetry /></BrowserRouter>);
+    render(<Telemetry />);
     await waitFor(() => {
       expect(screen.getByText('42')).toBeInTheDocument(); // events
       expect(screen.getByText('15,000')).toBeInTheDocument(); // tokens
@@ -64,7 +63,7 @@ describe('Telemetry', () => {
   });
 
   it('renders group rows', async () => {
-    render(<BrowserRouter><Telemetry /></BrowserRouter>);
+    render(<Telemetry />);
     await waitFor(() => {
       expect(screen.getByText('anthropic')).toBeInTheDocument();
       expect(screen.getByText('openai')).toBeInTheDocument();
@@ -73,23 +72,29 @@ describe('Telemetry', () => {
 
   it('shows loading state before data', () => {
     vi.mocked(getTelemetrySummary).mockReturnValue(new Promise(() => {}));
-    render(<BrowserRouter><Telemetry /></BrowserRouter>);
+    render(<Telemetry />);
     expect(screen.getByText(/loading telemetry/i)).toBeInTheDocument();
   });
 
   it('shows 401 auth banner on unauthorized error', async () => {
-    const { ApiError } = await import('../lib/api.ts');
-    vi.mocked(getTelemetrySummary).mockRejectedValue(new ApiError(401, { error: 'Missing bearer token' }));
-    render(<BrowserRouter><Telemetry /></BrowserRouter>);
+    const { ApiError } = await import('@/lib/api');
+    vi.mocked(getTelemetrySummary).mockRejectedValue(
+      new ApiError(401, { error: 'Missing bearer token' }),
+    );
+    render(<Telemetry />);
     await waitFor(() => {
-      expect(screen.getByText(/Telemetry API authorization required/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Telemetry API authorization required/i),
+      ).toBeInTheDocument();
     });
   });
 
   it('shows 503 banner when server token is unconfigured', async () => {
-    const { ApiError } = await import('../lib/api.ts');
-    vi.mocked(getTelemetrySummary).mockRejectedValue(new ApiError(503, { error: 'Telemetry token is not configured' }));
-    render(<BrowserRouter><Telemetry /></BrowserRouter>);
+    const { ApiError } = await import('@/lib/api');
+    vi.mocked(getTelemetrySummary).mockRejectedValue(
+      new ApiError(503, { error: 'Telemetry token is not configured' }),
+    );
+    render(<Telemetry />);
     await waitFor(() => {
       expect(screen.getByText(/Telemetry service unavailable/i)).toBeInTheDocument();
     });

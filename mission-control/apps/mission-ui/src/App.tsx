@@ -1,61 +1,40 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { Dashboard } from './pages/Dashboard.tsx';
-import { TaskBoard } from './pages/TaskBoard.tsx';
-import { TaskDetail } from './pages/TaskDetail.tsx';
-import { AgentDetail } from './pages/AgentDetail.tsx';
-import { Telemetry } from './pages/Telemetry.tsx';
-
-function NavItem({ to, label }: { to: string; label: string }) {
-  return (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        `rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-          isActive
-            ? 'bg-gray-800 text-gray-100'
-            : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
-        }`
-      }
-    >
-      {label}
-    </NavLink>
-  );
-}
-
-function Layout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      <header className="border-b border-gray-800 px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <NavLink to="/" className="text-lg font-bold tracking-tight">
-              Mission Control
-            </NavLink>
-            <nav className="flex items-center gap-1">
-              <NavItem to="/" label="Dashboard" />
-              <NavItem to="/tasks" label="Tasks" />
-              <NavItem to="/telemetry" label="Telemetry" />
-            </nav>
-          </div>
-        </div>
-      </header>
-      <main className="p-6">{children}</main>
-    </div>
-  );
-}
+import { ThemeProvider } from 'next-themes';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ModeToggle } from '@/components/ModeToggle';
+import { Dashboard } from './pages/Dashboard';
+import { Telemetry } from './pages/Telemetry';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/tasks" element={<TaskBoard />} />
-          <Route path="/tasks/:id" element={<TaskDetail />} />
-          <Route path="/agents/:id" element={<AgentDetail />} />
-          <Route path="/telemetry" element={<Telemetry />} />
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+    <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
+      <TooltipProvider>
+        <div className="min-h-screen bg-background text-foreground">
+          <Tabs defaultValue="dashboard" className="flex flex-col min-h-screen">
+            {/* Top bar */}
+            <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="flex h-14 items-center gap-4 px-6">
+                <span className="text-base font-semibold tracking-tight">Mission Control</span>
+                <TabsList className="h-8">
+                  <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
+                  <TabsTrigger value="telemetry" className="text-xs">Telemetry</TabsTrigger>
+                </TabsList>
+                <div className="ml-auto">
+                  <ModeToggle />
+                </div>
+              </div>
+            </header>
+
+            {/* Page content */}
+            <TabsContent value="dashboard" className="flex-1 mt-0">
+              <Dashboard />
+            </TabsContent>
+            <TabsContent value="telemetry" className="flex-1 mt-0">
+              <Telemetry />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </TooltipProvider>
+    </ThemeProvider>
   );
 }

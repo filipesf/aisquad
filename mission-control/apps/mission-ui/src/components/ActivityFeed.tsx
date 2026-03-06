@@ -1,6 +1,9 @@
 import { useRef } from 'react';
-import type { Activity } from '../types/domain.ts';
-import { TimeAgo } from './TimeAgo.tsx';
+import type { Activity } from '@/types/domain';
+import { TimeAgo } from './TimeAgo';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface ActivityFeedProps {
   activities: Activity[];
@@ -31,78 +34,76 @@ function getActivityDescription(activity: Activity): string {
 
   switch (activity.type) {
     case 'agent.online':
-      return `Agent came online`;
+      return 'Agent came online';
     case 'agent.offline':
-      return `Agent went offline`;
+      return 'Agent went offline';
     case 'task.created':
       return `Task created: ${String(p['title'] ?? '')}`;
     case 'task.state_changed':
       return `Task state: ${String(p['from'] ?? '?')} → ${String(p['to'] ?? '?')}`;
     case 'task.requeued':
-      return `Task requeued`;
+      return 'Task requeued';
     case 'assignment.offered':
-      return `Assignment offered`;
+      return 'Assignment offered';
     case 'assignment.accepted':
-      return `Assignment accepted`;
+      return 'Assignment accepted';
     case 'assignment.completed':
-      return `Assignment completed`;
+      return 'Assignment completed';
     case 'assignment.expired':
-      return `Assignment expired (lease timeout)`;
+      return 'Assignment expired (lease timeout)';
     case 'comment.created':
-      return `Comment posted`;
+      return 'Comment posted';
     default:
       return activity.type;
   }
 }
 
-export function ActivityFeed({ activities, connected, maxHeight = '600px' }: ActivityFeedProps) {
+export function ActivityFeed({ activities, connected, maxHeight = '400px' }: ActivityFeedProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="rounded-lg border border-gray-800 bg-gray-900">
-      <div className="flex items-center justify-between border-b border-gray-800 px-4 py-3">
-        <h3 className="text-sm font-semibold text-gray-200">Activity Feed</h3>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+        <CardTitle className="text-sm font-semibold">Activity Feed</CardTitle>
         <div className="flex items-center gap-2">
           <div
-            className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400'}`}
+            className={cn(
+              'h-2 w-2 rounded-full',
+              connected ? 'bg-emerald-500' : 'bg-red-500',
+            )}
             title={connected ? 'Connected' : 'Disconnected'}
           />
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-muted-foreground">
             {connected ? 'Live' : 'Reconnecting...'}
           </span>
         </div>
-      </div>
-
-      <div
-        ref={scrollRef}
-        className="overflow-y-auto"
-        style={{ maxHeight }}
-      >
-        {activities.length === 0 ? (
-          <div className="p-4 text-center text-sm text-gray-500">No activities yet</div>
-        ) : (
-          <ul className="divide-y divide-gray-800/50">
-            {activities.map((activity) => (
-              <li
-                key={activity.id}
-                className="flex items-start gap-3 px-4 py-3 hover:bg-gray-800/30"
-              >
-                <span className="mt-0.5 text-base leading-none">
-                  {getActivityIcon(activity.type)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-gray-300">
-                    {getActivityDescription(activity)}
-                  </p>
-                  <p className="mt-0.5 text-xs text-gray-500">
-                    <TimeAgo date={activity.created_at} />
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ScrollArea style={{ height: maxHeight }} ref={scrollRef}>
+          {activities.length === 0 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">No activities yet</div>
+          ) : (
+            <ul className="divide-y">
+              {activities.map((activity) => (
+                <li
+                  key={activity.id}
+                  className="flex items-start gap-3 px-4 py-3 hover:bg-muted/30"
+                >
+                  <span className="mt-0.5 text-base leading-none">
+                    {getActivityIcon(activity.type)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm">{getActivityDescription(activity)}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      <TimeAgo date={activity.created_at} />
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 }

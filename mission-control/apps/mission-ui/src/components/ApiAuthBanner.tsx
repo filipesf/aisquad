@@ -1,4 +1,6 @@
-import { ApiError } from '../lib/api.ts';
+import { AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { ApiError } from '@/lib/api';
 
 export function ApiAuthBanner({ error }: { error: unknown }) {
   if (!(error instanceof ApiError) || error.status !== 401) {
@@ -6,14 +8,15 @@ export function ApiAuthBanner({ error }: { error: unknown }) {
   }
 
   return (
-    <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-      <p className="font-medium">Mission Control API authorization required</p>
-      <p className="mt-1 text-amber-100/90">
-        Set an agent token in browser storage and reload:
-        <code className="ml-1 rounded bg-black/30 px-1.5 py-0.5 text-xs">
+    <Alert variant="destructive">
+      <AlertTriangle className="h-4 w-4" />
+      <AlertTitle>Mission Control API authorization required</AlertTitle>
+      <AlertDescription>
+        Set an agent token in browser storage and reload:{' '}
+        <code className="rounded bg-black/20 px-1.5 py-0.5 text-xs">
           localStorage.setItem('MC_AGENT_TOKEN', '&lt;token&gt;')
         </code>
-      </p>
-    </div>
+      </AlertDescription>
+    </Alert>
   );
 }
