@@ -32,6 +32,7 @@ export interface Task {
   state: TaskState;
   priority: number;
   required_capabilities: Record<string, unknown>;
+  due_date: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -40,9 +40,18 @@ export const CreateTaskSchema = z.object({
   title: z.string().min(1).max(500),
   description: z.string().default(''),
   priority: z.number().int().min(0).max(10).default(5),
-  required_capabilities: z.record(z.unknown()).default({})
+  required_capabilities: z.record(z.unknown()).default({}),
+  due_date: z.string().datetime({ offset: true }).nullable().optional()
 });
 export type CreateTaskInput = z.infer<typeof CreateTaskSchema>;
+
+export const UpdateTaskSchema = z.object({
+  title: z.string().min(1).max(500).optional(),
+  description: z.string().optional(),
+  priority: z.number().int().min(0).max(10).optional(),
+  due_date: z.string().datetime({ offset: true }).nullable().optional()
+});
+export type UpdateTaskInput = z.infer<typeof UpdateTaskSchema>;
 
 export const TaskSchema = z.object({
   id: z.string().uuid(),
@@ -51,6 +60,7 @@ export const TaskSchema = z.object({
   state: TaskState,
   priority: z.number(),
   required_capabilities: z.record(z.unknown()),
+  due_date: z.string().nullable(),
   created_at: z.string(),
   updated_at: z.string()
 });

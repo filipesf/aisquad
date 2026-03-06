@@ -8,7 +8,7 @@ import {
   type SortingState,
   useReactTable
 } from '@tanstack/react-table';
-import { Check, ClipboardList, PlusCircle, X } from 'lucide-react';
+import { Check, ClipboardList, Loader2, PlusCircle, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,14 @@ import {
   CommandList,
   CommandSeparator
 } from '@/components/ui/command';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -34,10 +42,13 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
+import { useToast } from '@/hooks/useToast';
+import { deleteTask } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import type { Task } from '@/types/domain';
 import { TASK_STATES } from '@/types/domain';
 import { CreateTaskDialog } from './CreateTaskDialog';
+import { EditTaskDialog } from './EditTaskDialog';
 import { getTaskColumns } from './columns';
 import { TaskDetailSheet } from './TaskDetailSheet';
 
@@ -59,6 +70,11 @@ export function TasksTable({
 }: TasksTableProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [internalCreateOpen, setInternalCreateOpen] = useState(false);
+  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const { toast } = useToast();
 
   // Support both controlled (keyboard shortcut from parent) and uncontrolled usage
   const createOpen = externalCreateOpen ?? internalCreateOpen;
@@ -66,7 +82,14 @@ export function TasksTable({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  const columns = useMemo(() => getTaskColumns(), []);
+  const columns = useMemo(
+    () =>
+      getTaskColumns({
+        onEdit: setEditTask,
+        onDelete: setDeleteTarget
+      }),
+    [] // setEditTask / setDeleteTarget are stable setState refs
+  );
 
   const table = useReactTable({
     data: tasks,
@@ -92,6 +115,25 @@ export function TasksTable({
   }
 
   const hasFilters = statusFilter.length > 0 || priorityFilter.length > 0;
+
+  async function handleDeleteConfirm() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteTask(deleteTarget.id);
+      // If the deleted task is currently open in the detail sheet, close it
+      if (selectedTask?.id === deleteTarget.id) {
+        setSelectedTask(null);
+      }
+      setDeleteTarget(null);
+      onRefresh();
+      toast({ title: 'Task deleted.', duration: 3000 });
+    } catch {
+      toast({ title: 'Delete failed. Please try again.', variant: 'destructive', duration: 4000 });
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <>
@@ -376,8 +418,67 @@ export function TasksTable({
         </div>
       </div>
 
-      <TaskDetailSheet task={selectedTask} onClose={() => setSelectedTask(null)} />
+      <TaskDetailSheet
+        task={selectedTask}
+        onClose={() => setSelectedTask(null)}
+        onUpdated={onRefresh}
+      />
+
       <CreateTaskDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={onRefresh} />
+
+      <EditTaskDialog
+        task={editTask}
+        onOpenChange={(open) => {
+          if (!open) setEditTask(null);
+        }}
+        onUpdated={() => {
+          setEditTask(null);
+          onRefresh();
+        }}
+      />
+
+      {/* Delete confirmation dialog */}
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete task?</DialogTitle>
+            <DialogDescription>
+              <strong>&ldquo;{deleteTarget?.title}&rdquo;</strong> will be permanently deleted. This
+              cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleting}
+              className="transition-transform duration-[--dur-instant] active:scale-[0.97]"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleting}
+              onClick={handleDeleteConfirm}
+              className="min-w-[90px] transition-transform duration-[--dur-instant] active:scale-[0.97]"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                  Deleting…
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

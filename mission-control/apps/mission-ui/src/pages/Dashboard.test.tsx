@@ -50,6 +50,7 @@ const mockTasks: Task[] = [
     state: 'queued',
     priority: 5,
     required_capabilities: {},
+    due_date: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
@@ -60,6 +61,7 @@ const mockTasks: Task[] = [
     state: 'done',
     priority: 3,
     required_capabilities: {},
+    due_date: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }

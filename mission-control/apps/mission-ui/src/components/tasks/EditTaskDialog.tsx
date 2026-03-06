@@ -1,5 +1,5 @@
 import { Check, Loader2 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -18,13 +18,14 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { createTask } from '@/lib/api';
-import { fromDateInputValue } from '@/lib/dueDate';
+import { updateTask } from '@/lib/api';
+import { fromDateInputValue, toDateInputValue } from '@/lib/dueDate';
+import type { Task } from '@/types/domain';
 
-interface CreateTaskDialogProps {
-  open: boolean;
+interface EditTaskDialogProps {
+  task: Task | null;
   onOpenChange: (open: boolean) => void;
-  onCreated: () => void;
+  onUpdated: (task: Task) => void;
 }
 
 const PRIORITY_OPTIONS = [
@@ -34,7 +35,14 @@ const PRIORITY_OPTIONS = [
   { label: 'Low', value: '2' }
 ];
 
-export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDialogProps) {
+function priorityToValue(priority: number): string {
+  if (priority >= 10) return '10';
+  if (priority >= 8) return '8';
+  if (priority >= 5) return '5';
+  return '2';
+}
+
+export function EditTaskDialog({ task, onOpenChange, onUpdated }: EditTaskDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('5');
@@ -44,67 +52,91 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
   const [error, setError] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Sync form fields when task changes (dialog opens with a different task)
+  useEffect(() => {
+    if (task) {
+      setTitle(task.title);
+      setDescription(task.description);
+      setPriority(priorityToValue(task.priority));
+      setDueDate(toDateInputValue(task.due_date));
+      setError(null);
+      setSucceeded(false);
+    }
+  }, [task]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!task || !title.trim()) return;
 
     setSubmitting(true);
     setError(null);
     try {
-      await createTask({
+      const updated = await updateTask(task.id, {
         title: title.trim(),
-        description: description.trim() || undefined,
+        description: description.trim(),
         priority: parseInt(priority, 10),
         due_date: fromDateInputValue(dueDate)
       });
-      // Brief success moment before closing — "Task deployed." for 700ms
       setSucceeded(true);
-      onCreated();
+      onUpdated(updated);
       closeTimer.current = setTimeout(() => {
-        setTitle('');
-        setDescription('');
-        setPriority('5');
-        setDueDate('');
         setSucceeded(false);
         onOpenChange(false);
       }, 700);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't create task. Please try again.");
+      setError(err instanceof Error ? err.message : "Couldn't save changes. Please try again.");
     } finally {
       setSubmitting(false);
     }
   }
 
-  // Clean up timer if dialog is dismissed manually mid-success
   function handleOpenChange(open: boolean) {
-    if (!open && closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      setSucceeded(false);
+    if (!open) {
+      if (closeTimer.current) {
+        clearTimeout(closeTimer.current);
+        setSucceeded(false);
+      }
+      // Reset to task values on cancel
+      if (task) {
+        setTitle(task.title);
+        setDescription(task.description);
+        setPriority(priorityToValue(task.priority));
+        setDueDate(toDateInputValue(task.due_date));
+      }
+      setError(null);
     }
     onOpenChange(open);
   }
 
+  const isDirty =
+    task &&
+    (title.trim() !== task.title ||
+      description.trim() !== task.description ||
+      parseInt(priority, 10) !== task.priority ||
+      // Compare at YYYY-MM-DD granularity to avoid ISO timezone drift false-positives
+      dueDate !== toDateInputValue(task.due_date));
+
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={!!task} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New task</DialogTitle>
+          <DialogTitle>Edit task</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="task-title">Title</Label>
+            <Label htmlFor="edit-task-title">Title</Label>
             <Input
-              id="task-title"
-              placeholder="Enter a task title"
+              id="edit-task-title"
+              placeholder="Task title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="task-description">Description</Label>
+            <Label htmlFor="edit-task-description">Description</Label>
             <Textarea
-              id="task-description"
+              id="edit-task-description"
               placeholder="Add a description (optional)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -112,9 +144,9 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="task-priority">Priority</Label>
+            <Label htmlFor="edit-task-priority">Priority</Label>
             <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger id="task-priority">
+              <SelectTrigger id="edit-task-priority">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -127,12 +159,12 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="task-due-date">
+            <Label htmlFor="edit-task-due-date">
               Due date{' '}
               <span className="text-muted-foreground text-xs">(optional)</span>
             </Label>
             <input
-              id="task-due-date"
+              id="edit-task-due-date"
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
@@ -140,7 +172,6 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
             />
           </div>
 
-          {/* Error — animate-fade-up so it doesn't pop in jarringly */}
           {error && (
             <p
               className="animate-fade-up text-destructive text-sm"
@@ -155,27 +186,27 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
               type="button"
               variant="outline"
               className="transition-transform duration-[--dur-instant] active:scale-[0.97]"
-              onClick={() => onOpenChange(false)}
+              onClick={() => handleOpenChange(false)}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={submitting || succeeded || !title.trim()}
+              disabled={submitting || succeeded || !title.trim() || !isDirty}
               className="min-w-[110px] transition-transform duration-[--dur-instant] active:scale-[0.97]"
             >
               {succeeded ? (
                 <span className="flex animate-task-done items-center gap-1.5">
                   <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                  Task deployed.
+                  Saved.
                 </span>
               ) : submitting ? (
                 <>
                   <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                  Creating…
+                  Saving…
                 </>
               ) : (
-                'Create task'
+                'Save changes'
               )}
             </Button>
           </DialogFooter>

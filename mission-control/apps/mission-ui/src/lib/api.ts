@@ -71,6 +71,7 @@ type TaskLike = Partial<Task> & {
   status?: string;
   priority?: number | string;
   required_capabilities?: Record<string, unknown>;
+  due_date?: string | null;
 };
 
 function normalizeTaskState(task: TaskLike): TaskState {
@@ -108,6 +109,7 @@ function normalizeTask(raw: TaskLike): Task {
     state: normalizeTaskState(raw),
     priority: normalizePriority(raw.priority),
     required_capabilities: raw.required_capabilities ?? {},
+    due_date: raw.due_date ?? null,
     created_at: String(raw.created_at ?? new Date().toISOString()),
     updated_at: String(raw.updated_at ?? new Date().toISOString())
   };
@@ -174,11 +176,40 @@ export async function createTask(input: {
   description?: string;
   priority?: number;
   required_capabilities?: Record<string, unknown>;
+  due_date?: string | null;
 }): Promise<Task> {
-  return request<Task>('/tasks', {
+  const raw = await request<TaskLike>('/tasks', {
     method: 'POST',
     body: JSON.stringify(input)
   });
+  return normalizeTask(raw);
+}
+
+export async function updateTask(
+  id: string,
+  input: { title?: string; description?: string; priority?: number; due_date?: string | null }
+): Promise<Task> {
+  const raw = await request<TaskLike>(`/tasks/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input)
+  });
+  return normalizeTask(raw);
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  const url = `${BASE_URL}/tasks/${id}`;
+  const token = getBearerToken();
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    const body = text ? (JSON.parse(text) as unknown) : null;
+    throw new ApiError(res.status, body ?? { error: res.statusText });
+  }
 }
 
 export async function changeTaskState(id: string, state: TaskState): Promise<Task> {

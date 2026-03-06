@@ -1,14 +1,18 @@
-import { CreateTaskSchema, TaskState } from '@mc/shared';
+import { CreateTaskSchema, TaskState, UpdateTaskSchema } from '@mc/shared';
 import type { FastifyInstance } from 'fastify';
 import * as assignmentDomain from '../domain/assignments.js';
 import * as taskDomain from '../domain/tasks.js';
 import { InvalidTransitionError } from '../domain/tasks.js';
 
+// All HTTP-originated task operations are attributed to "operator" —
+// distinguishing dashboard/API-key actions from agent-originated actions.
+const OPERATOR = 'operator';
+
 export async function taskRoutes(app: FastifyInstance): Promise<void> {
   // Create a task
   app.post('/tasks', async (req, reply) => {
     const input = CreateTaskSchema.parse(req.body);
-    const task = await taskDomain.createTask(input);
+    const task = await taskDomain.createTask(input, OPERATOR);
     return reply.status(201).send(task);
   });
 
@@ -35,8 +39,23 @@ export async function taskRoutes(app: FastifyInstance): Promise<void> {
   app.delete('/tasks/:id', async (req, reply) => {
     const { id } = req.params as { id: string };
     try {
-      await taskDomain.deleteTask(id);
+      await taskDomain.deleteTask(id, OPERATOR);
       return reply.status(204).send();
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('not found')) {
+        return reply.status(404).send({ error: err.message });
+      }
+      throw err;
+    }
+  });
+
+  // Update task fields (title, description, priority)
+  app.patch('/tasks/:id', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const input = UpdateTaskSchema.parse(req.body);
+    try {
+      const task = await taskDomain.updateTask(id, input, OPERATOR);
+      return reply.send(task);
     } catch (err) {
       if (err instanceof Error && err.message.includes('not found')) {
         return reply.status(404).send({ error: err.message });
@@ -60,7 +79,7 @@ export async function taskRoutes(app: FastifyInstance): Promise<void> {
     }
 
     try {
-      const task = await taskDomain.transitionState(id, parsed.data);
+      const task = await taskDomain.transitionState(id, parsed.data, OPERATOR);
       return reply.send(task);
     } catch (err) {
       if (err instanceof InvalidTransitionError) {

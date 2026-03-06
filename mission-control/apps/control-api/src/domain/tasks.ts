@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { CreateTaskInput, Task, TaskState } from '@mc/shared';
+import type { CreateTaskInput, Task, TaskState, UpdateTaskInput } from '@mc/shared';
 import { query } from '../services/db.js';
 import * as activities from './activities.js';
 
@@ -10,6 +10,7 @@ interface TaskRow {
   state: string;
   priority: number;
   required_capabilities: Record<string, unknown>;
+  due_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -22,6 +23,7 @@ function rowToTask(row: TaskRow): Task {
     state: row.state as TaskState,
     priority: row.priority,
     required_capabilities: row.required_capabilities,
+    due_date: row.due_date,
     created_at: row.created_at,
     updated_at: row.updated_at
   };
@@ -66,13 +68,13 @@ export function getValidTransitions(state: string): string[] {
 
 // ── CRUD ───────────────────────────────────────────────────────
 
-export async function createTask(input: CreateTaskInput): Promise<Task> {
+export async function createTask(input: CreateTaskInput, actorId?: string): Promise<Task> {
   const id = randomUUID();
   const now = new Date().toISOString();
 
   const result = await query<TaskRow>(
-    `INSERT INTO tasks (id, title, description, state, priority, required_capabilities, created_at, updated_at)
-     VALUES ($1, $2, $3, 'queued', $4, $5, $6, $6)
+    `INSERT INTO tasks (id, title, description, state, priority, required_capabilities, due_date, created_at, updated_at)
+     VALUES ($1, $2, $3, 'queued', $4, $5, $6, $7, $7)
      RETURNING *`,
     [
       id,
@@ -80,11 +82,12 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
       input.description,
       input.priority,
       JSON.stringify(input.required_capabilities),
+      input.due_date ?? null,
       now
     ]
   );
 
-  await activities.emit('task.created', { taskId: id, title: input.title });
+  await activities.emit('task.created', { taskId: id, title: input.title }, actorId);
   return rowToTask(result.rows[0]!);
 }
 
@@ -105,7 +108,11 @@ export async function listTasks(state?: string): Promise<Task[]> {
   return result.rows.map(rowToTask);
 }
 
-export async function transitionState(id: string, newState: TaskState): Promise<Task> {
+export async function transitionState(
+  id: string,
+  newState: TaskState,
+  actorId?: string
+): Promise<Task> {
   const task = await getTask(id);
   if (!task) {
     throw new Error(`Task ${id} not found`);
@@ -120,24 +127,74 @@ export async function transitionState(id: string, newState: TaskState): Promise<
     [id, newState]
   );
 
-  await activities.emit('task.state_changed', {
-    taskId: id,
-    from: task.state,
-    to: newState
-  });
+  await activities.emit(
+    'task.state_changed',
+    { taskId: id, title: task.title, from: task.state, to: newState },
+    actorId
+  );
 
   return rowToTask(result.rows[0]!);
 }
 
-export async function deleteTask(id: string): Promise<void> {
+export async function deleteTask(id: string, actorId?: string): Promise<void> {
+  // Fetch title before deletion so we can include it in the activity
+  const task = await getTask(id);
+  if (!task) {
+    throw new Error(`Task ${id} not found`);
+  }
   const result = await query<TaskRow>('DELETE FROM tasks WHERE id = $1 RETURNING id', [id]);
   if (!result.rows[0]) {
     throw new Error(`Task ${id} not found`);
   }
-  await activities.emit('task.deleted', { taskId: id });
+  await activities.emit('task.deleted', { taskId: id, title: task.title }, actorId);
 }
 
-export async function requeue(id: string): Promise<Task> {
+export async function updateTask(id: string, input: UpdateTaskInput, actorId?: string): Promise<Task> {
+  const fields: string[] = [];
+  const values: unknown[] = [id];
+
+  if (input.title !== undefined) {
+    values.push(input.title);
+    fields.push(`title = $${values.length}`);
+  }
+  if (input.description !== undefined) {
+    values.push(input.description);
+    fields.push(`description = $${values.length}`);
+  }
+  if (input.priority !== undefined) {
+    values.push(input.priority);
+    fields.push(`priority = $${values.length}`);
+  }
+  if (input.due_date !== undefined) {
+    values.push(input.due_date);
+    fields.push(`due_date = $${values.length}`);
+  }
+
+  if (fields.length === 0) {
+    const task = await getTask(id);
+    if (!task) throw new Error(`Task ${id} not found`);
+    return task;
+  }
+
+  fields.push('updated_at = now()');
+
+  const result = await query<TaskRow>(
+    `UPDATE tasks SET ${fields.join(', ')} WHERE id = $1 RETURNING *`,
+    values
+  );
+
+  if (!result.rows[0]) throw new Error(`Task ${id} not found`);
+
+  const updatedTask = rowToTask(result.rows[0]!);
+  await activities.emit(
+    'task.updated',
+    { taskId: id, title: updatedTask.title, changes: input },
+    actorId
+  );
+  return updatedTask;
+}
+
+export async function requeue(id: string, actorId?: string): Promise<Task> {
   const result = await query<TaskRow>(
     `UPDATE tasks SET state = 'queued', updated_at = now()
      WHERE id = $1
@@ -149,6 +206,7 @@ export async function requeue(id: string): Promise<Task> {
     throw new Error(`Task ${id} not found`);
   }
 
-  await activities.emit('task.requeued', { taskId: id });
-  return rowToTask(result.rows[0]);
+  const task = rowToTask(result.rows[0]);
+  await activities.emit('task.requeued', { taskId: id, title: task.title }, actorId);
+  return task;
 }

@@ -7,10 +7,11 @@ import {
   Clock,
   Flag,
   MessageSquare,
-  Pin,
+  Pencil,
   RefreshCw,
   RotateCcw,
-  Send
+  Send,
+  Trash2
 } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -34,17 +35,18 @@ const ACTIVITY_META: Record<string, ActivityMeta> = {
   'agent.online': { icon: CircleDot, colour: 'text-emerald-500' },
   'agent.offline': { icon: CircleOff, colour: 'text-muted-foreground' },
   'task.created': { icon: ClipboardList, colour: 'text-blue-500' },
+  'task.updated': { icon: Pencil, colour: 'text-amber-500' },
+  'task.deleted': { icon: Trash2, colour: 'text-red-500' },
   'task.state_changed': { icon: RefreshCw, colour: 'text-amber-500' },
   'task.requeued': { icon: RotateCcw, colour: 'text-amber-500' },
   'assignment.offered': { icon: Send, colour: 'text-blue-500' },
   'assignment.accepted': { icon: CheckCircle2, colour: 'text-emerald-500' },
   'assignment.completed': { icon: Flag, colour: 'text-muted-foreground' },
-  'assignment.expired': { icon: Clock, colour: 'text-red-500' },
-  'comment.created': { icon: MessageSquare, colour: 'text-foreground' },
-  'notification.dispatched': { icon: Bell, colour: 'text-foreground' }
+  'assignment.expired': { icon: Clock, colour: 'text-gray-400' },
+  'comment.created': { icon: MessageSquare, colour: 'text-foreground' }
 };
 
-const FALLBACK_META: ActivityMeta = { icon: Pin, colour: 'text-muted-foreground' };
+const FALLBACK_META: ActivityMeta = { icon: Bell, colour: 'text-muted-foreground' };
 
 // Dry-wit empty state messages. Rotate based on minute-of-hour so they
 // feel stable during a session but different across sessions.
@@ -60,32 +62,54 @@ function getActivityMeta(type: string): ActivityMeta {
   return ACTIVITY_META[type] ?? FALLBACK_META;
 }
 
+/** Returns a short human-readable actor label. */
+function actorLabel(activity: Activity): string {
+  const { actor_id, payload } = activity;
+  // Prefer a name from the payload (agent name on assignment events)
+  const payloadName = (payload.name ?? payload.agentName) as string | undefined;
+  if (payloadName) return payloadName;
+  if (!actor_id) return 'unknown';
+  if (actor_id === 'operator') return 'operator';
+  // UUIDs → truncate to first 8 chars for readability
+  return actor_id.length > 12 ? actor_id.slice(0, 8) : actor_id;
+}
+
 function getActivityDescription(activity: Activity): string {
   const p = activity.payload;
-
-  const agentLabel = (p.name ?? p.agentName) ? String(p.name ?? p.agentName) : null;
+  const title = p.title ? `"${String(p.title)}"` : null;
+  const actor = actorLabel(activity);
 
   switch (activity.type) {
     case 'agent.online':
-      return agentLabel ? `${agentLabel} came online` : 'Agent came online';
+      return actor !== 'unknown' ? `${actor} came online` : 'Agent came online';
     case 'agent.offline':
-      return agentLabel ? `${agentLabel} went offline` : 'Agent went offline';
+      return actor !== 'unknown' ? `${actor} went offline` : 'Agent went offline';
+
     case 'task.created':
-      return `New task: ${String(p.title ?? '')}`;
+      return title ? `Task ${title} created by ${actor}` : `Task created by ${actor}`;
+    case 'task.updated':
+      return title ? `Task ${title} updated by ${actor}` : `Task updated by ${actor}`;
+    case 'task.deleted':
+      return title ? `Task ${title} deleted by ${actor}` : `Task deleted by ${actor}`;
     case 'task.state_changed':
-      return `Status changed: ${String(p.from ?? '?')} → ${String(p.to ?? '?')}`;
+      return title
+        ? `Task ${title} moved to ${String(p.to ?? '?')} by ${actor}`
+        : `Status changed: ${String(p.from ?? '?')} → ${String(p.to ?? '?')}`;
     case 'task.requeued':
-      return 'Task returned to queue';
+      return title ? `Task ${title} requeued by ${actor}` : `Task requeued by ${actor}`;
+
     case 'assignment.offered':
-      return agentLabel ? `Task assigned to ${agentLabel}` : 'Task assigned to agent';
+      return actor !== 'unknown' ? `Task assigned to ${actor}` : 'Task assigned to agent';
     case 'assignment.accepted':
-      return agentLabel ? `${agentLabel} accepted task` : 'Agent accepted task';
+      return actor !== 'unknown' ? `${actor} accepted task` : 'Agent accepted task';
     case 'assignment.completed':
-      return agentLabel ? `${agentLabel} completed task` : 'Agent completed task';
+      return actor !== 'unknown' ? `${actor} completed task` : 'Agent completed task';
     case 'assignment.expired':
-      return agentLabel ? `Assignment timed out (${agentLabel})` : 'Assignment timed out';
+      return actor !== 'unknown' ? `Assignment timed out (${actor})` : 'Assignment timed out';
+
     case 'comment.created':
-      return 'New comment added';
+      return title ? `Comment added on ${title}` : 'Comment added';
+
     default:
       return activity.type;
   }
