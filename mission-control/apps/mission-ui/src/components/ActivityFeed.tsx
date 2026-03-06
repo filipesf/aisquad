@@ -63,11 +63,13 @@ function getActivityMeta(type: string): ActivityMeta {
 function getActivityDescription(activity: Activity): string {
   const p = activity.payload;
 
+  const agentLabel = (p.name ?? p.agentName) ? String(p.name ?? p.agentName) : null;
+
   switch (activity.type) {
     case 'agent.online':
-      return 'Agent came online';
+      return agentLabel ? `${agentLabel} came online` : 'Agent came online';
     case 'agent.offline':
-      return 'Agent went offline';
+      return agentLabel ? `${agentLabel} went offline` : 'Agent went offline';
     case 'task.created':
       return `New task: ${String(p.title ?? '')}`;
     case 'task.state_changed':
@@ -75,13 +77,13 @@ function getActivityDescription(activity: Activity): string {
     case 'task.requeued':
       return 'Task returned to queue';
     case 'assignment.offered':
-      return 'Task assigned to agent';
+      return agentLabel ? `Task assigned to ${agentLabel}` : 'Task assigned to agent';
     case 'assignment.accepted':
-      return 'Agent accepted task';
+      return agentLabel ? `${agentLabel} accepted task` : 'Agent accepted task';
     case 'assignment.completed':
-      return 'Agent completed task';
+      return agentLabel ? `${agentLabel} completed task` : 'Agent completed task';
     case 'assignment.expired':
-      return 'Assignment timed out';
+      return agentLabel ? `Assignment timed out (${agentLabel})` : 'Assignment timed out';
     case 'comment.created':
       return 'New comment added';
     default:

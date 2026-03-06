@@ -59,7 +59,9 @@ export async function offer(
 
       await client.query('COMMIT');
 
-      await activities.emit('assignment.offered', { taskId, agentId, assignmentId: id });
+      const agentNameRow = await query<{ name: string }>('SELECT name FROM agents WHERE id = $1', [agentId]);
+      const agentName = agentNameRow.rows[0]?.name;
+      await activities.emit('assignment.offered', { taskId, agentId, assignmentId: id, agentName });
       return rowToAssignment(result.rows[0]!);
     } catch (err: unknown) {
       await client.query('ROLLBACK');
@@ -104,10 +106,13 @@ export async function accept(assignmentId: string): Promise<Assignment | null> {
 
     await client.query('COMMIT');
 
+    const agentNameRow = await query<{ name: string }>('SELECT name FROM agents WHERE id = $1', [assignment.agent_id]);
+    const agentName = agentNameRow.rows[0]?.name;
     await activities.emit('assignment.accepted', {
       taskId: assignment.task_id,
       agentId: assignment.agent_id,
-      assignmentId
+      assignmentId,
+      agentName
     });
 
     return rowToAssignment(assignment);
@@ -146,10 +151,13 @@ export async function complete(assignmentId: string): Promise<Assignment | null>
 
     await client.query('COMMIT');
 
+    const agentNameRow = await query<{ name: string }>('SELECT name FROM agents WHERE id = $1', [assignment.agent_id]);
+    const agentName = agentNameRow.rows[0]?.name;
     await activities.emit('assignment.completed', {
       taskId: assignment.task_id,
       agentId: assignment.agent_id,
-      assignmentId
+      assignmentId,
+      agentName
     });
 
     return rowToAssignment(assignment);
@@ -187,10 +195,13 @@ export async function expire(assignmentId: string): Promise<Assignment | null> {
 
     await client.query('COMMIT');
 
+    const agentNameRow = await query<{ name: string }>('SELECT name FROM agents WHERE id = $1', [assignment.agent_id]);
+    const agentName = agentNameRow.rows[0]?.name;
     await activities.emit('assignment.expired', {
       taskId: assignment.task_id,
       agentId: assignment.agent_id,
-      assignmentId
+      assignmentId,
+      agentName
     });
 
     return rowToAssignment(assignment);

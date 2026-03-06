@@ -52,7 +52,7 @@ function parseOpenClawCapability(capabilities: Record<string, unknown>) {
  * Send a heartbeat for an agent. Transitions offline→online and updates last_seen_at.
  * Uses a deterministic sequence_id per agent per interval to allow idempotent processing.
  */
-async function sendHeartbeat(agentId: string): Promise<void> {
+async function sendHeartbeat(agentId: string, agentName: string): Promise<void> {
   const now = new Date();
   const sequenceId = `bridge-${agentId}-${Math.floor(now.getTime() / POLL_INTERVAL_MS)}`;
 
@@ -77,7 +77,7 @@ async function sendHeartbeat(agentId: string): Promise<void> {
     await query(
       `INSERT INTO activities (id, type, actor_id, payload, created_at)
        VALUES ($1, 'agent.online', NULL, $2, now())`,
-      [randomUUID(), JSON.stringify({ agentId, source: 'openclaw-bridge' })]
+      [randomUUID(), JSON.stringify({ agentId, name: agentName, source: 'openclaw-bridge' })]
     );
 
     console.log(`openclaw-heartbeat-bridge: agent ${agentId} transitioned to online`);
@@ -107,7 +107,7 @@ async function pollHeartbeats(): Promise<number> {
     if (!cap || !cap.enabled) continue;
 
     try {
-      await sendHeartbeat(agent.id);
+      await sendHeartbeat(agent.id, agent.name);
       count++;
     } catch (err) {
       console.error(
@@ -171,4 +171,4 @@ run().catch((err) => {
 });
 
 // Export for testing
-export { findOpenClawAgents, parseOpenClawCapability, sendHeartbeat, pollHeartbeats };
+export { findOpenClawAgents, parseOpenClawCapability, pollHeartbeats, sendHeartbeat };

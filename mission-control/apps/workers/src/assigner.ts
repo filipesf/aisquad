@@ -90,7 +90,10 @@ async function assignQueuedTasks(): Promise<number> {
         await query(
           `INSERT INTO activities (id, type, actor_id, payload, created_at)
            VALUES ($1, 'assignment.offered', NULL, $2, now())`,
-          [randomUUID(), JSON.stringify({ taskId: task.id, agentId: agent.id, assignmentId })]
+          [
+            randomUUID(),
+            JSON.stringify({ taskId: task.id, agentId: agent.id, assignmentId, agentName: agent.name })
+          ]
         );
 
         await query('COMMIT');
@@ -124,6 +127,12 @@ async function expireStaleLeases(): Promise<number> {
   );
 
   for (const assignment of expired.rows) {
+    const agentNameResult = await query<{ name: string }>(
+      'SELECT name FROM agents WHERE id = $1',
+      [assignment.agent_id]
+    );
+    const agentName = agentNameResult.rows[0]?.name;
+
     await query('BEGIN');
 
     await query(`UPDATE assignments SET status = 'expired', updated_at = now() WHERE id = $1`, [
@@ -142,7 +151,8 @@ async function expireStaleLeases(): Promise<number> {
         JSON.stringify({
           taskId: assignment.task_id,
           agentId: assignment.agent_id,
-          assignmentId: assignment.id
+          assignmentId: assignment.id,
+          agentName
         })
       ]
     );
