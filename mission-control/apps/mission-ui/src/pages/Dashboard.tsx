@@ -4,6 +4,7 @@ import { listAgents, listTasks } from '@/lib/api';
 import { usePolling } from '@/hooks/usePolling';
 import { useActivityStream } from '@/hooks/useActivityStream';
 import { ApiAuthBanner } from '@/components/ApiAuthBanner';
+import { WelcomeBanner } from '@/components/WelcomeBanner';
 import { ActivityFeed } from '@/components/ActivityFeed';
 import { AgentsTable } from '@/components/agents/AgentsTable';
 import { TasksTable } from '@/components/tasks/TasksTable';
@@ -50,8 +51,11 @@ export function Dashboard() {
     <div className="p-6 space-y-8">
       <ApiAuthBanner error={tasksError ?? agentsError} />
 
-      {/* Fleet — stagger index 0 */}
-      <section className="animate-fade-up" style={{ '--stagger-i': 0 } as React.CSSProperties}>
+      {/* First-visit welcome — stagger index 0. Hidden once dismissed. */}
+      <WelcomeBanner />
+
+      {/* Fleet — stagger index 1 */}
+      <section className="animate-fade-up" style={{ '--stagger-i': 1 } as React.CSSProperties}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight">
             <span className="block h-3.5 w-0.5 rounded-full bg-primary" aria-hidden="true" />
@@ -64,8 +68,8 @@ export function Dashboard() {
         <AgentsTable agents={agents ?? []} />
       </section>
 
-      {/* Tasks — stagger index 1 */}
-      <section className="animate-fade-up" style={{ '--stagger-i': 1 } as React.CSSProperties}>
+      {/* Tasks — stagger index 2 */}
+      <section className="animate-fade-up" style={{ '--stagger-i': 2 } as React.CSSProperties}>
         <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold tracking-tight">
           <span className="block h-3.5 w-0.5 rounded-full bg-primary" aria-hidden="true" />
           Tasks
@@ -78,8 +82,8 @@ export function Dashboard() {
         />
       </section>
 
-      {/* Activity feed — stagger index 2 */}
-      <div className="animate-fade-up" style={{ '--stagger-i': 2 } as React.CSSProperties}>
+      {/* Activity feed — stagger index 3 */}
+      <div className="animate-fade-up" style={{ '--stagger-i': 3 } as React.CSSProperties}>
         <ActivityFeed activities={activities} connected={connected} maxHeight="400px" />
       </div>
     </div>

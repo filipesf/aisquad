@@ -35,10 +35,11 @@ import {
   CommandSeparator,
 } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
-import { Check, PlusCircle, X } from 'lucide-react';
+import { Check, PlusCircle, X, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { TableShell } from '@/components/ui/TableShell';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const PRIORITY_OPTIONS = ['Urgent', 'High', 'Medium', 'Low'];
 
@@ -242,15 +243,24 @@ export function TasksTable({
           </Button>
         )}
 
-        {/* New task */}
-        <Button
-          size="sm"
-          className="ml-auto h-8 text-xs active:scale-[0.97] transition-transform duration-[--dur-instant]"
-          onClick={() => setCreateOpen(true)}
-        >
-          <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
-          New task
-        </Button>
+        {/* New task — keyboard shortcut N */}
+        <div className="ml-auto flex items-center gap-1.5">
+          <kbd
+            className="hidden sm:inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground select-none"
+            title="Keyboard shortcut"
+            aria-label="Keyboard shortcut: N"
+          >
+            N
+          </kbd>
+          <Button
+            size="sm"
+            className="h-8 text-xs active:scale-[0.97] transition-transform duration-[--dur-instant]"
+            onClick={() => setCreateOpen(true)}
+          >
+            <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
+            New task
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
@@ -295,11 +305,39 @@ export function TasksTable({
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  {hasFilters ? 'No tasks match your filters.' : 'No tasks yet.'}
+                <TableCell colSpan={columns.length} className="p-0">
+                  {hasFilters ? (
+                    <EmptyState
+                      icon={ClipboardList}
+                      message="No tasks match your filters"
+                      description="Try adjusting the status or priority filters, or clear them to see all tasks."
+                      action={
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs"
+                          onClick={() => {
+                            table.getColumn('state')?.setFilterValue(undefined);
+                            table.getColumn('priority')?.setFilterValue(undefined);
+                          }}
+                        >
+                          Clear filters
+                        </Button>
+                      }
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={ClipboardList}
+                      message="No tasks yet"
+                      description="Tasks move through a state machine — from queued through assigned, in progress, review, and done. Create your first task to get started."
+                      action={
+                        <Button size="sm" className="text-xs" onClick={() => setCreateOpen(true)}>
+                          <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
+                          Create first task
+                        </Button>
+                      }
+                    />
+                  )}
                 </TableCell>
               </TableRow>
             )}

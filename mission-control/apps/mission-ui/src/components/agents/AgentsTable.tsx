@@ -3,6 +3,7 @@ import type { Agent } from '@/types/domain';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Users } from 'lucide-react';
 import { TimeAgo } from '@/components/TimeAgo';
+import { InlineCode } from '@/components/ui/InlineCode';
 import {
   Table,
   TableBody,
@@ -32,7 +33,16 @@ export const AgentsTable = memo(function AgentsTable({ agents }: AgentsTableProp
   if (agents.length === 0) {
     return (
       <TableShell>
-        <EmptyState icon={Users} message="No agents connected yet" />
+        <EmptyState
+          icon={Users}
+          message="No agents connected yet"
+          description={
+            <>
+              Agents register via <InlineCode>POST /agents</InlineCode> and send heartbeats to stay
+              online. Once connected, they appear here with live status.
+            </>
+          }
+        />
       </TableShell>
     );
   }

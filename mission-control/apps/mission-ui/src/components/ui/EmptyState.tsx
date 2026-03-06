@@ -3,26 +3,39 @@ import type { LucideIcon } from 'lucide-react';
 
 interface EmptyStateProps {
   icon: LucideIcon;
+  /** Short headline. */
   message: string;
+  /**
+   * Optional longer explanation shown below the headline.
+   * Use to explain *why* this section exists and *what value* it provides.
+   */
+  description?: React.ReactNode;
+  /**
+   * Optional call-to-action rendered below the description.
+   * Pass a `<Button>` or any other element.
+   */
+  action?: React.ReactNode;
   className?: string;
 }
 
 /**
- * Centred empty-state placeholder with an icon and a short message.
+ * Centred empty-state placeholder with an icon, headline, optional
+ * description, and optional CTA.
  *
- * Replaces the repeated inline pattern used in AgentsTable and ActivityFeed:
- * ```tsx
- * <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
- *   <Icon className="h-8 w-8 text-muted-foreground/40" />
- *   <p className="text-sm text-muted-foreground">…</p>
- * </div>
- * ```
- *
- * When used inside a Table, wrap with `<TableRow><TableCell colSpan={n}>` yourself.
+ * The basic variant (icon + message only) is backward-compatible with all
+ * existing call sites. Rich variants add `description` and/or `action`.
  *
  * @example
- * // Standalone (e.g. AgentsTable)
+ * // Basic (existing call sites are unchanged)
  * <EmptyState icon={Users} message="No agents connected yet" />
+ *
+ * // Rich — with description and CTA
+ * <EmptyState
+ *   icon={Users}
+ *   message="No agents connected yet"
+ *   description="Agents register via the API and send heartbeats to stay online."
+ *   action={<Button size="sm" onClick={…}>View setup guide</Button>}
+ * />
  *
  * // Inside a table body
  * <TableRow>
@@ -31,13 +44,23 @@ interface EmptyStateProps {
  *   </TableCell>
  * </TableRow>
  */
-export function EmptyState({ icon: Icon, message, className }: EmptyStateProps) {
+export function EmptyState({
+  icon: Icon,
+  message,
+  description,
+  action,
+  className,
+}: EmptyStateProps) {
   return (
     <div
       className={cn('flex flex-col items-center justify-center gap-2 py-12 text-center', className)}
     >
       <Icon className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
-      <p className="text-sm text-muted-foreground">{message}</p>
+      <p className="text-sm font-medium text-foreground/70">{message}</p>
+      {description && (
+        <p className="max-w-xs text-xs text-muted-foreground leading-relaxed">{description}</p>
+      )}
+      {action && <div className="mt-2">{action}</div>}
     </div>
   );
 }
