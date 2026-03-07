@@ -48,7 +48,8 @@ help:
 	@printf "  make devices-revoke DEVICE_ID=<id>\n"
 	@printf "                            Revoke paired device\n"
 	@printf "  make token-copy            Copy gateway token to macOS clipboard\n"
-	@printf "  make token-sync            Sync config token from env\n\n"
+	@printf "  make token-sync            Sync config token from env\n"
+	@printf "  make codex-auth-sync       Sync ~/.codex/auth.json from Mac to VM\n\n"
 	@printf "Multi-Agent\n"
 	@printf "  make agents-list           List agents\n"
 	@printf "  make agents-list-bindings  List agents with bindings\n"
@@ -219,6 +220,10 @@ token-copy:
 token-sync:
 	@$(ORB) bash -c 'cd $(OPENCLAW_DIR) && node -e "const fs=require(\"fs\");const p=\"$(STATE_DIR)/openclaw.json\";const c=JSON.parse(fs.readFileSync(p,\"utf8\"));c.gateway=c.gateway||{};c.gateway.auth=c.gateway.auth||{};c.gateway.auth.mode=\"token\";c.gateway.auth.token=process.env.OPENCLAW_GATEWAY_TOKEN;fs.writeFileSync(p,JSON.stringify(c,null,2)+\"\\n\");console.log(\"gateway token synced\")"'
 
+.PHONY: codex-auth-sync
+codex-auth-sync:
+	@VM=$(VM) ./scripts/sync_codex_auth.sh
+
 # ─── Multi-Agent ─────────────────────────────────────────────────────────────
 
 .PHONY: agents-list
@@ -303,7 +308,7 @@ restore:
 # ─── Maintenance ─────────────────────────────────────────────────────────────
 
 .PHONY: monthly
-monthly: pull restart ps status doctor audit health
+monthly: pull codex-auth-sync restart ps status doctor audit health
 	@echo "Monthly maintenance sequence complete."
 
 .PHONY: full-check

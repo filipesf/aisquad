@@ -155,9 +155,32 @@ make dashboard-url                     # Prints tokenized Control UI URL (no bro
 make devices-list                      # node dist/index.js devices list
 make devices-approve REQUEST_ID=<id>   # node dist/index.js devices approve "<id>"
 make devices-revoke DEVICE_ID=<id>     # node dist/index.js devices revoke "<id>"
+make codex-auth-sync                   # Sync ~/.codex/auth.json from Mac to VM (see below)
 ```
 
 > **`token-copy` vs `token-sync`:** `token-copy` puts the token on the clipboard for browser use. `token-sync` writes the token from the env file into `~/.openclaw/openclaw.json` â€” required when the two diverge (e.g. after rotating the token in the env file).
+
+### Codex OAuth credentials
+
+The `openai-codex` model provider authenticates via OAuth rather than an API key. Credentials are stored by the Codex CLI in `~/.codex/auth.json` on the macOS host. The gateway on the VM reads the same file from `~/.codex/auth.json` inside the VM.
+
+Because the Codex CLI only runs on macOS, every time it refreshes the OAuth token the VM copy goes stale, causing `refresh_token_reused` errors in the gateway logs and model failures for any agent using `openai-codex/*` models.
+
+**Sync the credentials manually:**
+
+```bash
+make codex-auth-sync
+```
+
+The script:
+1. Reads `~/.codex/auth.json` on the Mac
+2. Compares the refresh token with what is on the VM
+3. Skips silently if they are already identical
+4. Copies the file to the VM via `orb push` if they differ
+5. Verifies the copy landed correctly
+6. Restarts the gateway to pick up the new credentials
+
+**`make monthly` runs this automatically** as part of the routine maintenance sequence.
 
 ---
 
@@ -346,3 +369,15 @@ Repeated `[bonjour] gateway name conflict resolved` in gateway logs. Harmless â€
 make logs-sentinel    # check for errors
 make restart-sentinel
 ```
+
+### openai-codex OAuth token stale (`refresh_token_reused`)
+
+Symptom: Gateway logs show repeated `OAuth token refresh failed for openai-codex` with `refresh_token_reused`. Agents using `openai-codex/*` models fail with "All models failed".
+
+Cause: The Codex CLI on macOS rotated the OAuth token, but the VM's `~/.codex/auth.json` was not updated.
+
+```bash
+make codex-auth-sync
+```
+
+This syncs the current token from `~/.codex/auth.json` on the Mac to the VM and restarts the gateway. If `~/.codex/auth.json` is missing on the Mac, sign in via the Codex CLI first.
