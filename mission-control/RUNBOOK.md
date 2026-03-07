@@ -38,11 +38,10 @@ All services run from `mission-control/docker-compose.yml`. Commands are run fro
 | `offline-detector`        | `mctl-offline-detector` | —    | Marks agents offline when heartbeats stop                   |
 | `assigner`                | `mctl-assigner`         | —    | Expires stale leases; assigns queued tasks to online agents |
 | `notification-dispatcher` | `mctl-notif-dispatcher` | —    | Delivers queued notifications with exponential backoff      |
-| `daily-standup`           | `mctl-daily-standup`    | —    | One-shot: generates 24h activity digest                     |
 
 ### OpenClaw profile (optional)
 
-Started with `--profile openclaw`. Requires `OPENCLAW_ENABLED=true`, `OPENCLAW_GATEWAY_URL`, and `OPENCLAW_GATEWAY_TOKEN` in `.env`.
+Started with `--profile openclaw`. Requires `OPENCLAW_GATEWAY_URL` and `OPENCLAW_GATEWAY_TOKEN` in `.env`. (`OPENCLAW_ENABLED=true` is hardcoded in compose for profile services — you don't need to set it manually.)
 
 | Service name                | Container                  | Description                                                                                                                                                                |
 | --------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -79,7 +78,6 @@ docker compose --profile openclaw up -d
 Requires in `.env`:
 
 ```
-OPENCLAW_ENABLED=true
 OPENCLAW_GATEWAY_URL=http://aisquad.orb.local:18789
 OPENCLAW_GATEWAY_TOKEN=<hooks-bearer-token>
 ```
@@ -190,6 +188,7 @@ Migration files:
 - `004_telemetry.sql` — `telemetry_events` table + telemetry query indexes
 - `005_seed_corven_agent.sql` — Seeds corven OpenClaw agent (idempotent via `ON CONFLICT DO NOTHING`)
 - `006_clean_slate.sql` — Removes all non-corven agents and clears all operational data
+- `007_task_due_date.sql` — Adds `due_date` column to `tasks`
 
 ### Tables
 
@@ -210,16 +209,17 @@ Migration files:
 
 ## Workers
 
-Six background processes. All are stateless — they can be killed and restarted without data loss.
+Five background processes run continuously as Docker services. All are stateless — they can be killed and restarted without data loss.
 
-| Worker                    | Service name                | Container                  | Poll interval                               | Batch size          |
-| ------------------------- | --------------------------- | -------------------------- | ------------------------------------------- | ------------------- |
-| Offline Detector          | `offline-detector`          | `mctl-offline-detector`    | `OFFLINE_POLL_MS` (default 10s)             | —                   |
-| Assigner                  | `assigner`                  | `mctl-assigner`            | `ASSIGNER_POLL_MS` (default 10s)            | 10 tasks, 10 agents |
-| Notification Dispatcher   | `notification-dispatcher`   | `mctl-notif-dispatcher`    | `NOTIF_POLL_MS` (default 5s)                | 50 notifications    |
-| Daily Standup             | `daily-standup`             | `mctl-daily-standup`       | one-shot (or loop with `STANDUP_LOOP=true`) | —                   |
-| OpenClaw Dispatcher       | `openclaw-dispatcher`       | `mctl-openclaw-dispatcher` | `OPENCLAW_DISPATCH_POLL_MS` (default 10s)   | 20 assignments      |
-| OpenClaw Heartbeat Bridge | `openclaw-heartbeat-bridge` | `mctl-openclaw-heartbeat`  | `OPENCLAW_DISPATCH_POLL_MS` (default 10s)   | all OpenClaw agents |
+| Worker                    | Service name                | Container                  | Poll interval                             | Batch size          |
+| ------------------------- | --------------------------- | -------------------------- | ----------------------------------------- | ------------------- |
+| Offline Detector          | `offline-detector`          | `mctl-offline-detector`    | `DETECTOR_POLL_MS` (default 10s)          | —                   |
+| Assigner                  | `assigner`                  | `mctl-assigner`            | `ASSIGNER_POLL_MS` (default 5s)           | 10 tasks, 10 agents |
+| Notification Dispatcher   | `notification-dispatcher`   | `mctl-notif-dispatcher`    | `NOTIF_POLL_MS` (default 5s)              | 50 notifications    |
+| OpenClaw Dispatcher       | `openclaw-dispatcher`       | `mctl-openclaw-dispatcher` | `OPENCLAW_DISPATCH_POLL_MS` (default 10s) | 20 assignments      |
+| OpenClaw Heartbeat Bridge | `openclaw-heartbeat-bridge` | `mctl-openclaw-heartbeat`  | `OPENCLAW_DISPATCH_POLL_MS` (default 10s) | all OpenClaw agents |
+
+**Daily Standup** is a one-shot script (not a compose service). Run it manually:
 
 **Offline threshold:** per-agent `heartbeat_interval_ms × 3` (not a global fixed threshold).
 
@@ -233,10 +233,6 @@ Six background processes. All are stateless — they can be killed and restarted
 pnpm --filter @mc/workers offline-detector
 pnpm --filter @mc/workers assigner
 pnpm --filter @mc/workers notification-dispatcher
-pnpm --filter @mc/workers daily-standup
-
-# Daily standup in loop mode
-STANDUP_LOOP=true pnpm --filter @mc/workers daily-standup
 ```
 
 ---
@@ -299,31 +295,26 @@ Optional env overrides:
 
 Template: `mission-control/.env.example`. Copy to `mission-control/.env` and fill in values.
 
-| Variable                    | Default                 | Used by                 | Notes                                      |
-| --------------------------- | ----------------------- | ----------------------- | ------------------------------------------ |
-| `PGHOST`                    | `localhost`             | API, Workers            | Use `postgres` when running inside Docker  |
-| `PGPORT`                    | `5432`                  | API, Workers            |                                            |
-| `PGUSER`                    | `postgres`              | API, Workers            |                                            |
-| `PGPASSWORD`                | `postgres`              | API, Workers            |                                            |
-| `PGDATABASE`                | `mission_control`       | API, Workers            |                                            |
-| `REDIS_HOST`                | `localhost`             | API                     | Use `redis` when running inside Docker     |
-| `REDIS_PORT`                | `6379`                  | API                     |                                            |
-| `HOST`                      | `0.0.0.0`               | API                     |                                            |
-| `PORT`                      | `3000`                  | API                     |                                            |
-| `LOG_LEVEL`                 | `info`                  | API                     |                                            |
-| `CONTROL_API_TELEMETRY_TOKEN` | —                     | API                     | Required bearer token for `/telemetry/*` routes |
-| `VITE_TELEMETRY_TOKEN`  | —                       | Mission UI (build-time) | Baked into JS bundle via Docker build arg; defaults to `CONTROL_API_TELEMETRY_TOKEN` |
-| `OFFLINE_POLL_MS`           | `10000`                 | Offline Detector        |                                            |
-| `ASSIGNER_POLL_MS`          | `10000`                 | Assigner                |                                            |
-| `LEASE_SECONDS`             | `30`                    | Assigner                |                                            |
-| `NOTIF_POLL_MS`             | `5000`                  | Notification Dispatcher |                                            |
-| `OPENCLAW_ENABLED`          | `false`                 | OpenClaw workers        | Set `true` to activate OpenClaw profile    |
-| `OPENCLAW_GATEWAY_URL`      | —                       | OpenClaw workers        | Required when `OPENCLAW_ENABLED=true`      |
-| `OPENCLAW_GATEWAY_TOKEN`    | —                       | OpenClaw workers        | Hooks bearer token for `POST /hooks/agent` |
-| `OPENCLAW_DEFAULT_MODEL`    | —                       | OpenClaw workers        | Optional model override                    |
-| `OPENCLAW_DISPATCH_POLL_MS` | `10000`                 | OpenClaw workers        | Shared by dispatcher + heartbeat bridge    |
-| `CONTROL_API_URL`           | `http://localhost:3000` | OpenClaw workers        |                                            |
-| `STANDUP_LOOP`              | —                       | Daily Standup           | Set `true` for continuous loop mode        |
+| Variable                      | Default                 | Used by                 | Notes                                                                                                             |
+| ----------------------------- | ----------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `PGUSER`                      | `postgres`              | API, Workers            |                                                                                                                   |
+| `PGPASSWORD`                  | `postgres`              | API, Workers            |                                                                                                                   |
+| `PGDATABASE`                  | `mission_control`       | API, Workers            |                                                                                                                   |
+| `PG_PORT`                     | `5432`                  | compose port binding    | Host-side port only; containers always use internal port 5432                                                     |
+| `REDIS_PORT`                  | `6379`                  | compose port binding    | Host-side port only; containers always use internal port 6379                                                     |
+| `API_PORT`                    | `3000`                  | compose port binding    | Host-side port for `control-api`                                                                                  |
+| `UI_PORT`                     | `5173`                  | compose port binding    | Host-side port for `mission-ui`                                                                                   |
+| `LOG_LEVEL`                   | `info`                  | API                     |                                                                                                                   |
+| `CONTROL_API_TELEMETRY_TOKEN` | —                       | API, Mission UI         | Required bearer token for `/telemetry/*` routes; also baked into the UI JS bundle at build time as `VITE_TELEMETRY_TOKEN` |
+| `OFFLINE_THRESHOLD_MS`        | `30000`                 | Offline Detector        | Agent is marked offline after this many ms with no heartbeat                                                      |
+| `DETECTOR_POLL_MS`            | `10000`                 | Offline Detector        | How often the detector checks for stale heartbeats                                                                |
+| `ASSIGNER_POLL_MS`            | `5000`                  | Assigner                |                                                                                                                   |
+| `LEASE_SECONDS`               | `120`                   | Assigner                |                                                                                                                   |
+| `NOTIF_POLL_MS`               | `5000`                  | Notification Dispatcher |                                                                                                                   |
+| `OPENCLAW_GATEWAY_URL`        | —                       | OpenClaw workers        | Required for `--profile openclaw`                                                                                 |
+| `OPENCLAW_GATEWAY_TOKEN`      | —                       | OpenClaw workers        | Hooks bearer token for `POST /hooks/agent`                                                                        |
+| `OPENCLAW_DEFAULT_MODEL`      | —                       | OpenClaw workers        | Optional model override                                                                                           |
+| `OPENCLAW_DISPATCH_POLL_MS`   | `10000`                 | OpenClaw workers        | Shared by dispatcher + heartbeat bridge                                                                           |
 
 **Connection pool limits:** API max 20 connections; each worker max 5 connections.
 
@@ -615,7 +606,45 @@ docker compose logs --tail=100 <service-name>
 
 ```bash
 pnpm --filter @mc/workers daily-standup
-
-# Via Docker
-docker compose run --rm daily-standup
 ```
+
+---
+
+## Mission UI — Operator Notes
+
+### First login / auth token
+
+The UI reads its agent bearer token from `localStorage`. On first open, set it via the browser console:
+
+```js
+localStorage.setItem('MC_AGENT_TOKEN', '<your-session_key>')
+```
+
+If the token is missing or invalid the UI shows an auth banner with these same instructions.
+
+### Telemetry page token
+
+The telemetry page uses a separate token baked into the bundle at build time from `CONTROL_API_TELEMETRY_TOKEN`. If you need to override it at runtime (e.g. during local dev without a rebuild):
+
+```js
+localStorage.setItem('MC_TELEMETRY_TOKEN', '<your-telemetry-token>')
+```
+
+### Keyboard shortcuts
+
+| Key | Action          |
+| --- | --------------- |
+| `N` | Open New Task dialog (guarded — won't fire while typing in an input) |
+
+### Reset onboarding hints
+
+Onboarding dismissals are persisted under `mc_ob_*` keys. To reset and show them again:
+
+```js
+Object.keys(localStorage).filter(k => k.startsWith('mc_ob_')).forEach(k => localStorage.removeItem(k))
+location.reload()
+```
+
+### UI polling behaviour
+
+The dashboard polls the API on a timer. Polling **pauses automatically when the tab is hidden** and fires an immediate catch-up request when the tab becomes visible again. This is expected — traffic drops are not an error.

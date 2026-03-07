@@ -27,8 +27,9 @@ make up
 
 This runs:
 
-1. `make vm-up` -> starts VM OpenClaw/Sentinel services
-2. `make mc-up` -> starts Mission Control stack
+1. `make vm-up` — starts VM OpenClaw/Sentinel services
+2. `make mc-up` — starts Mission Control stack
+3. `make links` — prints operational URLs
 
 ### Check Status
 
@@ -36,10 +37,29 @@ This runs:
 make status
 ```
 
+This runs `make vm-ps` + `make mc-ps` + `make links`.
+
+### Print Operational Links
+
+```bash
+make links
+```
+
+Prints Mission Control UI, API health, OpenClaw VM endpoint, and dashboard URL.
+
+### Update Everything (pull + rebuild + restart)
+
+```bash
+make update
+```
+
 This runs:
 
-- `make vm-ps`
-- `make mc-ps`
+1. `git pull`
+2. `make -C vm pull` — updates OpenClaw in VM
+3. `bash sentinel/deploy.sh` — rebuilds and redeploys Sentinel
+4. Rebuilds Mission Control Docker images
+5. Full restart via `make down && make up`
 
 ### Stop Mission Control
 
